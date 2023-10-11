@@ -1,10 +1,18 @@
 name:                apollo
 version:             0.1.0.0
-github:              "githubuser/apollo"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2023 Author name here"
+github:              "github.com/Arthur-Aillet/Apollo"
+license:             GPL-3
+author:              
+  - "Auguste Frater"
+  - "Julian Scott"
+  - "Ludovic De-Chavagnac"
+  - "Arthur Aillet"
+maintainer:          
+  - "aguste.frater@epitech.eu"
+  - "julian.scott@epitech.eu"
+  - "ludovic.de-chavagnac@epitech.eu"
+  - "arthur.aillet@epitech.eu"
+copyright:           "2023 Arthur Aillet"
 
 extra-source-files:
 - README.md
@@ -16,7 +24,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/apollo#readme>
+description:         Please see the README on GitHub at <https://github.com/Arthur-Aillet/Apollo#readme>
 
 dependencies:
 - base >= 4.7 && < 5
