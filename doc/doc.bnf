@@ -1,0 +1,30 @@
+<lettre>                = "a".."z";
+<digit>                 = "0" .. "9";
+<specialCharCall>     = "_" | "-";
+<specialChars>          = "(" | ")" | "\\" | "/" | "[" |"]" | "\"" | "'" | <specialCharCall>;
+
+
+<PosNumber>             = {<digit>};
+<NegNumber>             = "-"<PosNumber>;
+<Number>                = <PosNumber> | <NegNumber>
+<String>                = {<lettre> | <digit> | <specialCharCall>}
+<Elem>                  = <String> | <Number>
+
+<StringType>                = "\""{<lettre> | <digit> | <specialChar> }"\""
+
+<predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">="
+<boolOperator>          = "&&" | "||"
+<Not>                   = "!"
+<condition>             = [<Not>] <Elem> <predicat> <Elem> | <condition> <boolOperator> <condition>
+
+<type>                  = "char" | "string" | "bool" | "int" | "float"
+
+<modifieVariable>       = <String> "=" <Elem>
+<defineVariable>        = <type> <modifieVariable>
+
+
+<instruction>           = <structure_if> | <defineVariable> | <modifieVariable>
+
+<instructions>          = {<instruction>}
+
+<structure_if>          = if "(" <condition> ")" "{"<instructions>"}" [else "{" <instructions>"}" ];
