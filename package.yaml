@@ -8,7 +8,6 @@ copyright:           "2023 Author name here"
 
 extra-source-files:
 - README.md
-- CHANGELOG.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -34,10 +33,10 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
-  source-dirs: src
-
+  source-dirs: 
+  - src
 executables:
-  apollo-exe:
+  apollo:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

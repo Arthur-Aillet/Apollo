@@ -25,7 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Parser
+      Parser.Lib
   other-modules:
       Paths_apollo
   hs-source-dirs:
@@ -35,7 +36,7 @@ library
       base >=4.7 && <5
   default-language: Haskell2010
 
-executable apollo-exe
+executable apollo
   main-is: Main.hs
   other-modules:
       Paths_apollo
