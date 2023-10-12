@@ -4,7 +4,6 @@ import Eval.Builtin(Value(..), Instruction(..), Stack, Insts, Env, Args, Func, B
 
 import Data.HashMap.Lazy (empty, (!?), insert)
 
-
 absFunc :: Func
 absFunc = [PushArg 0,
   Push (Int 0),

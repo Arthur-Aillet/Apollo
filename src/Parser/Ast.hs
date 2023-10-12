@@ -1,4 +1,4 @@
-module ParseAst
+module Parser.Ast
   ( parseAst
   )
 where
