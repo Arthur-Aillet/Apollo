@@ -1,42 +1,45 @@
 
 <lettreMin>             = "a".."z";
-<lettreMaj>             = "A" .. "Z";
-<letter>                = <lettreMin> | <lettreMaj>
+<lettreMaj>             = "A".."Z";
+<letter>                = <lettreMin> | <lettreMaj>;
 <digit>                 = "0" .. "9";
 <specialCharCall>       = "_" | "-";
 <specialChars>          = "(" | ")" | "\\" | "/" | "[" |"]" | "\"" | "'" | <specialCharCall>;
-<String>                = {<lettre> | <digit> | <specialCharCall>};
+<String>                = <1>*(<lettre> | <digit> | <specialCharCall>);
 
-<PosNumber>             = {<digit>};
-<NegNumber>             = "-"<PosNumber>;
+<PosNumber>             = <1>*<digit>;
+<NegNumber>             = "-" <PosNumber>;
 <PosFloat>              = <PosNumber> "." <PosNumber>;
 <NegFloat>              = <NegNumber> "." <PosNumber>;
 
 <Number>                = <PosNumber> | <NegNumber>;
 <Float>                 = <PosFloat> | <NegFloat>;
-<StringType>            = "\""[{<lettre> | <digit> | <specialChar>}]"\"";
-<List>                  = "[" [<Elem> {["," <Elem>]}]"]";
+<StringType>            = "\"" *(<lettre> | <digit> | <specialChar>) "\"";
+<List>                  = "[" ([<Elem>] [*("," <Elem>)]) "]";
 <Bool>                  = "true" | "false";
+<type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <type> "]";
 
-<Elem>                  = <StringType> | <Number> | <Float> | ArrayType> | <List> | <Bool>;
+<Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <funcCall>;
 
 <predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">=";
 <boolOperator>          = "&&" | "||";
 <Not>                   = "!";
-<condition>             = [<Not>] <Elem> <predicat> <Elem> | [<Not>] ["("]<condition> <boolOperator> <condition> [")"];
+<condition>             = [<Not>] <Elem> <predicat> <Elem> | [<Not> "("] <condition> <boolOperator> <condition> [")"];
 
-<type>                  = "char" | "string" | "bool" | "int" | "float";
-
-<modifieVariable>       = <String> "=" <Elem>;
+<modifieVariable>       = <String> " = " <Elem>;
 <defineVariable>        = <type> <modifieVariable>;
 <defineDefaultVariable> = <type> <String>;
 
+<instruction>           = <structure_if> | <structure_switch> | <funcCall> | <return> | <defineVariable> | <modifieVariable> ";";
+<instructions>          = *<instruction>;
 
-<instruction>           = <structure_if> | <defineVariable> | <modifieVariable>;
-<instructions>          = {<instruction>};
+<structure_if>          = "if (" <condition> ") {" <instructions> "}" [ "else {" <instructions> "}" ];
+<default_case>          = "default :" <instructions> "break;"
+<structure_case>        = "case " <elem> ":" <instructions> "break;";
+<structure_switch>      = "switch (" <Elem> ") {" *<structure_case> [<default_case>] "}";
 
+<functionDef>           = "def" <String> "(" [<defineDefaultVariable>] *[ "," <defineDefaultVariable] ")" "{" <instructions> "}";
+<funcCall>              = <string> "(" *<Elem> ")";
 
-<structure_if>          = "if (" <condition> ")" "{"<instructions>"}" ["else {" <instructions>"}" ];
-
-<function>              = "def" <String> "(" [<defineDefaultVariable> {["," <defineDefaultVariable]}] ")" "{" <instructions> "}";
+<return>                = "return (" <Elem> ");";
 
