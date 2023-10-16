@@ -28,6 +28,7 @@ description:         Please see the README on GitHub at <https://github.com/Arth
 
 dependencies:
 - base >= 4.7 && < 5
+- unordered-containers
 
 ghc-options:
 - -Wall

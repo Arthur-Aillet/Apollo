@@ -1,6 +1,6 @@
 module Parser
-  ( Parser.Lib.someFunc,
+  ( Parser.Type.Parser(..),
   )
 where
 
-import Parser.Lib
+import Parser.Type
