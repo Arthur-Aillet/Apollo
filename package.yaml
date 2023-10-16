@@ -64,3 +64,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - apollo
+    - HUnit
