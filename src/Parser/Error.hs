@@ -11,9 +11,10 @@ import Parser.Type (Parser (..))
 import Parser.Position (Position (..))
 
 withErr :: String -> Parser a -> Parser a
-withErr msg parser = Parser $ \string pos -> case runParser parser string pos of
+withErr new_msg parser = Parser $ \string pos -> case runParser parser string pos of
   Right a -> Right a
-  Left (_, new_pos) -> Left (msg, new_pos)
+  Left (msg, new_pos) -> Left (err, new_pos)
+    where err = msg ++ "\n\n" ++ new_msg
 
 failingWith :: String -> Parser a
 failingWith string = Parser (\_ pos -> Left (string, pos))
