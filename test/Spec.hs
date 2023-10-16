@@ -1,2 +1,12 @@
+import Control.Monad
+import Test.HUnit
+import ParserSpec(parserTests)
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = Control.Monad.void (runTestTT tests)
+
+tests :: Test
+tests =
+  TestList
+    [ parserTests
+    ]
