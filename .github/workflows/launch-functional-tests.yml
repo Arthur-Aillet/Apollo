@@ -1,8 +1,9 @@
-name: protect-pull-request
-run-name: ${{ github.actor }} is testing out our Apollo 🚀 for `${{github.ref_name}}`
+name: launch-functional-tests
+run-name: ${{ github.actor }} is running functional tests out our GLaDOS 🤖
 on:
-  pull_request:
-    branches: [ main ]
+  push:
+    paths:
+      - 'test/samples/*'
 jobs:
   Run-Tests:
     runs-on: ubuntu-latest
@@ -21,8 +22,6 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
           restore-keys: |
             ${{ runner.os }}-
-      - name: Build and run unit tests
-        run: | 
-          stack test --fast --no-terminal --system-ghc 2>/tmp/ci-test-output
-          cat /tmp/ci-test-output
-          ! grep "Failure in" /tmp/ci-test-output
+      - name: Build and run functional tests
+        run: "make func-test"
+  
