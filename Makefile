@@ -5,7 +5,7 @@
 ## GLaDOS Makefile
 ##
 
-NAME			=	glados
+NAME			=	apollo
 
 all:
 	stack --local-bin-path . install
@@ -29,7 +29,7 @@ unit-test:
 	stack test --coverage
 	stack hpc report --all --destdir test/coverage
 
-func-test:
+func-test: re
 	./functional-tests/launch.sh
 
 test: unit-test func-test
