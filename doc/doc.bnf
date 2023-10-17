@@ -13,7 +13,7 @@
 <PosFloat>              = <PosNumber> "." <PosNumber>;
 <NegFloat>              = <NegNumber> "." <PosNumber>;
 
-<HexaNumber>            = "0x"{<Hexadecimal>}-
+<HexaNumber>            = "0x"{<Hexadecimal>}-;
 <Number>                = <PosNumber> | <NegNumber> | HexaNumber;
 <Float>                 = <PosFloat> | <NegFloat>;
 <StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
@@ -22,7 +22,7 @@
 <Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
 
 <Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <FuncCall>;
-<ElemSeparateByComa>    = [<Elem>] | <Elem> {("," <Elem>)}
+<ElemSeparateByComa>    = [<Elem>] | <Elem> {("," <Elem>)};
 
 <Predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">=";
 <BoolOperator>          = "&&" | "||";
@@ -32,10 +32,10 @@
 <DeclareVariable>       = <Type> <String>;
 <SetVariable>           = <DeclareVariable> = <Elem>;
 
-<Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable}
+<Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
 
 <StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" [ "else {" <Instructions> "}" ];
-<DefaultCase>           = "default :" <Instructions>
+<DefaultCase>           = "default :" <Instructions>;
 <StructureCase>         = "case " <Elem> ": " <Instructions>;
 <StructureSwitch>       = "switch (" <Elem> ") {" {<StructureCase>} [<DefaultCase>] "}";
 <FunctionDef>           = "def" <String> "(" <Parameters> ")" "{" <Instructions> "}";
@@ -45,8 +45,8 @@
 <Call>
 
 <Return>                = "return (" <Elem> ");";
-<Then>                  = <Call> ">>" <Call>
-<Bind>                  = <DeclareVariable> "<-" <Call>
+<Then>                  = <Call> ">>" <Call>;
+<Bind>                  = <DeclareVariable> "<-" <Call>;
 
 <Instruction>           = <StructureIf> | <StructureSwitch> | <FuncCall> | <Return> | <SetVariable> | <DeclareVariable> | <ShellCall> ";";
 <Instructions>          = {<Instruction>};
