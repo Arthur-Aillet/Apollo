@@ -42,11 +42,11 @@
 
 <FuncCall>              = <string> "(" {<Elem>} ")";
 <ShellCall>             = "$"<String> "(" <ElemSeparateByComa> ")";
-<Call>
+<Call>                  = <FuncCall> | <ShellCall>
 
 <Return>                = "return (" <Elem> ");";
 <Then>                  = <Call> ">>" <Call>;
 <Bind>                  = <DeclareVariable> "<-" <Call>;
 
-<Instruction>           = <StructureIf> | <StructureSwitch> | <FuncCall> | <Return> | <SetVariable> | <DeclareVariable> | <ShellCall> ";";
+<Instruction>           = <StructureIf> | <StructureSwitch> | <Call> | <Return> | <SetVariable> | <DeclareVariable>";";
 <Instructions>          = {<Instruction>};
