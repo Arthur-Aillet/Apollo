@@ -30,7 +30,7 @@ unit-test:
 	stack hpc report --all --destdir test/coverage
 
 func-test:
-	./test/functional-tests.sh
+	./functional-tests/launch.sh
 
 test: unit-test func-test
 
