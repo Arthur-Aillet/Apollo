@@ -26,3 +26,5 @@ jobs:
           stack test --fast --no-terminal --system-ghc 2>/tmp/ci-test-output
           cat /tmp/ci-test-output
           ! grep "Failure in" /tmp/ci-test-output
+      - name: Run functional tests
+        run : "./functional-tests/launch.sh"
