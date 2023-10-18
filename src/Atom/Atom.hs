@@ -6,7 +6,9 @@
 --
 
 module Atom.Atom (Atom (..),
-  bAtom, cAtom, iAtom, fAtom) where
+  bAtom, cAtom, iAtom, fAtom,
+  atomCast
+  ) where
 
 -- import Text.Read
 
