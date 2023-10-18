@@ -9,52 +9,52 @@ module Parser.Char (module Parser.Char) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Error (failingWith, withErr)
-import Parser.Type (Parser (..))
-import Parser.Position (moveCursor)
+import Parser.Type (Parser (..), StackTrace(..))
+import Parser.Position (moveCursor, defaultPosition, Range(..), moveCursor)
 
 parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of
   ('\n' : xs) -> Right ('\n', xs, moveCursor pos True)
   (x : xs) -> Right (x, xs, moveCursor pos False)
-  [] -> Left ("Not Found: List is empty", pos)
+  [] -> Left StackTrace { errors = [("parseAChar: Not Found: End of Input", Range { start = pos, end = pos })] }
 
 parseDigit :: Parser Char
 parseDigit = parseAnyChar ['0' .. '9']
 
 parseOpeningQuote :: Parser Char
-parseOpeningQuote = withErr "Not Found: Missing opening Quote" (parseChar '"')
+parseOpeningQuote = withErr "parseOpeningQuote: Not Found: Missing opening Quote" (parseChar '"')
 
 parseClosingQuote :: Parser Char
-parseClosingQuote = withErr "Not Found: Missing closing Quote" (parseChar '"')
+parseClosingQuote = withErr "parseClosingQuote: Not Found: Missing closing Quote" (parseChar '"')
 
 parseOpeningParenthesis :: Parser Char
 parseOpeningParenthesis =
-  withErr "Not Found: Missing opening Parenthesis" (parseChar '(')
+  withErr "parseOpeningParenthesis: Not Found: Missing opening Parenthesis" (parseChar '(')
 
 parseClosingParenthesis :: Parser Char
 parseClosingParenthesis =
-  withErr "Not Found: Missing closing Parenthesis" (parseChar ')')
+  withErr "parseClosingParenthesis: Not Found: Missing closing Parenthesis" (parseChar ')')
 
 parseChar :: Char -> Parser Char
 parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
     | x == char -> Right (char, new_str, new_pos)
     | otherwise ->
-        Left (err, moveCursor pos False)
+        Left (StackTrace { errors = [(err, err_range)]})
     where
-      err = "Not Found: charactere is not '" ++ [x] ++ "'"
-  Left (_, new_pos) -> Left ("Not Found: List is empty", new_pos)
+      err = "parseChar: Not Found: charactere is not '" ++ [x] ++ "' (is " ++ show char ++ ")"
+      err_range = Range { start = pos, end = pos }
+  Left err -> Left err
 
 parseNotChar :: Char -> Parser Char
 parseNotChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
-    | x == char ->
-        Left
-          ( ("Not Found: charactere is not '" ++ [x] ++ "'"),
-            moveCursor pos False
-          )
+    | x == char -> Left StackTrace { errors = [( err, err_range )] }
     | otherwise -> Right (char, new_str, new_pos)
-  Left (_, new_pos) -> Left ("Not Found: List is empty", new_pos)
+    where
+      err = "parseNotChar: Not Found: character is '" ++ [x] ++ "'"
+      err_range = Range { start = pos , end = pos}
+  Left err -> Left err
 
 parseAnyChar :: [Char] -> Parser Char
 parseAnyChar =

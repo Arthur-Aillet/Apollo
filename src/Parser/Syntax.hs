@@ -8,15 +8,21 @@
 module Parser.Syntax (module Parser.Syntax) where
 
 import Parser.Char (parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis)
-import Parser.Type (Parser (..))
+import Parser.Type (Parser (..), StackTrace (..))
+import Parser.Position (Range(..), Position(..))
+import Parser.Error (withErr)
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseMany parse) new_str new_pos of
-      Left _ -> Right ([], new_str, new_pos)
+      Left (StackTrace ((_, range):_)) -> Right ([], new_str, end range)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
-  Left _ -> Right ([], string, pos)
+  Left (StackTrace ((_, range):_)) -> Right ([], drop (char (end range) - char (start range)) string, end range)
+  -- Left _ -> Right ([], string, pos)
+
+  
+
 
 parseSpaces :: Parser Char
 parseSpaces = parseAnyChar [' ', '\n', '\t']
@@ -58,8 +64,8 @@ parsePair parser =
 
 parseList :: Parser a -> Parser [a]
 parseList parser =
-  parseWithSpace
+ parseWithSpace (withErr "parseList: Error found"
     ( parseOpeningParenthesis
         *> parseMany (parseWithSpace parser)
         <* parseClosingParenthesis
-    )
+    ))

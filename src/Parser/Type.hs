@@ -5,17 +5,25 @@
 -- Parser type
 -}
 
-module Parser.Type (Parser (..)) where
+module Parser.Type (Parser (..), StackTrace(..), defaultRange) where
 
 import Control.Applicative (Alternative (empty, (<|>)))
-import Parser.Position (Position)
+import Parser.Position (Range(..), defaultRange, Position(..))
 
 newtype Parser a = Parser
   { runParser ::
       String ->
       Position ->
-      Either (String, Position) (a, String, Position)
+      Either StackTrace (a, String, Position)
   }
+
+newtype StackTrace = StackTrace { errors :: [(String, Range)] }
+
+addNewMessage :: (String, Range) -> String -> String
+addNewMessage (str, range) pre = pre ++ "\tError from " ++ show (start range) ++ " to " ++ show (end range) ++ " -> " ++ str ++ "\n"
+
+instance Show StackTrace where
+  show (StackTrace list) = foldr addNewMessage "Errors are: \n" list
 
 instance Functor Parser where
   fmap fct parser = Parser $ \string pos -> case runParser parser string pos of
@@ -33,7 +41,6 @@ instance Applicative Parser where
   a <* b = const <$> a <*> b
 
 instance Alternative Parser where
-  empty = Parser $ \_ pos -> Left ("Empty", pos)
   first <|> second =
     Parser
       ( \s pos -> case (runParser first s pos, runParser second s pos) of
