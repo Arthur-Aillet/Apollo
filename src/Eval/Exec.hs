@@ -1,8 +1,21 @@
-module Eval.Exec (module Eval.Exec) where
+--
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Exec
+--
 
-import Eval.Builtin(Value(..), Instruction(..), Stack, Insts, Env, Args, Func, Builtin (..), moveForward, execBuiltin)
+module Eval.Exec (module Eval.Exec, module Eval.Values, module Eval.Instructions, module Eval.Builtins) where
 
-import Data.HashMap.Lazy (empty, (!?), insert)
+import Eval.Values (Value (..))
+import Eval.Instructions (Instruction (..), Insts, moveForward)
+import Eval.Builtins (Builtin (..), execBuiltin, Stack)
+
+import Data.HashMap.Lazy (HashMap, empty, (!?), insert)
+
+type Func = [Instruction];
+type Env = (HashMap String (Int, Insts));
+type Args = [Value];
 
 absFunc :: Func
 absFunc = [PushArg 0,

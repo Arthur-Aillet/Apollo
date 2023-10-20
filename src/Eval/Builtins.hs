@@ -1,41 +1,11 @@
-module Eval.Builtin (module Eval.Builtin) where
+module Eval.Builtins (
+  execBuiltin,
+  Builtin (..), Stack
+) where
 
-import Data.HashMap.Lazy (HashMap)
+import Eval.Values (Value (..), Builtin (..))
 
-data Value
-  = Int Int
-  | Bool Bool
-  | Op Builtin
-  | Func String
-  deriving (Show)
-
-data Instruction
-  = Push Value
-  | PushArg Int
-  | Call
-  | JumpIfFalse Int
-  | Ret
-  deriving (Show)
-
-data Builtin
-  = Add
-  | Sub
-  | Mul
-  | Div
-  | Eq
-  | Less
-  deriving (Show)
-
-type Args = [Value];
 type Stack = [Value];
-type Insts = [Instruction];
-type Env = (HashMap String (Int, Insts));
-type Func = [Instruction];
-
-moveForward :: Int -> Insts -> Either String Insts
-moveForward 0 insts = Right insts
-moveForward nb [] = Left ("Error: Jump too far (" ++ show nb ++ ")")
-moveForward nb (_:xs) = moveForward (nb - 1) xs
 
 execBuiltin :: Builtin -> Stack -> Either String Stack
 execBuiltin _ [] = Left "Op on empty stack"
