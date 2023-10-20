@@ -24,7 +24,12 @@ atomTests =
       cAtomTests,
       fAtomTests,
       atomEqTests,
+      atomOrdTests,
       atomCastTests,
+      atomFracTests,
+      atomAddTests,
+      atomMulTests,
+      atomNumTests,
       readAtomTests
     ]
 
@@ -110,8 +115,68 @@ atomEqTests =
     [
       "Char == Int" ~: (AtomC 'A' False == AtomI 65) ~?= True,
       "Int == Int" ~: AtomI 65 == AtomI 65 ~?= True,
-      "Bool == Int" ~: AtomB False == AtomI 0 ~?= True
+      "Bool == Int" ~: AtomB False == AtomI 0 ~?= True,
+      "Float == Int" ~: AtomF 65.0 == AtomI 65 ~?= True
     ]
+
+atomOrdTests :: Test
+atomOrdTests =
+  TestList
+    [
+      "Char <= Int" ~: (AtomC 'A' False <= AtomI 65) ~?= True,
+      "Char <= Char" ~: (AtomC 'a' True <= AtomC 'A' True) ~?= True,
+      "Int < Int" ~: AtomI (-8) < AtomI (-6) ~?= True,
+      "Bool > Bool" ~: AtomB True > AtomB False ~?= True,
+      "Float => Int" ~: 65.4 >= AtomI 65 ~?= True
+    ]
+
+atomFracTests :: Test
+atomFracTests =
+  TestList
+    [
+      "Int / Int" ~: AtomI 465 / AtomI 23 ~?= AtomI (465 `div` 23),
+      "Char / Int" ~: (AtomC 'A' False / AtomI 65) ~?= cAtom (AtomI (97 `div` 65)),
+      "Char / Char" ~: (AtomC 'a' True / AtomC 'A' True) ~?= AtomF ((-97.0) / (-65.0)),
+      "Bool / Bool" ~: AtomB True / AtomB False ~?= AtomB False,
+      "Float / Int" ~: AtomF 65.4 / AtomI 65 ~?= AtomF (65.4 / 65.0)
+    ]
+
+atomAddTests :: Test
+atomAddTests =
+  TestList
+    [
+      "Int + Int" ~: AtomI 645 + AtomI 758 ~?= AtomI (645 + 758),
+      "Char + neg Char" ~: AtomC 'A' False + AtomC 'C' True ~?= cAtom (AtomI (65 - 67)),
+      "neg Char + Char" ~: AtomC 'A' True + AtomC 'C' False ~?= cAtom (AtomI (67 - 65)),
+      "Float + Float" ~: AtomF 6.45 + AtomF 75.8 ~?= AtomF (6.45 + 75.8),
+      "Bool + Bool" ~: AtomB False + AtomB True ~?= AtomB True,
+      "Float + Bool" ~: AtomF 6.45 + AtomB True ~?= AtomF 7.45
+    ]
+
+atomMulTests :: Test
+atomMulTests =
+  TestList
+    [
+      "Int * Int" ~: AtomI 645 * AtomI 758 ~?= AtomI (645 * 758),
+      "Char * neg Char" ~: AtomC 'A' False * AtomC 'C' True ~?= cAtom (AtomI (65 * (-67))),
+      "Char * Char" ~: AtomC 'A' False * AtomC 'C' False ~?= cAtom (AtomI (67 * 65)),
+      "neg Char * neg Char" ~: AtomC 'A' True * AtomC 'C' True ~?= cAtom (AtomI ((-67) * (-65))),
+      "Float * Float" ~: AtomF 6.45 * AtomF 75.8 ~?= AtomF (6.45 * 75.8),
+      "Bool * Bool" ~: AtomB True * AtomB True ~?= AtomB True,
+      "Float * Bool" ~: AtomF 6.45 * AtomB True ~?= AtomF 6.45
+    ]
+
+atomNumTests :: Test
+atomNumTests =
+  TestList
+    [
+      "Int - Int" ~: AtomI 645 - AtomI 758 ~?= AtomI (645 - 758),
+      "Char - Char" ~: cAtom (AtomI 645) - cAtom (AtomI 758) ~?= cAtom (AtomI (645 - 758)),
+      "signum Float" ~: signum (AtomF 6.45) ~?= signum 6.45,
+      "abs Bool" ~: abs (AtomB True) ~?= AtomB True,
+      "fromInteger" ~: (fromInteger 58 :: Atom) ~?= AtomI 58
+    ]
+
 
 readAtomTests :: Test
 readAtomTests =
