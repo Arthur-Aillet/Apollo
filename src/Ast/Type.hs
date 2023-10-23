@@ -7,7 +7,7 @@
 
 module Ast.Type (Ast(..)) where
 
-import Atom.Atom
+import Atom.Atom ( Atom )
 
 data Function = Function [(String, Operable)] Ast
 
@@ -18,7 +18,7 @@ data Definition
 
 data Structure -- layout, structure and connection of statements, having no value
   =
-    Resolved -- expression resolving to no value
+    Resolved -- expression resolving to no value 
   | If Operable Ast Ast -- branching condition (if (x) {} {})
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
