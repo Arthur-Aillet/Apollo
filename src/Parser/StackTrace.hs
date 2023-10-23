@@ -9,7 +9,7 @@ module Parser.StackTrace (StackTrace (..)) where
 
 import Parser.Range (Range (..), addNewMessage)
 
-newtype StackTrace = StackTrace {errors :: [(String, Range)]}
+newtype StackTrace = StackTrace [(String, Range)]
 
 instance Show StackTrace where
   show (StackTrace list) = foldr addNewMessage "Errors are: \n" list
