@@ -1,5 +1,5 @@
 module Parser
-  ( Parser.Type.Parser(..),
+  ( Parser.Type.Parser (..),
   )
 where
 

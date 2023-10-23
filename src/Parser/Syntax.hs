@@ -8,21 +8,30 @@
 module Parser.Syntax (module Parser.Syntax) where
 
 import Parser.Char (parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis)
-import Parser.Type (Parser (..), StackTrace (..))
-import Parser.Position (Range(..), Position(..))
 import Parser.Error (withErr)
+import Parser.Position (Position (..))
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..))
+import Parser.Type (Parser (..))
+
+-- NOTE - ParseMany moins laxiste. ex: ParseMany Parse Bool => True -> True -> Error
+-- NOTE Ne renvoie pas d'erreur
+
+-- NOTE - Ajouter dans la StackTrace qui n'es pas une erreur mais une Position
+-- NOTE Exemple: erreur de grammaire + erreur Condition
+-- Modifié StackTrace pour mettre Erreur et Repère (exemple: erreur dans un while/if)
+-- Modifié son implémentation show
+-- Refaire tout les parsers
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseMany parse) new_str new_pos of
-      Left (StackTrace ((_, range):_)) -> Right ([], new_str, end range)
+      Left (StackTrace ((_, range) : _)) -> Right ([], new_str, end range)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
-  Left (StackTrace ((_, range):_)) -> Right ([], drop (char (end range) - char (start range)) string, end range)
-  -- Left _ -> Right ([], string, pos)
+  Left (StackTrace ((_, range) : _)) -> Right ([], drop (char (end range) - char (start range)) string, end range)
 
-  
-
+-- Left _ -> Right ([], string, pos)
 
 parseSpaces :: Parser Char
 parseSpaces = parseAnyChar [' ', '\n', '\t']
@@ -64,8 +73,11 @@ parsePair parser =
 
 parseList :: Parser a -> Parser [a]
 parseList parser =
- parseWithSpace (withErr "parseList: Error found"
-    ( parseOpeningParenthesis
-        *> parseMany (parseWithSpace parser)
-        <* parseClosingParenthesis
-    ))
+  parseWithSpace
+    ( withErr
+        "parseList: Error found"
+        ( parseOpeningParenthesis
+            *> parseMany (parseWithSpace parser)
+            <* parseClosingParenthesis
+        )
+    )
