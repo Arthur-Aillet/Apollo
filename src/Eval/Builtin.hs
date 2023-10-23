@@ -1,12 +1,10 @@
 module Eval.Builtin (module Eval.Builtin) where
 
-import Data.HashMap.Lazy (HashMap)
-
 data Value
   = Int Int
   | Bool Bool
   | Op Builtin
-  | Func String
+  | Func Int
   deriving (Show)
 
 data Instruction
@@ -29,7 +27,7 @@ data Builtin
 type Args = [Value];
 type Stack = [Value];
 type Insts = [Instruction];
-type Env = (HashMap String (Int, Insts));
+type Env = [(Int, Insts)];
 type Func = [Instruction];
 
 moveForward :: Int -> Insts -> Either String Insts

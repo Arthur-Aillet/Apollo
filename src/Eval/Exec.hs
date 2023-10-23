@@ -2,8 +2,6 @@ module Eval.Exec (module Eval.Exec) where
 
 import Eval.Builtin(Value(..), Instruction(..), Stack, Insts, Env, Args, Func, Builtin (..), moveForward, execBuiltin)
 
-import Data.HashMap.Lazy (empty, (!?), insert)
-
 absFunc :: Func
 absFunc = [PushArg 0,
   Push (Int 0),
@@ -19,7 +17,7 @@ absFunc = [PushArg 0,
   Ret]
 
 createEnv :: Env
-createEnv = insert "abs" (1, absFunc) empty
+createEnv = [(1, absFunc)]
 
 getElem :: Int -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
@@ -36,10 +34,10 @@ exec env args (PushArg val: xs) stack = case getElem val args of
 exec env args (Call:xs) (Op y:ys) = case execBuiltin y ys of
   Right new_stack -> exec env args xs new_stack
   Left err -> Left err
-exec env _ (Call:xs) (Func name:stack) = case env !? name of
-  Nothing -> Left "Error: Func not found"
-  Just (args_nbr, insts) -> exec env start (insts ++ xs) end
-    where (start, end) = splitAt args_nbr stack
+exec env _ (Call:xs) (Func func_id:stack) = exec env start (insts ++ xs) end 
+    where 
+      (start, end) = splitAt args_nbr stack
+      (args_nbr, insts) = env !! func_id
 exec _ _ (Call:_) (y:_) = Left ("Error: Call to " ++ show y ++ " impossible, not a function")
 exec env args (JumpIfFalse line:xs) (y:ys) = case y of
   Bool True -> exec env args xs ys
