@@ -19,18 +19,9 @@ absFunc = [PushArg 0,
 createEnv :: Env
 createEnv = [(1, absFunc)]
 
-getElem :: Int -> [a] -> Either String a
-getElem _ [] = Left "Error: Function args list empty"
-getElem nb list
-  | nb >= length list = Left "Error: Element asked outside args list"
-  | nb < 0 = Left "Error: Element asked invalid"
-  | otherwise = Right (last (take (nb + 1) list))
-
 exec :: Env -> Args -> Insts -> Stack -> Either String Value
 exec env args (Push val:xs) stack = exec env args xs (val:stack)
-exec env args (PushArg val: xs) stack = case getElem val args of
-  Left err -> Left err
-  Right arg -> exec env args xs (arg:stack)
+exec env args (PushArg val: xs) stack = exec env args xs (args !! val:stack)
 exec env args (Call:xs) (Op y:ys) = case execBuiltin y ys of
   Right new_stack -> exec env args xs new_stack
   Left err -> Left err
