@@ -9,16 +9,16 @@ module Parser.Range (Range (..), newRange, defaultRange, growRange, addNewMessag
 
 import Parser.Position (Position (..), defaultPosition, moveCursor)
 
-data Range = Range {start :: Position, end :: Position} deriving (Show, Eq)
+data Range = Range Position Position deriving (Show, Eq)
 
 newRange :: Position -> Position -> Range
-newRange x y = Range {start = x, end = y}
+newRange x y = Range x y
 
 defaultRange :: Range
-defaultRange = Range {start = defaultPosition, end = defaultPosition}
+defaultRange = Range defaultPosition defaultPosition
 
 growRange :: Range -> Bool -> Range
-growRange old nl = Range {start = start old, end = moveCursor (end old) nl}
+growRange (Range start end) nl = Range start (moveCursor end nl)
 
 addNewMessage :: (String, Range) -> String -> String
-addNewMessage (str, range) pre = pre ++ "\tError from " ++ show (start range) ++ " to " ++ show (end range) ++ " -> " ++ str ++ "\n"
+addNewMessage (str, (Range start end)) pre = pre ++ "\tError from " ++ show start ++ " to " ++ show end ++ " -> " ++ str ++ "\n"

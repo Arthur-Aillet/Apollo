@@ -14,7 +14,7 @@ import Parser.Type (Parser (..), StackTrace (..))
 withErr :: String -> Parser a -> Parser a
 withErr new_msg parser = Parser $ \string pos -> case runParser parser string pos of
   Right a -> Right a
-  Left (StackTrace ((msg, old_range) : xs)) -> Left (StackTrace ((new_msg, Range {start = pos, end = end old_range}) : (msg, old_range) : xs))
+  Left (StackTrace ((msg, (Range start end)) : xs)) -> Left (StackTrace ((new_msg, Range start end) : (msg, (Range start end)) : xs))
   Left err -> Left err
 
 failingWith :: String -> Parser a

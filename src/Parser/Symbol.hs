@@ -19,5 +19,5 @@ parseSymbol string = Parser $ \s p ->
     Right (found, n_s, n_p)
       | found == string -> Right (found, n_s, n_p)
       | otherwise -> Left (StackTrace [("Error: Symbols are not the same", newRange p n_p)])
-    Left (StackTrace ((_, old_range) : xs)) -> Left (StackTrace (("Not Found: List is empty", newRange p (end old_range)) : xs))
+    Left (StackTrace ((_, (Range _ end)) : xs)) -> Left (StackTrace (("Not Found: List is empty", newRange p end) : xs))
     Left _ -> Left (StackTrace [("Not Found: List is empty", newRange p p)])

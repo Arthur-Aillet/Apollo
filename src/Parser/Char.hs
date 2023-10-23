@@ -17,7 +17,7 @@ parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of
   ('\n' : xs) -> Right ('\n', xs, moveCursor pos True)
   (x : xs) -> Right (x, xs, moveCursor pos False)
-  [] -> Left (StackTrace [("parseAChar: Not Found: End of Input", Range {start = pos, end = pos})])
+  [] -> Left (StackTrace [("parseAChar: Not Found: End of Input", Range pos pos)])
 
 parseDigit :: Parser Char
 parseDigit = parseAnyChar ['0' .. '9']
@@ -44,7 +44,7 @@ parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
         Left (StackTrace [(err, err_range)])
     where
       err = "parseChar: Not Found: charactere is not '" ++ [x] ++ "' (is " ++ show char ++ ")"
-      err_range = Range {start = pos, end = pos}
+      err_range = Range pos pos
   Left err -> Left err
 
 parseNotChar :: Char -> Parser Char
@@ -54,7 +54,7 @@ parseNotChar x = Parser $ \string pos -> case runParser parseAChar string pos of
     | otherwise -> Right (char, new_str, new_pos)
     where
       err = "parseNotChar: Not Found: character is '" ++ [x] ++ "'"
-      err_range = Range {start = pos, end = pos}
+      err_range = Range pos pos
   Left err -> Left err
 
 parseAnyChar :: [Char] -> Parser Char
