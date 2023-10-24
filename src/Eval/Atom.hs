@@ -5,7 +5,7 @@
 -- Atom
 --
 
-module Atom.Atom (Atom (..),
+module Eval.Atom (Atom (..),
   bAtom, cAtom, iAtom, fAtom,
   atomCast
   ) where

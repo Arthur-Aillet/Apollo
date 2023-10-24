@@ -11,7 +11,7 @@ module AtomSpec (
   ) where
 
 import Test.HUnit
-import Atom.Atom (Atom (..), bAtom, cAtom, iAtom, fAtom, atomCast)
+import Eval.Atom (Atom (..), bAtom, cAtom, iAtom, fAtom, atomCast)
 import Text.Read (readMaybe)
 
 

@@ -9,6 +9,8 @@ module Eval.Values (
     Builtin (..), Value (..)
 ) where
 
+import Eval.Atom
+
 data Builtin
   = Add
   | Sub
@@ -19,8 +21,7 @@ data Builtin
   deriving (Show)
 
 data Value
-  = Int Int
-  | Bool Bool
+  = Atom Atom
   | Op Builtin
   | Func String
   deriving (Show)

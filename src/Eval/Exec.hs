@@ -54,12 +54,12 @@ exec env _ (Call:xs) (Func name:stack) = case env !? name of
   Just (args_nbr, insts) -> exec env start (insts ++ xs) end
     where (start, end) = splitAt args_nbr stack
 exec _ _ (Call:_) (y:_) = Left ("Error: Call to " ++ show y ++ " impossible, not a function")
-exec env args (JumpIfFalse line:xs) (y:ys) = case y of
-  Bool True -> exec env args xs ys
-  Bool False -> case moveForward line xs of
-    Left a -> Left a
-    Right valid -> exec env args valid ys
-  _ -> Left "Error: if on other type than boolean"
+exec env args (JumpIfFalse line:xs) (y:ys) =
+  if y == 0
+    then case moveForward line xs of
+      Left a -> Left a
+      Right valid -> exec env args valid ys
+    else exec env args xs ys
 exec _ _ (Ret:_) (x:_) = Right x
 exec _ _ (Ret:_) _ = Left "Error: Return with empty stack"
 exec _ _ [] _ = Left "Error: Missing return"
