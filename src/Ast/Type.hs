@@ -5,7 +5,7 @@
 -- AST
 -}
 
-module Ast.Type (Ast(..), Function(..), Structure(..), Operation(..), Type(..), Definition(..)) where
+module Ast.Type (Ast(..), Function(..), Structure(..), Operation(..), Type(..), Definition(..), Operable(..)) where
 
 import Atom.Atom ( Atom )
 
@@ -19,6 +19,7 @@ data Definition
 data Structure -- layout, structure and connection of statements, having no value
   =
     Resolved -- expression resolving to no value 
+  | StructResult Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
@@ -36,21 +37,20 @@ data Operation -- statement involving an action, resulting in a value
 
 data Operable -- statement having a value
   =
-    Variable String -- Variable reffering to single known value
-  | Value Atom -- Single known value
-  | Operation Operation -- operation resulting in an operable value
-  | IOPipe String -- named pipe, String is likely a placeholder
+    OpVariable String -- Variable reffering to single known value
+  | OpValue Atom -- Single known value
+  | OpOperation Operation -- operation resulting in an operable value
+  | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
 
 data Type
-  = Bool
-  | Char
-  | Int
-  | Float
+  = TypeBool
+  | TypeChar
+  | TypeInt
+  | TypeFloat
 
 data Ast
   =
-    Structure Structure -- structure block ({})
-  | Operable Operable -- inherent value (x)
+    AstStructure Structure -- structure block ({})
+  | AstOperation Operation -- take an action
   deriving (Show, Eq)
-
