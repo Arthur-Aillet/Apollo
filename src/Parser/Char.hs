@@ -12,12 +12,13 @@ import Parser.Error (failingWith, withErr)
 import Parser.Position (moveCursor)
 import Parser.Range (Range (..))
 import Parser.Type (Parser (..), StackTrace (..))
+import Parser.StackTrace (defaultLocation)
 
 parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of
   ('\n' : xs) -> Right ('\n', xs, moveCursor pos True)
   (x : xs) -> Right (x, xs, moveCursor pos False)
-  [] -> Left (StackTrace [("parseAChar: Not Found: End of Input", Range pos pos)])
+  [] -> Left (StackTrace [("parseAChar: Not Found: End of Input", Range pos pos, defaultLocation)])
 
 parseDigit :: Parser Char
 parseDigit = parseAnyChar ['0' .. '9']
@@ -41,7 +42,7 @@ parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
     | x == char -> Right (char, new_str, new_pos)
     | otherwise ->
-        Left (StackTrace [(err, err_range)])
+        Left (StackTrace [(err, err_range, defaultLocation)])
     where
       err = "parseChar: Not Found: charactere is not '" ++ [x] ++ "' (is " ++ show char ++ ")"
       err_range = Range pos pos
@@ -50,7 +51,7 @@ parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
 parseNotChar :: Char -> Parser Char
 parseNotChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
-    | x == char -> Left (StackTrace [(err, err_range)])
+    | x == char -> Left (StackTrace [(err, err_range, defaultLocation)])
     | otherwise -> Right (char, new_str, new_pos)
     where
       err = "parseNotChar: Not Found: character is '" ++ [x] ++ "'"

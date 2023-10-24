@@ -27,9 +27,9 @@ parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseMany parse) new_str new_pos of
-      Left (StackTrace ((_, (Range _ end)) : _)) -> Right ([], new_str, end)
+      Left (StackTrace ((_, (Range _ end), _) : _)) -> Right ([], new_str, end)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
-  Left (StackTrace ((_, (Range start end)) : _)) -> Right ([], drop (char end - char start) string, end)
+  Left (StackTrace ((_, (Range start end), _) : _)) -> Right ([], drop (char end - char start) string, end)
 
 -- Left _ -> Right ([], string, pos)
 
