@@ -1,32 +1,46 @@
 module Eval.Builtins (
-  execBuiltin,
-  Builtin (..), Stack
+  execOperator,
+  Operator (..),
+  Stack
 ) where
 
-import Eval.Values (Value (..), Builtin (..))
+import Eval.Atom (Atom (..))
 
-type Stack = [Value];
+type Stack = [Atom];
 
-execBuiltin :: Builtin -> Stack -> Either String Stack
-execBuiltin _ [] = Left "Op on empty stack"
-execBuiltin Add (x:y:xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Int (ix + iy):xs)
-  _ -> Left "Error: Add on unsupported types"
-execBuiltin Sub (x:y:xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Int (ix - iy):xs)
-  _ -> Left "Error: Sub on unsupported types"
-execBuiltin Mul (x:y:xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Int (ix * iy):xs)
-  _ -> Left "Error: Mul on unsupported types"
-execBuiltin Div (x:y:xs) = case (x, y) of
-  (Int _, Int 0) -> Left "Error : division by 0"
-  (Int ix, Int iy) -> Right (Int (div ix iy):xs)
-  _ -> Left "Error: Div on unsupported types"
-execBuiltin Eq (x:y:xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Bool ((==) ix iy):xs)
-  (Bool bx, Bool by) -> Right (Bool ((==) bx by):xs)
-  _ -> Left "Error: Eq on unsupported types"
-execBuiltin Less (x:y:xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Bool ((<) ix iy):xs)
-  _ -> Left "Error: Eq on unsupported types"
-execBuiltin _ _ = Left "Op on only one element"
+data Operator
+    = Addition
+    | Subtraction
+    | Multiplication
+    | Division
+    | Eq
+    | Less
+    deriving (Show)
+
+operate :: Operator -> ([Atom] -> Either String Atom)
+operate Addition = Right . sum
+operate Subtraction = \ [a,b] -> Right (a - b)
+operate Multiplication = Right . product
+operate Division = \ [a,b] -> if b /= 0
+                then Right (a / b)
+                else Left "Division by zero"
+operate Eq = \[a, b] -> Right $ AtomB $ a == b
+operate less = \[a, b] -> Right $ AtomB $ a < b
+
+operatorArgCount :: Operator -> Int
+operatorArgCount Addition        = 2
+operatorArgCount Subtraction     = 2
+operatorArgCount Multiplication  = 2
+operatorArgCount Division        = 2
+operatorArgCount Eq              = 2
+operatorArgCount Less            = 2
+
+execOperator :: Stack -> Operator -> Either String Stack
+execOperator stack op = if length (take count stack) >= count
+        then case operate op top of
+            Right res -> Right (res : bottom)
+            Left x -> Left x
+        else Left "not enough arguments in the stack"
+    where
+        (top, bottom) = splitAt count stack
+        count = operatorArgCount op

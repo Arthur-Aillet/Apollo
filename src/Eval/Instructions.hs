@@ -6,16 +6,21 @@
 --
 
 module Eval.Instructions (
-    Instruction (..), Insts, moveForward
+    Instruction (..), Insts, moveForward, Register, Func
 ) where
 
-import Eval.Builtins (Builtin (..))
-import Eval.Values (Value (..))
+import Eval.Builtins (Operator (..), )
+import Eval.Atom (Atom (..))
+
+type Register = Int
+type Func = [Instruction];
 
 data Instruction
-  = Push Value
-  | PushArg Int
-  | Call
+  = PushD Atom
+  | PushI Register
+  | CallD String
+  | CallI Register
+  | Op Operator
   | JumpIfFalse Int
   | Ret
   deriving (Show)
