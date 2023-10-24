@@ -9,7 +9,7 @@ module Ast.Type (Ast(..)) where
 
 import Atom.Atom
 
-data Function = Function [(String, Operable)] Ast
+data Function = Function [(String, Type)] Ast
 
 data Definition
   =
@@ -27,7 +27,7 @@ data Structure -- layout, structure and connection of statements, having no valu
 
 data Operation -- statement involving an action, resulting in a value
   =
-    Interrupt String -- Interrupt program flow
+    Interrupt Operable -- Interrupt program flow
   | CallStd String [Operable] -- call a standard or builtin operation (x(y))
   | CallFunc String [Operable] -- call a function, exposes both inherent IOPipes (x(y))
   | CallSH String [Operable] -- syscall of builtin program ($x(y)), exposes both IOPipes
