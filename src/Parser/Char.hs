@@ -9,8 +9,8 @@ module Parser.Char (module Parser.Char) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Error (failingWith, withErr)
-import Parser.Type (Parser (..))
 import Parser.Position (moveCursor)
+import Parser.Type (Parser (..))
 
 parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of

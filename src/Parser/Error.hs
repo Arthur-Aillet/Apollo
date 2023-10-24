@@ -7,8 +7,8 @@
 
 module Parser.Error (module Parser.Error) where
 
-import Parser.Type (Parser (..))
 import Parser.Position (Position (..))
+import Parser.Type (Parser (..))
 
 withErr :: String -> Parser a -> Parser a
 withErr msg parser = Parser $ \string pos -> case runParser parser string pos of
