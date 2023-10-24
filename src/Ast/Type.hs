@@ -5,7 +5,7 @@
 -- AST
 -}
 
-module Ast.Type (Ast(..)) where
+module Ast.Type (Ast (..)) where
 
 data Ast
   = Truth Bool -- Single known boolean value

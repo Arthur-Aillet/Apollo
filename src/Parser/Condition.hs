@@ -1,5 +1,5 @@
 module Parser.Condition
-  ( parseIf
+  ( parseIf,
   )
 where
 

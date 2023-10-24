@@ -1,11 +1,11 @@
 module Parser.Ast
-  ( parseAst
+  ( parseAst,
   )
 where
 
-import Parser.Type (Parser(..))
-import Ast.Type (Ast(..))
+import Ast.Type (Ast (..))
 import Parser.Bool (parseBool)
+import Parser.Type (Parser (..))
 
 parseAst :: Parser Ast
 parseAst = Truth <$> parseBool

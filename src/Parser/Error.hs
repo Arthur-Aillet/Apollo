@@ -7,16 +7,19 @@
 
 module Parser.Error (module Parser.Error) where
 
-import Parser.Type (Parser (..))
 import Parser.Position (Position (..))
+import Parser.Range (Range (..), newRange)
+import Parser.Type (Parser (..), StackTrace (..))
+import Parser.StackTrace (defaultLocation)
 
 withErr :: String -> Parser a -> Parser a
-withErr msg parser = Parser $ \string pos -> case runParser parser string pos of
+withErr new_msg parser = Parser $ \string pos -> case runParser parser string pos of
   Right a -> Right a
-  Left (_, new_pos) -> Left (msg, new_pos)
+  Left (StackTrace ((msg, (Range start end), src) : xs)) -> Left (StackTrace ((new_msg, Range start end, src) : (msg, (Range start end), src) : xs))
+  Left err -> Left err
 
 failingWith :: String -> Parser a
-failingWith string = Parser (\_ pos -> Left (string, pos))
+failingWith string = Parser (\_ pos -> Left (StackTrace [(string, newRange pos pos, defaultLocation)]))
 
 printErr :: (String, Position) -> IO ()
 printErr (err, pos) =

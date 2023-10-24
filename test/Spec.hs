@@ -1,6 +1,6 @@
 import Control.Monad
+import ParserSpec (parserTests)
 import Test.HUnit
-import ParserSpec(parserTests)
 
 main :: IO ()
 main = Control.Monad.void (runTestTT tests)
