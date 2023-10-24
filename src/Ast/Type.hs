@@ -5,11 +5,11 @@
 -- AST
 -}
 
-module Ast.Type (Ast(..)) where
+module Ast.Type (Ast(..), Function(..), Structure(..), Operation(..), Type(..), Definition(..)) where
 
 import Atom.Atom ( Atom )
 
-data Function = Function [(String, Operable)] Ast
+data Function = Function [(String, Type)] (Maybe Type) Ast
 
 data Definition
   =
@@ -42,8 +42,15 @@ data Operable -- statement having a value
   | IOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
 
+data Type
+  = Bool
+  | Char
+  | Int
+  | Float
+
 data Ast
   =
     Structure Structure -- structure block ({})
   | Operable Operable -- inherent value (x)
   deriving (Show, Eq)
+
