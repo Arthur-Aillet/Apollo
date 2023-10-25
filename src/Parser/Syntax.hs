@@ -7,13 +7,10 @@
 
 module Parser.Syntax (module Parser.Syntax) where
 
-import Parser.Char (parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis)
-import Parser.Error (withErr)
-import Parser.Position (Position (..))
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..))
 import Parser.Type (Parser (..))
-
+import Parser.Char (parseAnyChar)
 -- NOTE - ParseMany moins laxiste. ex: ParseMany Parse Bool => True -> True -> Error
 -- NOTE Ne renvoie pas d'erreur
 

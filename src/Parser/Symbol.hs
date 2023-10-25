@@ -8,9 +8,6 @@
 module Parser.Symbol (module Parser.Symbol) where
 
 import Parser.Char (parseChar)
-import Parser.Range (Range (..), newRange)
-import Parser.StackTrace (StackTrace (..), defaultLocation)
-import Parser.Syntax (parseSome)
 import Parser.Type (Parser (..))
 
 parseSymbol :: String -> Parser String

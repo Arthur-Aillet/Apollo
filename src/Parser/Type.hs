@@ -7,7 +7,7 @@
 
 module Parser.Type (Parser (..), StackTrace (..), defaultRange) where
 
-import Control.Applicative (Alternative (empty, (<|>)))
+import Control.Applicative (Alternative ((<|>)))
 import Parser.Position (Position (..))
 import Parser.Range (defaultRange)
 import Parser.StackTrace (StackTrace (..))
