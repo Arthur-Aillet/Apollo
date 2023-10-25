@@ -19,10 +19,11 @@ data Builtin
   = Add
   | Sub
   | Mul
+  | Mod
   | Div
   | Eq
   | Less
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Args = [Value]
 
@@ -49,6 +50,9 @@ execBuiltin Sub (x : y : xs) = case (x, y) of
   _ -> Left "Error: Sub on unsupported types"
 execBuiltin Mul (x : y : xs) = case (x, y) of
   (Int ix, Int iy) -> Right (Int (ix * iy) : xs)
+  _ -> Left "Error: Mul on unsupported types"
+execBuiltin Mod (x : y : xs) = case (x, y) of
+  (Int ix, Int iy) -> Right (Int (ix % iy) : xs)
   _ -> Left "Error: Mul on unsupported types"
 execBuiltin Div (x : y : xs) = case (x, y) of
   (Int _, Int 0) -> Left "Error : division by 0"

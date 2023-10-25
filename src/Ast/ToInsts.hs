@@ -8,7 +8,7 @@
 module Ast.ToInsts (module Ast.ToInsts) where
 
 import Ast.Type
-import Atom.Atom (Atom (AtomI))
+import Atom.Atom (Atom (AtomC, AtomI))
 import Data.HashMap.Lazy (HashMap, empty, fromList, fromListWith, insert, (!?))
 import Debug.Trace
 import Eval.Builtin
@@ -28,14 +28,14 @@ createGcd =
         (Just TypeInt)
         ( AstStructure
             ( If
-                (OpOperation (CallStd "==" [OpValue (AtomI 0), OpVariable "y"]))
+                (OpOperation (CallStd Eq [OpValue (AtomI 0), OpVariable "y"]))
                 (AstStructure $ Return $ OpVariable "x")
                 ( AstStructure $
                     Return $
                       OpOperation $
                         CallFunc
                           "gcd"
-                          [OpVariable "y", OpOperation (CallStd "%" [OpVariable "x", OpVariable "y"])]
+                          [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
                 )
             )
         )
@@ -81,8 +81,10 @@ convFunc (Function args output ast) ctx = case createLocalContext args output of
   Right local -> convAst ast ctx local
 
 convStruct :: Structure -> Context -> LocalContext -> Either String Insts
-convStruct Resolved _ _ = Left "Err: unsupported"
-convStruct (Return a) _ _ = Left "Err: unsupported"
+convStruct Resolved _ _ = Left "Err: Resolved unsupported"
+convStruct (Return ope) c l = case convOperable ope c l of
+  Left err -> Left err
+  Right insts -> Right $ insts ++ [Ret]
 convStruct (If op ast_then ast_else) c l =
   (++++)
     <$> opera
@@ -90,24 +92,34 @@ convStruct (If op ast_then ast_else) c l =
     <*> then_insts
     <*> else_insts
   where
-    opera = convOp op c l
+    opera = convOperable op c l
     jump = Right [JumpIfFalse (length then_insts)]
     then_insts = convAst ast_then c l
     else_insts = convAst ast_else c l
-convStruct (Single ast) _ _ = Left "Err: unsupported"
-convStruct (Block asts vars) _ _ = Left "Err: unsupported"
-convStruct (Sequence asts) _ _ = Left "Err: unsupported"
+convStruct (Single ast) _ _ = Left "Err: Single unsupported"
+convStruct (Block asts vars) _ _ = Left "Err: Block unsupported"
+convStruct (Sequence asts) _ _ = Left "Err: Sequence unsupported"
 
-convOp :: Operable -> Context -> LocalContext -> Either String Insts
-convOp _ _ _ = Right [Push (Int 0)]
+convOperable :: Operable -> Context -> LocalContext -> Either String Insts
+convOperable (OpValue (AtomI val)) c l = Right [Push (Int val)]
+convOperable (OpVariable name) c (LocalContext hash _) = case hash !? name of
+  Nothing -> Left $ "Variable: " ++ name ++ " never defined"
+  Just (index, _) -> Right [PushArg index]
+convOperable (OpOperation op) c l = convOperation op c l
+convOperable (OpIOPipe op) _ _ = Left "Err: OpIOPipe unsupported"
+convOperable (OpValue _) c l = Left "Err: OpValue not int unsupported"
 
-{-
-  = OpVariable String -- Variable reffering to single known value
-  | OpValue Atom -- Single known value
-  | OpOperation Operation -- operation resulting in an operable value
-  | OpIOPipe String --
+convOperation :: Operation -> Context -> LocalContext -> Either String Insts
+convOperation _ _ _ = Left "Err: Operation unsupported"
+-- convOperation (CallStd builtin ops) _ _ = Right $ ops ++ [Push (Op Eq), Call builtin]
+
+  {-
+  = Interrupt String -- Interrupt program flow
+  | CallStd String [Operable] -- call a standard or builtin operation (x(y))
+  | CallFunc String [Operable] -- call a function, exposes both inherent IOPipes (x(y))
+  | CallSH String [Operable] -- syscall of builtin program ($x(y)), exposes both IOPipes
+  | Pipe Operable Operable -- stdout mapped to stdin ({x.y}, {x <- y})
   -}
-
 convAst :: Ast -> Context -> LocalContext -> Either String Insts
-convAst (AstStructure struct) c l = convStruct struct c l
-convAst (AstOperation op) _ _ = Left "Err: unsupported"
+convAst (AstStructure struct) = convStruct struct
+convAst (AstOperation op) = convOperation op
