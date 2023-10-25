@@ -19,7 +19,7 @@ data LocalContext = LocalContext (HashMap String (Int, Type)) (Maybe Type)
 
 data Binary = Binary Env Func deriving (Show)
 
-createGcd :: Definition
+createGcd :: DefinitionDefinition
 createGcd =
   FuncDefinition
     "gcd"
