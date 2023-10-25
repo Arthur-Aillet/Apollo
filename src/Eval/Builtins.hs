@@ -23,7 +23,7 @@ data Operator
     | Division
     | Eq
     | Less
-    deriving (Show)
+    deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
 operate Addition = Right . sum

@@ -23,7 +23,7 @@ data Instruction
   | Op Operator
   | JumpIfFalse Int
   | Ret
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Insts = [Instruction];
 

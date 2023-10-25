@@ -3,6 +3,7 @@ import Test.HUnit
 import ParserSpec(parserTests)
 import AtomSpec(atomTests)
 import OperatorSpec(operatorTests)
+import InstructionSpec(instructionTests)
 
 main :: IO ()
 main = Control.Monad.void (runTestTT tests)
@@ -13,5 +14,6 @@ tests =
     [
       parserTests,
       atomTests,
-      operatorTests
+      operatorTests,
+      instructionTests
     ]
