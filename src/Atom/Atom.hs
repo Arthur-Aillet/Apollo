@@ -5,10 +5,15 @@
 -- Atom
 --
 
-module Atom.Atom (Atom (..),
-  bAtom, cAtom, iAtom, fAtom,
-  atomCast
-  ) where
+module Atom.Atom
+  ( Atom (..),
+    bAtom,
+    cAtom,
+    iAtom,
+    fAtom,
+    atomCast,
+  )
+where
 
 -- import Text.Read
 
@@ -45,43 +50,47 @@ fAtom x = case iAtom x of
   AtomI i -> AtomF $ toEnum i
   _ -> AtomF $ 0.0 / 0.0
 
-
 atomCast :: (Atom -> Atom -> a) -> Atom -> Atom -> a
 atomCast f (AtomF a) b = f (AtomF a) (fAtom b)
 atomCast f a (AtomF b) = f (fAtom a) (AtomF b)
 atomCast f a b = case a of
-    AtomB _ -> case b of
-      AtomB _ -> f a b
-      AtomC _ _ -> f (cAtom a) b
-      AtomI _ -> f (iAtom a) b
-    AtomC _ _ -> case b of
-      AtomB _ -> f a (cAtom b)
-      AtomC _ _ -> f a b
-      AtomI _ -> f a (cAtom b)
-    AtomI _ -> case b of
-      AtomB _ -> f a (iAtom b)
-      AtomC _ _ -> f (cAtom a) b
-      AtomI _ -> f a b
+  AtomB _ -> case b of
+    AtomB _ -> f a b
+    AtomC _ _ -> f (cAtom a) b
+    AtomI _ -> f (iAtom a) b
+  AtomC _ _ -> case b of
+    AtomB _ -> f a (cAtom b)
+    AtomC _ _ -> f a b
+    AtomI _ -> f a (cAtom b)
+  AtomI _ -> case b of
+    AtomB _ -> f a (iAtom b)
+    AtomC _ _ -> f (cAtom a) b
+    AtomI _ -> f a b
 
 instance Num Atom where
   (+) (AtomB a) (AtomB b) = AtomB (a || b)
-  (+) (AtomC a sa) (AtomC b sb) = if res <= 0
+  (+) (AtomC a sa) (AtomC b sb) =
+    if res <= 0
       then AtomC (toEnum (abs res)) True
       else AtomC (toEnum res) False
-    where res = (if sa then negate else id) (fromEnum a)
-                    +  (if sb then negate else id) (fromEnum b)
+    where
+      res =
+        (if sa then negate else id) (fromEnum a)
+          + (if sb then negate else id) (fromEnum b)
   -- (+) (AtomC a) (AtomC b) = AtomC $ toEnum $ fromEnum a + fromEnum b
   (+) (AtomI a) (AtomI b) = AtomI (a + b)
   (+) (AtomF a) (AtomF b) = AtomF (a + b)
   (+) a b = atomCast (+) a b
 
-
   (*) (AtomB a) (AtomB b) = AtomB (a && b)
-  (*) (AtomC a sa) (AtomC b sb) = if res <= 0
+  (*) (AtomC a sa) (AtomC b sb) =
+    if res <= 0
       then AtomC (toEnum (abs res)) True
       else AtomC (toEnum res) False
-    where res = (if sa then negate else id) (fromEnum a)
-                    *  (if sb then negate else id) (fromEnum b)
+    where
+      res =
+        (if sa then negate else id) (fromEnum a)
+          * (if sb then negate else id) (fromEnum b)
   -- (*) (AtomC a) (AtomC b) = AtomC $ toEnum $ fromEnum a * fromEnum b
   (*) (AtomI a) (AtomI b) = AtomI (a * b)
   (*) (AtomF a) (AtomF b) = AtomF (a * b)
@@ -130,32 +139,35 @@ instance Fractional Atom where
   fromRational x = AtomF $ fromRational x
 
 readSAtomB :: ReadS Atom
-readSAtomB ('#':'t':xs) = [(AtomB True, xs)]
-readSAtomB ('#':'f':xs) = [(AtomB False, xs)]
+readSAtomB ('#' : 't' : xs) = [(AtomB True, xs)]
+readSAtomB ('#' : 'f' : xs) = [(AtomB False, xs)]
 readSAtomB _ = []
 
 readSAtomC :: ReadS Atom
-readSAtomC (c:xs) = [(AtomC c False, xs)]
+readSAtomC (c : xs) = [(AtomC c False, xs)]
 readSAtomC _ = []
 
 readSAtomI :: ReadS Atom
 readSAtomI s = case reads s :: [(Int, String)] of
-  (x, xs):_ -> [(AtomI x, xs)]
+  (x, xs) : _ -> [(AtomI x, xs)]
   [] -> [] :: [(Atom, String)]
 
 readSAtomF :: ReadS Atom
 readSAtomF s = case reads s :: [(Float, String)] of
-  (x, xs):_ -> [(AtomF x, xs)]
+  (x, xs) : _ -> [(AtomF x, xs)]
   [] -> [] :: [(Atom, String)]
 
 readSAtom :: ReadS Atom
-readSAtom (' ':xs) = readSAtom xs
-readSAtom ('\n':xs) = readSAtom xs
-readSAtom ('\t':xs) = readSAtom xs
-readSAtom string = [head $ readSAtomB string
-                          ++ readSAtomI string
-                          ++ readSAtomF string
-                          ++ readSAtomC string]
+readSAtom (' ' : xs) = readSAtom xs
+readSAtom ('\n' : xs) = readSAtom xs
+readSAtom ('\t' : xs) = readSAtom xs
+readSAtom string =
+  [ head $
+      readSAtomB string
+        ++ readSAtomI string
+        ++ readSAtomF string
+        ++ readSAtomC string
+  ]
 
 instance Read Atom where
   readsPrec _ = readSAtom

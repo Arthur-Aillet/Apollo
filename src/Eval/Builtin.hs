@@ -1,12 +1,10 @@
 module Eval.Builtin (module Eval.Builtin) where
 
-import Data.HashMap.Lazy (HashMap)
-
 data Value
   = Int Int
   | Bool Bool
   | Op Builtin
-  | Func String
+  | Func Int
   deriving (Show)
 
 data Instruction
@@ -21,10 +19,11 @@ data Builtin
   = Add
   | Sub
   | Mul
+  | Mod
   | Div
   | Eq
   | Less
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Args = [Value]
 
@@ -32,7 +31,7 @@ type Stack = [Value]
 
 type Insts = [Instruction]
 
-type Env = (HashMap String (Int, Insts))
+type Env = [(Int, Insts)]
 
 type Func = [Instruction]
 
@@ -51,6 +50,9 @@ execBuiltin Sub (x : y : xs) = case (x, y) of
   _ -> Left "Error: Sub on unsupported types"
 execBuiltin Mul (x : y : xs) = case (x, y) of
   (Int ix, Int iy) -> Right (Int (ix * iy) : xs)
+  _ -> Left "Error: Mul on unsupported types"
+execBuiltin Mod (x : y : xs) = case (x, y) of
+  (Int ix, Int iy) -> Right (Int (ix `mod` iy) : xs)
   _ -> Left "Error: Mul on unsupported types"
 execBuiltin Div (x : y : xs) = case (x, y) of
   (Int _, Int 0) -> Left "Error : division by 0"
