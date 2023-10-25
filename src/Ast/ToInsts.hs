@@ -13,9 +13,11 @@ import Data.HashMap.Lazy (HashMap, empty, fromList, fromListWith, insert, (!?))
 import Debug.Trace
 import Eval.Builtin
 
-newtype Context = Context (HashMap String (Int, Function))
+newtype Index = Index Int
 
-data LocalContext = LocalContext (HashMap String (Int, Type)) (Maybe Type)
+newtype Context = Context (HashMap String (Index, Function))
+
+data LocalContext = LocalContext (HashMap String (Index, Type)) (Maybe Type)
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -43,7 +45,7 @@ createGcd =
 
 createCtx :: [Definition] -> Context -> Int -> Either String Context
 createCtx (FuncDefinition string def : xs) (Context ctx) nbr =
-  createCtx xs (Context $ insert string (nbr, def) ctx) (nbr + 1)
+  createCtx xs (Context $ insert string (Index nbr, def) ctx) (nbr + 1)
 createCtx (VarDefinition _ _ : _) _ _ = Left "Error: Global Variables not supported yet"
 createCtx [] ctx _ = Right ctx
 
@@ -68,12 +70,12 @@ convAllFunc [] bin _ = Right bin
 (++++) :: [a] -> [a] -> [a] -> [a] -> [a]
 (++++) a b c d = a ++ b ++ c ++ d
 
-attachIndex :: [(String, Type)] -> Int -> [(String, (Int, Type))]
+attachIndex :: [(String, Type)] -> Index -> [(String, (Index, Type))]
 attachIndex [] _ = []
-attachIndex ((str, t) : xs) acc = (str, (acc, t)) : attachIndex xs (acc + 1)
+attachIndex ((str, t) : xs) (Index acc) = (str, (Index acc, t)) : attachIndex xs (Index (acc + 1))
 
 createLocalContext :: [(String, Type)] -> Maybe Type -> Either String LocalContext
-createLocalContext args output = Right $ LocalContext (fromList (attachIndex args 0)) output
+createLocalContext args output = Right $ LocalContext (fromList (attachIndex args (Index 0))) output
 
 convFunc :: Function -> Context -> Either String Insts
 convFunc (Function args output ast) ctx = case createLocalContext args output of
@@ -104,7 +106,7 @@ convOperable :: Operable -> Context -> LocalContext -> Either String Insts
 convOperable (OpValue (AtomI val)) c l = Right [Push (Int val)]
 convOperable (OpVariable name) c (LocalContext hash _) = case hash !? name of
   Nothing -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (index, _) -> Right [PushArg index]
+  Just (Index index, _) -> Right [PushArg index]
 convOperable (OpOperation op) c l = convOperation op c l
 convOperable (OpIOPipe op) _ _ = Left "Err: OpIOPipe unsupported"
 convOperable (OpValue _) c l = Left "Err: OpValue not int unsupported"
