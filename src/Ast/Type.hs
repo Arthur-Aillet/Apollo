@@ -17,10 +17,11 @@ data Definition
   | VarDefinition String Type -- define a variable
 
 data Structure -- layout, structure and connection of statements, having no value
-  {- Useless? -} = Resolved -- expression resolving to no value
+{- Useless? -}
+  = Resolved -- expression resolving to no value
   | Return Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
-  {- Useless? -} | Single Ast -- single operation or operable ({x})
+  | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
   | Sequence [Ast] -- several actions ordered by precedence ({x >> y})
   deriving (Show, Eq)
