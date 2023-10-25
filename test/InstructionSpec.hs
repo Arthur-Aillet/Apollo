@@ -12,8 +12,6 @@ module InstructionSpec (
 import Test.HUnit
 import Eval.Instructions
 import Eval.Exec
-import Data.Maybe
-import Data.HashMap.Lazy ((!?))
 import Data.Either
 
 instructionTests :: Test
@@ -33,4 +31,4 @@ moveForwardTests =
             "moveForward too many" ~: isLeft (moveForward 30 insts) ~?= True,
             "moveForward -1" ~: isLeft (moveForward (-1) insts) ~?= True
         ]
-    where (_, insts) = fromJust $ createEnv !? "abs"
+    where (_, insts) = createEnv !! 0

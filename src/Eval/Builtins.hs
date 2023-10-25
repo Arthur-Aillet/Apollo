@@ -33,7 +33,7 @@ operate Division = \ [a,b] -> if b /= 0
                 then Right (a / b)
                 else Left "Division by zero"
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
-operate less = \[a, b] -> Right $ AtomB $ a < b
+operate Less = \[a, b] -> Right $ AtomB $ a < b
 
 operatorArgCount :: Operator -> Int
 operatorArgCount Addition        = 2
