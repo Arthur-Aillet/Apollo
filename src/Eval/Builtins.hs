@@ -1,7 +1,8 @@
 module Eval.Builtins (
   execOperator,
   Operator (..),
-  Stack
+  Stack,
+  operatorArgCount
 ) where
 
 import Eval.Atom (Atom (..))

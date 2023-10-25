@@ -20,6 +20,7 @@ import Ast.Type
 import Ast.Context (Index(..), Context(..), LocalContext(..), createCtx, createLocalContext)
 
 import Eval.Atom (Atom (AtomI))
+import Eval.Builtins (operatorArgCount)
 import Data.HashMap.Lazy (empty, (!?))
 import Ast.Utils ((++++))
 
@@ -77,11 +78,11 @@ convStruct (Return ope) c l = case convOperable ope c l of
   Left err -> Left err
   Right insts -> Right $ insts ++ [Ret]
 convStruct (If op ast_then ast_else) c l =
-  (++++)
-    <$> convOperable op c l
-    <*> Right [JumpIfFalse (length then_insts)]
-    <*> then_insts
-    <*> convAst ast_else c l
+  concatInner
+    [convOperable op c l,
+    Right [JumpIfFalse (length then_insts)],
+    then_insts,
+    convAst ast_else c l]
   where
     then_insts = convAst ast_then c l
 convStruct (Single ast) _ _ = Left "Err: Single unsupported"
@@ -96,10 +97,19 @@ convOperable (OpVariable name) c (LocalContext hash _) = case hash !? name of
 convOperable (OpOperation op) c l = convOperation op c l
 convOperable (OpIOPipe op) _ _ = Left "Err: OpIOPipe unsupported"
 
-convOperation :: Operation -> Context -> LocalContext -> Either String Insts
-convOperation _ _ _ = Left "Err: Operation unsupported"
+concatInner :: [Either a [b]] -> Either a [b]
+concatInner = foldl (\a b -> (++) <$> a <*> b) (Right [])
 
--- convOperation (CallStd builtin ops) _ _ = Right $ ops ++ [Push (Op Eq), Call builtin]
+convOperation :: Operation -> Context -> LocalContext -> Either String Insts
+convOperation (CallStd builtin ops) c l =
+  if length ops == operatorArgCount builtin
+    then (++) <$> concatInner (map (\op -> convOperable op c l) ops) <*> Right [Op builtin]
+    else Left "Err: Invalid number of args"
+
+
+--  <$> (\op -> (\a -> a ++ [Op builtin]) <$> convOperable op c l) ops
+convOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a
+
 
 {-
 = Interrupt String -- Interrupt program flow
