@@ -1,11 +1,8 @@
 module ParserSpec (parserTests) where
 
-import Parser.Bool
 import Parser.Char
-import Parser.Condition
-import Parser.Error
 import Parser.Position (Position (..), defaultPosition, moveCursor)
-import Parser.Range (Range (..), defaultRange)
+import Parser.Range (defaultRange)
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol
 import Parser.Syntax
