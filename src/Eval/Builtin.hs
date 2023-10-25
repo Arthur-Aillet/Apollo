@@ -52,7 +52,7 @@ execBuiltin Mul (x : y : xs) = case (x, y) of
   (Int ix, Int iy) -> Right (Int (ix * iy) : xs)
   _ -> Left "Error: Mul on unsupported types"
 execBuiltin Mod (x : y : xs) = case (x, y) of
-  (Int ix, Int iy) -> Right (Int (ix % iy) : xs)
+  (Int ix, Int iy) -> Right (Int (ix `mod` iy) : xs)
   _ -> Left "Error: Mul on unsupported types"
 execBuiltin Div (x : y : xs) = case (x, y) of
   (Int _, Int 0) -> Left "Error : division by 0"

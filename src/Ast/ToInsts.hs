@@ -23,22 +23,22 @@ createGcd :: Definition
 createGcd =
   FuncDefinition
     "gcd"
-    ( Function
-        [("x", TypeInt), ("y", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure
-            ( If
-                (OpOperation (CallStd Eq [OpValue (AtomI 0), OpVariable "y"]))
-                (AstStructure $ Return $ OpVariable "x")
-                ( AstStructure $
-                    Return $
-                      OpOperation $
-                        CallFunc
-                          "gcd"
-                          [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
-                )
-            )
+    (Function
+      [("x", TypeInt), ("y", TypeInt)]
+      (Just TypeInt)
+      (AstStructure
+        (If
+          (OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"])
+          (AstStructure $ Return $ OpVariable "x")
+          (AstStructure $
+            Return $
+              OpOperation $
+                CallFunc
+                  "gcd"
+                  [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
+          )
         )
+      )
     )
 
 createCtx :: [Definition] -> Context -> Int -> Either String Context
