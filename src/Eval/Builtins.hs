@@ -1,5 +1,13 @@
+--
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Builtins
+--
+
 module Eval.Builtins (
   execOperator,
+  operate,
   Operator (..),
   Stack
 ) where
