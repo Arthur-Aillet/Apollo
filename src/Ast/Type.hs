@@ -7,8 +7,8 @@
 
 module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..)) where
 
-import Atom.Atom (Atom)
-import Eval.Builtin (Builtin)
+import Eval.Atom (Atom)
+import Eval.Builtins (Operator)
 
 data Function = Function [(String, Type)] (Maybe Type) Ast
 
@@ -28,9 +28,9 @@ data Structure -- layout, structure and connection of statements, having no valu
 
 data Operation -- statement involving an action, resulting in a value
   = Interrupt String -- Interrupt program flow
-  | CallStd Builtin [Operable] -- call a standard or builtin operation (x(y))
+  | CallStd Operator [Operable] -- call a standard or operator operation (x(y))
   | CallFunc String [Operable] -- call a function, exposes both inherent IOPipes (x(y))
-  | CallSH String [Operable] -- syscall of builtin program ($x(y)), exposes both IOPipes
+  | CallSH String [Operable] -- syscall of Operator program ($x(y)), exposes both IOPipes
   | Pipe Operable Operable -- stdout mapped to stdin ({x.y}, {x <- y})
   deriving (Show, Eq)
 

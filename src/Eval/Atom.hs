@@ -5,15 +5,10 @@
 -- Atom
 --
 
-module Atom.Atom
-  ( Atom (..),
-    bAtom,
-    cAtom,
-    iAtom,
-    fAtom,
-    atomCast,
-  )
-where
+module Eval.Atom (Atom (..),
+  bAtom, cAtom, iAtom, fAtom,
+  atomCast
+  ) where
 
 -- import Text.Read
 

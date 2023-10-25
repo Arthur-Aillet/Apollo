@@ -19,17 +19,13 @@ import Ast.Type
 
 import Ast.Context (Index(..), Context(..), LocalContext(..), createCtx, createLocalContext)
 
-import Atom.Atom (Atom (AtomI))
+import Eval.Atom (Atom (AtomI))
 import Data.HashMap.Lazy (empty, (!?))
 import Ast.Utils ((++++))
-import Eval.Builtin
-  ( Builtin (Eq, Mod),
-    Env,
-    Func,
-    Instruction (JumpIfFalse, Push, PushArg, Ret),
-    Insts,
-    Value (Int),
-  )
+
+import Eval.Exec
+import Eval.Builtins
+import Eval.Instructions
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -49,7 +45,7 @@ createGcd =
                       OpOperation $
                         CallFunc
                           "gcd"
-                          [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
+                          [OpVariable "y", OpOperation (CallStd Division [OpVariable "x", OpVariable "y"])]
                 )
             )
         )
@@ -93,13 +89,12 @@ convStruct (Block asts vars) _ _ = Left "Err: Block unsupported"
 convStruct (Sequence asts) _ _ = Left "Err: Sequence unsupported"
 
 convOperable :: Operable -> Context -> LocalContext -> Either String Insts
-convOperable (OpValue (AtomI val)) c l = Right [Push (Int val)]
+convOperable (OpValue val) c l = Right [PushD val]
 convOperable (OpVariable name) c (LocalContext hash _) = case hash !? name of
   Nothing -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (Index index, _) -> Right [PushArg index]
+  Just (Index index, _) -> Right [PushI index]
 convOperable (OpOperation op) c l = convOperation op c l
 convOperable (OpIOPipe op) _ _ = Left "Err: OpIOPipe unsupported"
-convOperable (OpValue _) c l = Left "Err: OpValue not int unsupported"
 
 convOperation :: Operation -> Context -> LocalContext -> Either String Insts
 convOperation _ _ _ = Left "Err: Operation unsupported"
