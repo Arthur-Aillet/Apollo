@@ -133,6 +133,26 @@ instance Fractional Atom where
 
   fromRational x = AtomF $ fromRational x
 
+instance Real Atom where
+  toRational x = case fAtom x of
+    (AtomF y) -> toRational y
+    _ -> error ""
+
+instance Enum Atom where
+  fromEnum x = case iAtom x of
+    (AtomI y) -> fromEnum y
+    _ -> error ""
+  toEnum = AtomI
+
+instance Integral Atom where
+  quotRem (AtomI x) (AtomI y) = (AtomI x', AtomI y')
+    where (x', y') = quotRem x y
+  quotRem x y = quotRem (iAtom x) (iAtom y)
+
+  toInteger x = case iAtom x of
+    (AtomI y) -> toInteger y
+    _ -> error ""
+
 readSAtomB :: ReadS Atom
 readSAtomB ('#' : 't' : xs) = [(AtomB True, xs)]
 readSAtomB ('#' : 'f' : xs) = [(AtomB False, xs)]
