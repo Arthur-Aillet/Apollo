@@ -17,21 +17,15 @@ import Parser.Type (Parser (..))
 -- NOTE - ParseMany moins laxiste. ex: ParseMany Parse Bool => True -> True -> Error
 -- NOTE Ne renvoie pas d'erreur
 
--- NOTE - Ajouter dans la StackTrace qui n'es pas une erreur mais une Position
--- NOTE Exemple: erreur de grammaire + erreur Condition
--- Modifié StackTrace pour mettre Erreur et Repère (exemple: erreur dans un while/if)
--- Modifié son implémentation show
 -- Refaire tout les parsers
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseMany parse) new_str new_pos of
-      Left (StackTrace ((_, (Range _ end), _) : _)) -> Right ([], new_str, end)
+      Left (StackTrace ((_, (Range _ end), _) : _)) -> Right (element : [], new_str, end)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
-  Left (StackTrace ((_, (Range start end), _) : _)) -> Right ([], drop (char end - char start) string, end)
-
--- Left _ -> Right ([], string, pos)
+  Left a -> Left a
 
 parseSpaces :: Parser Char
 parseSpaces = parseAnyChar [' ', '\n', '\t']
@@ -62,22 +56,3 @@ parseSome parse = (:) <$> parse <*> parseMany parse
 parseWithSpace :: Parser a -> Parser a
 parseWithSpace parser =
   parseMany parseSpaces *> parser <* parseMany parseSpaces
-
-parsePair :: Parser a -> Parser (a, a)
-parsePair parser =
-  parseWithSpace
-    ( (,)
-        <$> (parseOpeningParenthesis *> parseWithSpace parser)
-        <*> (parseWithSpace parser <* parseClosingParenthesis)
-    )
-
-parseList :: Parser a -> Parser [a]
-parseList parser =
-  parseWithSpace
-    ( withErr
-        "parseList: Error found"
-        ( parseOpeningParenthesis
-            *> parseMany (parseWithSpace parser)
-            <* parseClosingParenthesis
-        )
-    )

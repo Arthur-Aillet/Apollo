@@ -7,18 +7,19 @@
 
 module Parser.Symbol (module Parser.Symbol) where
 
-import Parser.Char (parseAnyChar)
+import Parser.Char (parseChar)
 import Parser.Range (Range (..), newRange)
-import Parser.StackTrace (StackTrace (..))
+import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Syntax (parseSome)
 import Parser.Type (Parser (..))
-import Parser.StackTrace (defaultLocation)
 
 parseSymbol :: String -> Parser String
-parseSymbol string = Parser $ \s p ->
-  case runParser (parseSome (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z']))) s p of
-    Right (found, n_s, n_p)
-      | found == string -> Right (found, n_s, n_p)
-      | otherwise -> Left (StackTrace [("Error: Symbols are not the same", newRange p n_p, defaultLocation)])
-    Left (StackTrace ((_, (Range _ end), src) : xs)) -> Left (StackTrace (("Not Found: List is empty", newRange p end, src) : xs))
-    Left _ -> Left (StackTrace [("Not Found: List is empty", newRange p p, defaultLocation)])
+parseSymbol str
+  | length str == 1 = Parser $ \s p -> case runParser (parseChar (head str)) s p of
+      Right (char, new_str, new_pos) -> Right ([char], new_str, new_pos)
+      Left err -> Left err
+parseSymbol (x : xs) = Parser $ \s p -> case runParser (parseChar x) s p of
+  Left err -> Left err
+  Right (new, new_str, new_pos) -> case runParser (parseSymbol xs) new_str new_pos of
+    Left err -> Left err
+    Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)

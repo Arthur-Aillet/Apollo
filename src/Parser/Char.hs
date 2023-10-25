@@ -11,8 +11,8 @@ import Control.Applicative (Alternative ((<|>)))
 import Parser.Error (failingWith, withErr)
 import Parser.Position (moveCursor)
 import Parser.Range (Range (..))
-import Parser.Type (Parser (..), StackTrace (..))
 import Parser.StackTrace (defaultLocation)
+import Parser.Type (Parser (..), StackTrace (..))
 
 parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of

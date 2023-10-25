@@ -9,8 +9,8 @@ module Parser.Error (module Parser.Error) where
 
 import Parser.Position (Position (..))
 import Parser.Range (Range (..), newRange)
-import Parser.Type (Parser (..), StackTrace (..))
 import Parser.StackTrace (defaultLocation)
+import Parser.Type (Parser (..), StackTrace (..))
 
 withErr :: String -> Parser a -> Parser a
 withErr new_msg parser = Parser $ \string pos -> case runParser parser string pos of

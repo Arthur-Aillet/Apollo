@@ -5,8 +5,14 @@
 -- Position type
 -}
 
-module Parser.StackTrace (StackTrace (..), SourceLocation (..),
-            addNewMessage, addSourceLocation, defaultLocation) where
+module Parser.StackTrace
+  ( StackTrace (..),
+    SourceLocation (..),
+    addNewMessage,
+    addSourceLocation,
+    defaultLocation,
+  )
+where
 
 import Parser.Range (Range (..))
 
@@ -55,3 +61,10 @@ addNewMessage (str, (Range start end), src) pre =
 
 instance Show StackTrace where
   show (StackTrace list) = foldr addNewMessage "Errors are: \n" list
+
+instance Eq SourceLocation where
+  (SourceLocation fn1 file1 l1 c1) == (SourceLocation fn2 file2 l2 c2) =
+    fn1 == fn2 && file1 == file2 && l1 == l2 && c1 == c2
+
+instance Eq StackTrace where
+  (StackTrace xs) == (StackTrace ys) = xs == ys
