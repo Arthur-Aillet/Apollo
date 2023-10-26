@@ -5,14 +5,14 @@
 -- AST To Insts Contxt
 -}
 
-module Ast.Context (Index, Context(..), LocalContext(..), createCtx, createLocalContext) where
+module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext) where
 
-import Data.HashMap.Lazy (HashMap, insert, fromList)
 import Ast.Type
-  ( Function (..),
+  ( Definition (..),
+    Function (..),
     Type,
-    Definition(..),
   )
+import Data.HashMap.Lazy (HashMap, fromList, insert)
 
 type Index = Int
 

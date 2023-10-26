@@ -5,10 +5,15 @@
 -- Atom
 --
 
-module Eval.Atom (Atom (..),
-  bAtom, cAtom, iAtom, fAtom,
-  atomCast
-  ) where
+module Eval.Atom
+  ( Atom (..),
+    bAtom,
+    cAtom,
+    iAtom,
+    fAtom,
+    atomCast,
+  )
+where
 
 -- import Text.Read
 
@@ -146,7 +151,8 @@ instance Enum Atom where
 
 instance Integral Atom where
   quotRem (AtomI x) (AtomI y) = (AtomI x', AtomI y')
-    where (x', y') = quotRem x y
+    where
+      (x', y') = quotRem x y
   quotRem x y = quotRem (iAtom x) (iAtom y)
 
   toInteger x = case iAtom x of

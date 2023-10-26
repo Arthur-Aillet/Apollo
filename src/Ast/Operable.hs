@@ -7,12 +7,12 @@
 
 module Ast.Operable (concatInner, convOperable, convOperation) where
 
-import Ast.Type (Operation (CallStd, CallFunc), Type (TypeInt), Operable (..), atomType)
-import Ast.Context (LocalContext (..), Context (Context))
-import Eval.Instructions (Insts, Instruction (..))
+import Ast.Context (Context (Context), LocalContext (..))
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeInt), atomType)
 import Ast.Utils (concatInner, listInner)
-import Eval.Builtins (operatorArgCount)
 import Data.HashMap.Lazy ((!?))
+import Eval.Builtins (operatorArgCount)
+import Eval.Instructions (Instruction (..), Insts)
 
 convOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
 convOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
@@ -27,13 +27,12 @@ convOperable (OpIOPipe _) _ _ = Left "Err: OpIOPipe unsupported"
 
 argsHasError :: Either String [Type] -> [(String, Type)] -> Maybe String
 argsHasError (Left err) _ = Just err
-argsHasError (Right (given_type:xs)) ((arg_name, arg_type):ys) =
-  if given_type == arg_type then
-    argsHasError (Right xs) ys
-  else
-    Just $ "Err: " ++ arg_name ++ " invalid type"
-argsHasError (Right []) (x:xs) = Just "Too few arguments"
-argsHasError (Right (x:xs)) [] = Just "Too many arguments"
+argsHasError (Right (given_type : xs)) ((arg_name, arg_type) : ys) =
+  if given_type == arg_type
+    then argsHasError (Right xs) ys
+    else Just $ "Err: " ++ arg_name ++ " invalid type"
+argsHasError (Right []) (x : xs) = Just "Too few arguments"
+argsHasError (Right (x : xs)) [] = Just "Too many arguments"
 argsHasError (Right []) [] = Nothing
 
 convOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
@@ -44,10 +43,10 @@ convOperation (CallStd builtin ops) c l =
 convOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
   Nothing -> Left "Err: Function name not found"
   Just (_, func_args, out) -> case argsHasError types func_args of
-      Just err -> Left err
-      Nothing -> (\a -> (a, out)) <$> compiled
+    Just err -> Left err
+    Nothing -> (\a -> (a, out)) <$> compiled
     where
       compiled = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
-      args_compiled =  map (\op -> convOperable op (Context ctx) l) ops
+      args_compiled = map (\op -> convOperable op (Context ctx) l) ops
 convOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a

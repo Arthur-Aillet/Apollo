@@ -8,24 +8,26 @@
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Builtins) where
 
 import Eval.Atom (Atom (..))
-import Eval.Instructions (Instruction (..), Insts, moveForward, Index, Func)
-import Eval.Builtins (Operator (..), execOperator, Stack)
+import Eval.Builtins (Operator (..), Stack, execOperator)
+import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
 
-type Env = [(Int, Func)];
-type Args = [Atom];
+type Env = [(Int, Func)]
+
+type Args = [Atom]
 
 absFunc :: Func
-absFunc = [
-  PushI 0,
-  PushD (AtomI 0),
-  Op Less,
-  JumpIfFalse 2,
-  PushI 0,
-  Ret,
-  PushI 0,
-  PushD (AtomI (-1)),
-  Op Multiplication,
-  Ret]
+absFunc =
+  [ PushI 0,
+    PushD (AtomI 0),
+    Op Less,
+    JumpIfFalse 2,
+    PushI 0,
+    Ret,
+    PushI 0,
+    PushD (AtomI (-1)),
+    Op Multiplication,
+    Ret
+  ]
 
 createEnv :: Env
 createEnv = [(1, absFunc)]
@@ -38,10 +40,10 @@ getElem nb list
   | otherwise = Right (last (take (nb + 1) list))
 
 exec :: Env -> Args -> Insts -> Stack -> IO (Either String Atom)
-exec env args ((PushD val) : xs) stack = exec env args xs (val:stack)
+exec env args ((PushD val) : xs) stack = exec env args xs (val : stack)
 exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
   Left err -> return $ Left err
-  Right arg -> exec env args xs (arg:stack)
+  Right arg -> exec env args xs (arg : stack)
 exec env args ((Op op) : xs) stack = case execOperator stack op of
   Right new_stack -> exec env args xs new_stack
   Left err -> return $ Left err
@@ -49,13 +51,13 @@ exec env _ ((CallD func_index) : xs) stack = exec env start (insts ++ xs) end
   where
     (start, end) = splitAt args_nbr stack
     (args_nbr, insts) = env !! func_index
-exec env args ((JumpIfFalse line) : xs) (y:ys) =
+exec env args ((JumpIfFalse line) : xs) (y : ys) =
   if y == 0
-  then case moveForward line xs of
+    then case moveForward line xs of
       Left a -> return $ Left a
       Right valid -> exec env args valid ys
-  else exec env args xs ys
-exec _ _ (Ret:_) (x:_) = return $ Right x
-exec _ _ (Ret:_) _ = return $ Left "Error: Return with empty stack"
+    else exec env args xs ys
+exec _ _ (Ret : _) (x : _) = return $ Right x
+exec _ _ (Ret : _) _ = return $ Left "Error: Return with empty stack"
 exec _ _ [] _ = return $ Left "Error: Missing return"
 exec _ _ _ _ = return $ Left "Error: Undefined Yet"

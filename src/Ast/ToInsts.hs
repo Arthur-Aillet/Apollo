@@ -7,6 +7,8 @@
 
 module Ast.ToInsts (module Ast.ToInsts) where
 
+import Ast.Context (Context (..), Index (..), LocalContext (..), createCtx, createLocalContext)
+import Ast.Operable (concatInner, convOperable, convOperation)
 import Ast.Type
   ( Ast (..),
     Definition (..),
@@ -15,21 +17,16 @@ import Ast.Type
     Operation (CallFunc, CallStd),
     Structure (..),
     Type (..),
-    numType,
     atomType,
+    numType,
   )
-
-import Ast.Context (Index(..), Context(..), LocalContext(..), createCtx, createLocalContext)
-
-import Eval.Atom (Atom (AtomI))
-import Data.HashMap.Lazy (empty, (!?))
 import Ast.Utils ((++++))
-
-import Eval.Exec
-import Eval.Builtins
+import Data.HashMap.Lazy (empty, (!?))
 import Debug.Trace
+import Eval.Atom (Atom (AtomI))
+import Eval.Builtins
+import Eval.Exec
 import Eval.Instructions
-import Ast.Operable (convOperation, concatInner, convOperable)
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -85,21 +82,24 @@ convStruct (Return _) _ (LocalContext _ Nothing) = Left "Err: Return value in vo
 convStruct (Return ope) c (LocalContext a (Just fct_type)) =
   case convOperable ope c (LocalContext a (Just fct_type)) of
     Left err -> Left err
-    Right (op_compiled, op_type) -> if op_type == fct_type
-      then Right $ op_compiled ++ [Ret]
-      else Left "Err: Return invalid type"
+    Right (op_compiled, op_type) ->
+      if op_type == fct_type
+        then Right $ op_compiled ++ [Ret]
+        else Left "Err: Return invalid type"
 convStruct (If op ast_then ast_else) c l = case convOperable op c l of
   Left err -> Left err
   Right (op_compiled, op_type) -> case convAst ast_then c l of
     Left err -> Left err
-    Right then_insts -> if numType op_type then
-      concatInner
-        [Right op_compiled,
-        Right [JumpIfFalse (length then_insts)],
-        Right then_insts,
-        convAst ast_else c l]
-      else
-        Left "Err: Operator in if not numerical value"
+    Right then_insts ->
+      if numType op_type
+        then
+          concatInner
+            [ Right op_compiled,
+              Right [JumpIfFalse (length then_insts)],
+              Right then_insts,
+              convAst ast_else c l
+            ]
+        else Left "Err: Operator in if not numerical value"
 convStruct (Single _) _ _ = Left "Err: Single unsupported"
 convStruct (Block _ _) _ _ = Left "Err: Block unsupported"
 convStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"
