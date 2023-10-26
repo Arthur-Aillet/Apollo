@@ -11,7 +11,7 @@ module OperatorSpec
 where
 
 import Eval.Atom
-import Eval.Builtins
+import Eval.Operator
 import Test.HUnit
 
 operatorTests :: Test

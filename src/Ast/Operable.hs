@@ -4,8 +4,8 @@
 -- File description:
 -- AST To Insts Operable
 -}
-
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use tuple-section" #-}
 
 module Ast.Operable (concatInner, compOperable, compOperation) where
@@ -14,8 +14,9 @@ import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeInt), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
-import Eval.Operator (operatorArgCount)
+import Debug.Trace (trace)
 import Eval.Instructions (Instruction (..), Insts)
+import Eval.Operator (operatorArgCount)
 
 compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
 compOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
@@ -38,16 +39,28 @@ argsHasError (Right []) (_ : _) = Just "Too few arguments"
 argsHasError (Right (_ : _)) [] = Just "Too many arguments"
 argsHasError (Right []) [] = Nothing
 
+opeValidArgs :: [Either String (Insts, Type)] -> Int -> Maybe Type -> Either String Type
+opeValidArgs (Left err : _) _ _ = Left err
+opeValidArgs [] 0 (Just waited_type) = Right waited_type
+opeValidArgs [] _ (Just _) = Left "Err: Builtin, Not enough arguments"
+opeValidArgs (Right _ : _) 0 (Just _) = Left "Err: Builtin, Too many arguments"
+opeValidArgs [] _ Nothing = Left "Err: Builtin, No arguments given"
+opeValidArgs (Right (_, arg_type) : xs) nbr Nothing =
+  opeValidArgs xs (nbr - 1) (Just arg_type)
+opeValidArgs (Right (_, arg_type) : xs) nbr (Just waited_type) =
+  if arg_type == waited_type
+    then opeValidArgs xs (nbr - 1) (Just waited_type)
+    else Left "Err: Builtin different types given"
+
 compOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =
-  if length ops == operatorArgCount builtin
-    then
-      (\a -> (a, Just TypeInt))
-        <$> ( (++)
-                <$> concatInner (map (\op -> fst <$> compOperable op c l) ops)
-                <*> Right [Op builtin]
-            )
-    else Left "Err: Invalid number of args"
+  case opeValidArgs args (operatorArgCount builtin) Nothing of
+    Left err -> Left err
+    Right args_type ->
+      (\a -> (a, Just args_type))
+        <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op builtin])
+  where
+    args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
   Nothing -> Left "Err: Function name not found"
   Just (id, func_args, out) -> case argsHasError types func_args of

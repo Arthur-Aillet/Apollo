@@ -8,7 +8,7 @@
 module Ast.Compile (module Ast.Compile) where
 
 import Ast.Context (Context (..), LocalContext (..), createCtx, createLocalContext)
-import Ast.Operable (concatInner, compOperable, compOperation)
+import Ast.Operable (compOperable, compOperation, concatInner)
 import Ast.Type
   ( Ast (..),
     Definition (..),
@@ -20,20 +20,25 @@ import Ast.Type
     numType,
   )
 import Data.HashMap.Lazy (empty)
-import Eval.Operator
 import Eval.Exec
+import Eval.Operator
 
 data Binary = Binary Env Func deriving (Show)
 
 createMain :: Definition
-createMain = FuncDefinition
+createMain =
+  FuncDefinition
     "main"
-    (Function
+    ( Function
         []
         (Just TypeInt)
-        (AstStructure $ Return $ OpOperation $ CallFunc
-        "gcd"
-        [OpValue (AtomI 4), OpValue (AtomI 2)])
+        ( AstStructure $
+            Return $
+              OpOperation $
+                CallFunc
+                  "gcd"
+                  [OpValue (AtomI 4), OpValue (AtomI 2)]
+        )
     )
 
 createGcd :: Definition

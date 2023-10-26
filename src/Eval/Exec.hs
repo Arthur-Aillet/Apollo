@@ -8,8 +8,8 @@
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
 import Eval.Atom (Atom (..))
-import Eval.Operator (Operator (..), Stack, execOperator)
 import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
+import Eval.Operator (Operator (..), Stack, execOperator)
 
 type Env = [(Int, Func)]
 
