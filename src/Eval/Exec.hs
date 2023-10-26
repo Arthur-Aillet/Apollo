@@ -47,10 +47,11 @@ exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
 exec env args ((Op op) : xs) stack = case execOperator stack op of
   Right new_stack -> exec env args xs new_stack
   Left err -> return $ Left err
-exec env _ ((CallD func_index) : xs) stack = exec env start (insts ++ xs) end
-  where
-    (start, end) = splitAt args_nbr stack
-    (args_nbr, insts) = env !! func_index
+exec env _ ((CallD func_index) : xs) stack = case getElem func_index env of
+  Left err -> return $ Left err
+  Right (args_nbr, insts) -> exec env start (insts ++ xs) end
+    where
+      (start, end) = splitAt args_nbr stack
 exec env args ((JumpIfFalse line) : xs) (y : ys) =
   if y == 0
     then case moveForward line xs of
