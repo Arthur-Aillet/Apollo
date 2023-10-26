@@ -53,6 +53,7 @@ numType TypeBool = True
 numType TypeChar = True
 numType TypeInt = True
 numType TypeFloat = True
+
 -- numType _ = False
 
 atomType :: Atom -> Type

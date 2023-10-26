@@ -53,13 +53,16 @@ toInsts defs = case createCtx defs (Context empty) 0 of
   Right ctx -> convAllFunc defs (Binary [] []) ctx
 
 convAllFunc :: [Definition] -> Binary -> Context -> Either String Binary
-convAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx = case convFunc func ctx of
-  Left err -> Left err
-  Right function -> convAllFunc xs (Binary env function) ctx
-convAllFunc ((VarDefinition _ _) : _) _ _ = Left "Error: Global Variables not supported yet"
-convAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env funcs) ctx = case convFunc (Function args y z) ctx of
-  Left err -> Left err
-  Right func -> convAllFunc xs (Binary (env ++ [(length args, func)]) funcs) ctx
+convAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx =
+  case convFunc func ctx of
+    Left err -> Left err
+    Right function -> convAllFunc xs (Binary env function) ctx
+convAllFunc ((VarDefinition _ _) : _) _ _ =
+  Left "Error: Global Variables not supported yet"
+convAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env funcs) c =
+  case convFunc (Function args y z) c of
+    Left err -> Left err
+    Right f -> convAllFunc xs (Binary (env ++ [(length args, f)]) funcs) c
 convAllFunc [] bin _ = Right bin
 
 convFunc :: Function -> Context -> Either String Insts
@@ -71,9 +74,22 @@ convAst :: Ast -> Context -> LocalContext -> Either String Insts
 convAst (AstStructure struct) c l = convStruct struct c l
 convAst (AstOperation op) c l = fst <$> convOperation op c l
 
+convIf :: Insts -> Either String Insts -> Type -> Insts -> Either String Insts
+convIf op_compiled else_comp op_type then_insts =
+  if numType op_type
+    then
+      concatInner
+        [ Right op_compiled,
+          Right [JumpIfFalse (length then_insts)],
+          Right then_insts,
+          else_comp
+        ]
+    else Left "Err: Operator in if not numerical value"
+
 convStruct :: Structure -> Context -> LocalContext -> Either String Insts
 convStruct Resolved _ _ = Left "Err: Resolved unsupported"
-convStruct (Return _) _ (LocalContext _ Nothing) = Left "Err: Return value in void function"
+convStruct (Return _) _ (LocalContext _ Nothing) =
+  Left "Err: Return value in void function"
 convStruct (Return ope) c (LocalContext a (Just fct_type)) =
   case convOperable ope c (LocalContext a (Just fct_type)) of
     Left err -> Left err
@@ -86,15 +102,7 @@ convStruct (If op ast_then ast_else) c l = case convOperable op c l of
   Right (op_compiled, op_type) -> case convAst ast_then c l of
     Left err -> Left err
     Right then_insts ->
-      if numType op_type
-        then
-          concatInner
-            [ Right op_compiled,
-              Right [JumpIfFalse (length then_insts)],
-              Right then_insts,
-              convAst ast_else c l
-            ]
-        else Left "Err: Operator in if not numerical value"
+      convIf op_compiled (convAst ast_else c l) op_type then_insts
 convStruct (Single _) _ _ = Left "Err: Single unsupported"
 convStruct (Block _ _) _ _ = Left "Err: Block unsupported"
 convStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"

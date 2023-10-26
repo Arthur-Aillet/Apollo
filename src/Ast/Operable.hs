@@ -41,7 +41,12 @@ argsHasError (Right []) [] = Nothing
 convOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
 convOperation (CallStd builtin ops) c l =
   if length ops == operatorArgCount builtin
-    then (\a -> (a, Just TypeInt)) <$> ((++) <$> concatInner (map (\op -> fst <$> convOperable op c l) ops) <*> Right [Op builtin])
+    then
+      (\a -> (a, Just TypeInt))
+        <$> ( (++)
+                <$> concatInner (map (\op -> fst <$> convOperable op c l) ops)
+                <*> Right [Op builtin]
+            )
     else Left "Err: Invalid number of args"
 convOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
   Nothing -> Left "Err: Function name not found"
