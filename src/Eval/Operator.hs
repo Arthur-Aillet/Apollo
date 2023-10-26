@@ -10,13 +10,24 @@ module Eval.Operator
     operate,
     Operator (..),
     Stack,
-    operatorArgCount,
+    defsOp,
+    OperatorDef (..),
+    OperatorType (..),
   )
 where
 
 import Eval.Atom (Atom (..))
 
 type Stack = [Atom]
+
+type ArgsNbr = Int
+
+data OperatorDef = OperatorDef ArgsNbr OperatorType
+
+data OperatorType
+  = Equality
+  | Calculus
+  deriving (Show, Eq)
 
 data Operator
   = Addition
@@ -43,14 +54,14 @@ operate Modulo = \[a, b] ->
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Less = \[a, b] -> Right $ AtomB $ a < b
 
-operatorArgCount :: Operator -> Int
-operatorArgCount Addition = 2
-operatorArgCount Subtraction = 2
-operatorArgCount Multiplication = 2
-operatorArgCount Division = 2
-operatorArgCount Modulo = 2
-operatorArgCount Eq = 2
-operatorArgCount Less = 2
+defsOp :: Operator -> OperatorDef
+defsOp Addition = OperatorDef 2 Calculus
+defsOp Subtraction = OperatorDef 2 Calculus
+defsOp Multiplication = OperatorDef 2 Calculus
+defsOp Division = OperatorDef 2 Calculus
+defsOp Modulo = OperatorDef 2 Calculus
+defsOp Eq = OperatorDef 2 Equality
+defsOp Less = OperatorDef 2 Equality
 
 execOperator :: Stack -> Operator -> Either String Stack
 execOperator stack op =
@@ -61,4 +72,4 @@ execOperator stack op =
     else Left "not enough arguments in the stack"
   where
     (top, bottom) = splitAt count stack
-    count = operatorArgCount op
+    (OperatorDef count _) = defsOp op

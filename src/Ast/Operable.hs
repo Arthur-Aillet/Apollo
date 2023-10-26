@@ -11,12 +11,12 @@
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeInt), atomType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeInt), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Debug.Trace (trace)
 import Eval.Instructions (Instruction (..), Insts)
-import Eval.Operator (operatorArgCount)
+import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 
 compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
 compOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
@@ -52,13 +52,24 @@ opeValidArgs (Right (_, arg_type) : xs) nbr (Just waited_type) =
     then opeValidArgs xs (nbr - 1) (Just waited_type)
     else Left "Err: Builtin different types given"
 
+compCalculus :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
+compCalculus op args count = case opeValidArgs args count Nothing of
+  Left err -> Left err
+  Right return_type ->
+    (\a -> (a, Just return_type))
+      <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op op])
+
+compEquality :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
+compEquality op args count = case opeValidArgs args count Nothing of
+  Left err -> Left err
+  Right _ ->
+    (\a -> (a, Just TypeBool))
+      <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op op])
+
 compOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
-compOperation (CallStd builtin ops) c l =
-  case opeValidArgs args (operatorArgCount builtin) Nothing of
-    Left err -> Left err
-    Right args_type ->
-      (\a -> (a, Just args_type))
-        <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op builtin])
+compOperation (CallStd builtin ops) c l = case defsOp builtin of
+  (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
+  (OperatorDef argCount Equality) -> compEquality builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
