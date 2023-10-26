@@ -5,7 +5,7 @@
 -- Builtins
 --
 
-module Eval.Builtins
+module Eval.Operator
   ( execOperator,
     operate,
     Operator (..),

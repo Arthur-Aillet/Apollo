@@ -15,7 +15,7 @@ module Eval.Instructions
 where
 
 import Eval.Atom (Atom (..))
-import Eval.Builtins (Operator (..))
+import Eval.Operator (Operator (..))
 
 type Index = Int
 
