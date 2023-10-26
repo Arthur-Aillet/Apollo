@@ -11,10 +11,9 @@
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeInt), atomType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
-import Debug.Trace (trace)
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 
@@ -74,9 +73,9 @@ compOperation (CallStd builtin ops) c l = case defsOp builtin of
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
   Nothing -> Left "Err: Function name not found"
-  Just (id, func_args, out) -> case argsHasError types func_args of
+  Just (nb, func_args, out) -> case argsHasError types func_args of
     Just err -> Left err
-    Nothing -> (\a -> (a, out)) <$> ((++) <$> f_comp_args <*> Right [CallD id])
+    Nothing -> (\a -> (a, out)) <$> ((++) <$> f_comp_args <*> Right [CallD nb])
     where
       f_comp_args = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled

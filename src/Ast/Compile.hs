@@ -118,10 +118,13 @@ compStruct (Return ope) c (LocalContext a (Just fct_type)) =
         else Left "Err: Return invalid type"
 compStruct (If op ast_then ast_else) c l = case compOperable op c l of
   Left err -> Left err
-  Right (op_compiled, op_type) -> case compAst ast_then c l of
+  Right (op_compiled, TypeBool) -> case compAst ast_then c l of
     Left err -> Left err
     Right then_insts ->
-      compIf op_compiled (compAst ast_else c l) op_type then_insts
+      compIf op_compiled (compAst ast_else c l) TypeBool then_insts
+  Right (_, op_type) ->
+    Left $ "Err: If wait boolean and not " ++ show op_type
+
 compStruct (Single _) _ _ = Left "Err: Single unsupported"
 compStruct (Block _ _) _ _ = Left "Err: Block unsupported"
 compStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"
