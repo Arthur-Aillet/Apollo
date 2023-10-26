@@ -14,7 +14,9 @@ import Ast.Type
     Operable (..),
     Operation (CallFunc, CallStd),
     Structure (..),
-    Type (TypeInt),
+    Type (..),
+    numType,
+    atomType,
   )
 
 import Ast.Context (Index(..), Context(..), LocalContext(..), createCtx, createLocalContext)
@@ -26,6 +28,7 @@ import Ast.Utils ((++++))
 
 import Eval.Exec
 import Eval.Builtins
+import Debug.Trace
 import Eval.Instructions
 
 data Binary = Binary Env Func deriving (Show)
@@ -46,7 +49,7 @@ createGcd =
                       OpOperation $
                         CallFunc
                           "gcd"
-                          [OpVariable "y", OpOperation (CallStd Division [OpVariable "x", OpVariable "y"])]
+                          [OpVariable "y", OpOperation (CallStd Modulo [OpVariable "x", OpVariable "y"])]
                 )
             )
         )
@@ -74,38 +77,71 @@ convFunc (Function args output ast) ctx = case createLocalContext args output of
 
 convStruct :: Structure -> Context -> LocalContext -> Either String Insts
 convStruct Resolved _ _ = Left "Err: Resolved unsupported"
-convStruct (Return ope) c l = case convOperable ope c l of
+convStruct (Return _) _ (LocalContext _ Nothing) = Left "Err: Return value in void function"
+convStruct (Return ope) c (LocalContext a (Just fct_type)) =
+  case convOperable ope c (LocalContext a (Just fct_type)) of
+    Left err -> Left err
+    Right (op_compiled, op_type) -> if op_type == fct_type
+      then Right $ op_compiled ++ [Ret]
+      else Left "Err: Return invalid type"
+convStruct (If op ast_then ast_else) c l = case convOperable op c l of
   Left err -> Left err
-  Right insts -> Right $ insts ++ [Ret]
-convStruct (If op ast_then ast_else) c l =
-  concatInner
-    [convOperable op c l,
-    Right [JumpIfFalse (length then_insts)],
-    then_insts,
-    convAst ast_else c l]
-  where
-    then_insts = convAst ast_then c l
-convStruct (Single ast) _ _ = Left "Err: Single unsupported"
-convStruct (Block asts vars) _ _ = Left "Err: Block unsupported"
-convStruct (Sequence asts) _ _ = Left "Err: Sequence unsupported"
+  Right (op_compiled, op_type) -> case convAst ast_then c l of
+    Left err -> Left err
+    Right then_insts -> if numType op_type then
+      concatInner
+        [Right op_compiled,
+        Right [JumpIfFalse (length then_insts)],
+        Right then_insts,
+        convAst ast_else c l]
+      else
+        Left "Err: Operator in if not numerical value"
+convStruct (Single _) _ _ = Left "Err: Single unsupported"
+convStruct (Block _ _) _ _ = Left "Err: Block unsupported"
+convStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"
 
-convOperable :: Operable -> Context -> LocalContext -> Either String Insts
-convOperable (OpValue val) c l = Right [PushD val]
-convOperable (OpVariable name) c (LocalContext hash _) = case hash !? name of
+convOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
+convOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
+convOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
   Nothing -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (Index index, _) -> Right [PushI index]
+  Just (index, var_type) -> Right ([PushI index], var_type)
 convOperable (OpOperation op) c l = convOperation op c l
-convOperable (OpIOPipe op) _ _ = Left "Err: OpIOPipe unsupported"
+convOperable (OpIOPipe _) _ _ = Left "Err: OpIOPipe unsupported"
 
 concatInner :: [Either a [b]] -> Either a [b]
 concatInner = foldl (\a b -> (++) <$> a <*> b) (Right [])
 
-convOperation :: Operation -> Context -> LocalContext -> Either String Insts
+listInner :: [Either a b] -> Either a [b]
+listInner = foldl (\a b -> (++) <$> a <*> ((: []) <$> b)) (Right [])
+
+argsHasError :: Either String [Type] -> [(String, Type)] -> Maybe String
+argsHasError (Left err) _ = Just err
+argsHasError (Right (given_type:xs)) ((arg_name, arg_type):ys) =
+  if given_type == arg_type then
+    argsHasError (Right xs) ys
+  else
+    Just $ "Err: " ++ arg_name ++ " invalid type"
+argsHasError (Right []) (x:xs) = Just "Too few arguments"
+argsHasError (Right (x:xs)) [] = Just "Too many arguments"
+argsHasError (Right []) [] = Nothing
+
+convOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Type)
 convOperation (CallStd builtin ops) c l =
   if length ops == operatorArgCount builtin
-    then (++) <$> concatInner (map (\op -> convOperable op c l) ops) <*> Right [Op builtin]
-    else Left "Err: Invalid number of args"
+    then (\a -> (a, TypeInt)) <$> ((++) <$> concatInner (map (\op -> fst <$> convOperable op c l) ops) <*> Right [Op builtin])
+    else Left $ "Err: Invalid number of args"
+convOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
+  Nothing -> Left "Err: Function name not found"
+  Just (_, func_args, out) -> case argsHasError types func_args of
+      Just err -> Left err
+      Nothing -> (\a -> (a, TypeInt)) <$> compiled
+    where
+      compiled = concat <$> listInner (map (fst <$>) args_compiled)
+      types = listInner $ map (snd <$>) args_compiled
+      args_compiled =  map (\op -> convOperable op (Context ctx) l) ops
 
+  -- trace ((concatMap (\op -> "\n" ++ show (convOperable op (Context ctx) l)) (ops)) ++ (concatMap (\a ->  ("\n") ++ (show $ snd a)) b) ) $ Left "Err: Not finished"
+  -- Just (a, b, c) -> Left $ concat $ map (\a -> show $ snd a) b
 
 --  <$> (\op -> (\a -> a ++ [Op builtin]) <$> convOperable op c l) ops
 convOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a
@@ -119,5 +155,5 @@ convOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a
 \| Pipe Operable Operable -- stdout mapped to stdin ({x.y}, {x <- y})
 -}
 convAst :: Ast -> Context -> LocalContext -> Either String Insts
-convAst (AstStructure struct) = convStruct struct
-convAst (AstOperation op) = convOperation op
+convAst (AstStructure struct) c l = convStruct struct c l
+convAst (AstOperation op) c l = fst <$> convOperation op c l

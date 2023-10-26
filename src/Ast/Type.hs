@@ -5,12 +5,12 @@
 -- AST
 -}
 
-module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..)) where
+module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
 
-import Eval.Atom (Atom)
+import Eval.Atom (Atom (..))
 import Eval.Builtins (Operator)
 
-data Function = Function [(String, Type)] (Maybe Type) Ast
+data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
   = FuncDefinition String Function -- define a function
@@ -47,6 +47,19 @@ data Type
   | TypeInt
   | TypeFloat
   deriving (Show, Eq)
+
+numType :: Type -> Bool
+numType TypeBool = True
+numType TypeChar = True
+numType TypeInt = True
+numType TypeFloat = True
+numType _ = False
+
+atomType :: Atom -> Type
+atomType (AtomB _) = TypeBool
+atomType (AtomC _ _) = TypeChar
+atomType (AtomI _) = TypeInt
+atomType (AtomF _) = TypeFloat
 
 data Ast
   = AstStructure Structure -- structure block ({})
