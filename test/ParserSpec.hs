@@ -1,4 +1,5 @@
 module ParserSpec (parserTests) where
+
 import Test.HUnit
 
 parserTests :: Test

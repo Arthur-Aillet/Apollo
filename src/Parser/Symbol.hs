@@ -8,8 +8,8 @@
 module Parser.Symbol (module Parser.Symbol) where
 
 import Parser.Char (parseAnyChar)
-import Parser.Type (Parser (..))
 import Parser.Syntax (parseSome)
+import Parser.Type (Parser (..))
 
 parseSymbol :: String -> Parser String
 parseSymbol string = Parser $ \s p ->

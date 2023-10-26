@@ -1,10 +1,17 @@
 module Main (main) where
 
+import Ast.Compile (Binary (..), compile, createGcd, createMain)
 import Eval
 import Prelude
-import Data.Either (Either(Right))
 
 main :: IO ()
-main = case exec createEnv [] [Push (Int (-42)), Push (Func "abs"), Call, Ret] [] of
+main =
+  case compile [createMain, createGcd] of
     Left a -> putStrLn a
-    Right a -> print a
+    Right (Binary env main_func) -> do
+      print env
+      print main_func
+      result <- exec env [] main_func []
+      case result of
+        Left a -> putStrLn a
+        Right a -> print a
