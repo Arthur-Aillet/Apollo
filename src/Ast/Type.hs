@@ -8,7 +8,7 @@
 module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
 
 import Eval.Atom (Atom (..))
-import Eval.Builtins (Operator)
+import Eval.Operator (Operator)
 
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 

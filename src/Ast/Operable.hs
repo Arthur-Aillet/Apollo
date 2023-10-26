@@ -14,7 +14,7 @@ import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeInt), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
-import Eval.Builtins (operatorArgCount)
+import Eval.Operator (operatorArgCount)
 import Eval.Instructions (Instruction (..), Insts)
 
 compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
@@ -50,11 +50,11 @@ compOperation (CallStd builtin ops) c l =
     else Left "Err: Invalid number of args"
 compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
   Nothing -> Left "Err: Function name not found"
-  Just (_, func_args, out) -> case argsHasError types func_args of
+  Just (id, func_args, out) -> case argsHasError types func_args of
     Just err -> Left err
-    Nothing -> (\a -> (a, out)) <$> compiled
+    Nothing -> (\a -> (a, out)) <$> ((++) <$> f_comp_args <*> Right [CallD id])
     where
-      compiled = concat <$> listInner (map (fst <$>) args_compiled)
+      f_comp_args = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context ctx) l) ops
 compOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a

@@ -20,10 +20,21 @@ import Ast.Type
     numType,
   )
 import Data.HashMap.Lazy (empty)
-import Eval.Builtins
+import Eval.Operator
 import Eval.Exec
 
 data Binary = Binary Env Func deriving (Show)
+
+createMain :: Definition
+createMain = FuncDefinition
+    "main"
+    (Function
+        []
+        (Just TypeInt)
+        (AstStructure $ Return $ OpOperation $ CallFunc
+        "gcd"
+        [OpValue (AtomI 4), OpValue (AtomI 2)])
+    )
 
 createGcd :: Definition
 createGcd =
@@ -50,7 +61,10 @@ createGcd =
 compile :: [Definition] -> Either String Binary
 compile defs = case createCtx defs (Context empty) 0 of
   Left str -> Left str
-  Right ctx -> compAllFunc defs (Binary [] []) ctx
+  Right ctx -> case compAllFunc defs (Binary [] []) ctx of
+    Left err -> Left err
+    Right (Binary _ []) -> Left "Err: no main function found"
+    other -> other
 
 compAllFunc :: [Definition] -> Binary -> Context -> Either String Binary
 compAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx =
