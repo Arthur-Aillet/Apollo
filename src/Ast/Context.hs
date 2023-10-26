@@ -25,6 +25,7 @@ attachIndex [] _ = []
 attachIndex ((str, t) : xs) acc = (str, (acc, t)) : attachIndex xs (acc + 1)
 
 createCtx :: [Definition] -> Context -> Int -> Either String Context
+createCtx (FuncDefinition "main" _ : xs) ctx nbr = createCtx xs ctx nbr
 createCtx (FuncDefinition name (Function args rval _) : xs) (Context ctx) nbr =
   createCtx xs (Context $ insert name (nbr, args, rval) ctx) (nbr + 1)
 createCtx (VarDefinition _ _ : _) _ _ =
