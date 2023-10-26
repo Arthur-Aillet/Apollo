@@ -5,6 +5,9 @@
 -- AST To Insts Operable
 -}
 
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use tuple-section" #-}
+
 module Ast.Operable (concatInner, convOperable, convOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
@@ -31,8 +34,8 @@ argsHasError (Right (given_type : xs)) ((arg_name, arg_type) : ys) =
   if given_type == arg_type
     then argsHasError (Right xs) ys
     else Just $ "Err: " ++ arg_name ++ " invalid type"
-argsHasError (Right []) (x : xs) = Just "Too few arguments"
-argsHasError (Right (x : xs)) [] = Just "Too many arguments"
+argsHasError (Right []) (_ : _) = Just "Too few arguments"
+argsHasError (Right (_ : _)) [] = Just "Too many arguments"
 argsHasError (Right []) [] = Nothing
 
 convOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)

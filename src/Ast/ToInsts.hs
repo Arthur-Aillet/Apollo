@@ -7,7 +7,7 @@
 
 module Ast.ToInsts (module Ast.ToInsts) where
 
-import Ast.Context (Context (..), Index (..), LocalContext (..), createCtx, createLocalContext)
+import Ast.Context (Context (..), LocalContext (..), createCtx, createLocalContext)
 import Ast.Operable (concatInner, convOperable, convOperation)
 import Ast.Type
   ( Ast (..),
@@ -17,16 +17,11 @@ import Ast.Type
     Operation (CallFunc, CallStd),
     Structure (..),
     Type (..),
-    atomType,
     numType,
   )
-import Ast.Utils ((++++))
-import Data.HashMap.Lazy (empty, (!?))
-import Debug.Trace
-import Eval.Atom (Atom (AtomI))
+import Data.HashMap.Lazy (empty)
 import Eval.Builtins
 import Eval.Exec
-import Eval.Instructions
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -60,7 +55,7 @@ toInsts defs = case createCtx defs (Context empty) 0 of
 convAllFunc :: [Definition] -> Binary -> Context -> Either String Binary
 convAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx = case convFunc func ctx of
   Left err -> Left err
-  Right func -> convAllFunc xs (Binary env func) ctx
+  Right function -> convAllFunc xs (Binary env function) ctx
 convAllFunc ((VarDefinition _ _) : _) _ _ = Left "Error: Global Variables not supported yet"
 convAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env funcs) ctx = case convFunc (Function args y z) ctx of
   Left err -> Left err
