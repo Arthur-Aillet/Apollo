@@ -10,6 +10,7 @@ module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, 
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, execOperator)
+import Debug.Trace (trace)
 
 type Env = [(Int, Func)]
 
@@ -45,8 +46,8 @@ exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
   Left err -> return $ Left err
   Right arg -> exec env args xs (arg : stack)
 exec env args ((Op op) : xs) stack = case execOperator stack op of
-  Right new_stack -> exec env args xs new_stack
   Left err -> return $ Left err
+  Right new_stack -> exec env args xs new_stack
 exec env _ ((CallD func_index) : xs) stack = case getElem func_index env of
   Left err -> return $ Left err
   Right (args_nbr, insts) -> exec env start (insts ++ xs) end

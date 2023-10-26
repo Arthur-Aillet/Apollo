@@ -38,7 +38,7 @@ operate Division = \[a, b] ->
     else Left "Division by zero"
 operate Modulo = \[a, b] ->
   if b /= 0
-    then Right (a / b)
+    then Right (mod a b)
     else Left "Modulo by zero"
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Less = \[a, b] -> Right $ AtomB $ a < b
