@@ -77,7 +77,7 @@ compOperation (CallStd builtin ops) c l = case defsOp builtin of
   (OperatorDef argCount Equality) -> compEquality builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
+compOperation (CallFunc func ops) (Context c) l = case c !? func of
   Nothing -> Left "Err: Function name not found"
   Just (nb, func_args, out) -> case argsHasError types func_args of
     Just err -> Left err
@@ -85,5 +85,5 @@ compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
     where
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
-      args_compiled = map (\op -> compOperable op (Context ctx) l) (reverse ops)
+      args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
 compOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a

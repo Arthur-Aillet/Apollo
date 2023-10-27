@@ -1,9 +1,9 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- Atom
---
+-}
 
 module Eval.Atom
   ( Atom (..),
@@ -53,19 +53,18 @@ fAtom x = case iAtom x of
 atomCast :: (Atom -> Atom -> a) -> Atom -> Atom -> a
 atomCast f (AtomF a) b = f (AtomF a) (fAtom b)
 atomCast f a (AtomF b) = f (fAtom a) (AtomF b)
-atomCast f a b = case a of
-  AtomB _ -> case b of
-    AtomB _ -> f a b
-    AtomC _ _ -> f (cAtom a) b
-    AtomI _ -> f (iAtom a) b
-  AtomC _ _ -> case b of
-    AtomB _ -> f a (cAtom b)
-    AtomC _ _ -> f a b
-    AtomI _ -> f a (cAtom b)
-  AtomI _ -> case b of
-    AtomB _ -> f a (iAtom b)
-    AtomC _ _ -> f (cAtom a) b
-    AtomI _ -> f a b
+atomCast f (AtomB a) b = case b of
+  AtomB _ -> f (AtomB a) b
+  AtomC _ _ -> f (cAtom (AtomB a)) b
+  AtomI _ -> f (iAtom (AtomB a)) b
+atomCast f (AtomC a a2) b = case b of
+  AtomB _ -> f (AtomC a a2) (cAtom b)
+  AtomC _ _ -> f (AtomC a a2) b
+  AtomI _ -> f (AtomC a a2) (cAtom b)
+atomCast f (AtomI a) b = case b of
+  AtomB _ -> f (AtomI a) (iAtom b)
+  AtomC _ _ -> f (cAtom (AtomI a)) b
+  AtomI _ -> f (AtomI a) b
 
 instance Num Atom where
   (+) (AtomB a) (AtomB b) = AtomB (a || b)

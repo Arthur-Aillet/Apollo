@@ -1,13 +1,12 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- Exec
---
+-}
 
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
-import Debug.Trace (trace)
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, execOperator)
@@ -15,23 +14,6 @@ import Eval.Operator (Operator (..), Stack, execOperator)
 type Env = [(Int, Func)]
 
 type Args = [Atom]
-
-absFunc :: Func
-absFunc =
-  [ PushI 0,
-    PushD (AtomI 0),
-    Op Less,
-    JumpIfFalse 2,
-    PushI 0,
-    Ret,
-    PushI 0,
-    PushD (AtomI (-1)),
-    Op Multiplication,
-    Ret
-  ]
-
-createEnv :: Env
-createEnv = [(1, absFunc)]
 
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"

@@ -1,9 +1,9 @@
 module Main (main) where
 
 import Ast.Compile (Binary (..), compile)
+import Ast.Type
 import Eval
 import Prelude
-import Ast.Type
 
 createAbs :: Definition
 createAbs =
@@ -42,7 +42,8 @@ createFib =
                               CallStd
                                 Addition
                                 [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Subtraction [OpVariable "n", OpValue (AtomI 1)]],
-                                  OpOperation $ CallFunc "fib" [OpOperation $ CallStd Subtraction [OpVariable "n", OpValue (AtomI 2)]]]
+                                  OpOperation $ CallFunc "fib" [OpOperation $ CallStd Subtraction [OpVariable "n", OpValue (AtomI 2)]]
+                                ]
                       )
                 )
             )
@@ -54,15 +55,19 @@ createSub =
   FuncDefinition
     "sub"
     ( Function
-      [("a", TypeInt), ("b", TypeInt)]
-      (Just TypeInt)
-      ( AstStructure $
-            Return $ OpOperation $ CallStd Subtraction [
-              OpVariable "a",
-              OpVariable "b"
-              ]
+        [("a", TypeInt), ("b", TypeInt)]
+        (Just TypeInt)
+        ( AstStructure $
+            Return $
+              OpOperation $
+                CallStd
+                  Subtraction
+                  [ OpVariable "a",
+                    OpVariable "b"
+                  ]
         )
     )
+
 createMain :: Definition
 createMain =
   FuncDefinition
@@ -71,7 +76,9 @@ createMain =
         []
         (Just TypeInt)
         ( AstStructure $
-            Return $ OpOperation $ CallFunc "fib" [OpValue (AtomI 14)]
+            Return $
+              OpOperation $
+                CallFunc "fib" [OpValue (AtomI 14)]
         )
     )
 

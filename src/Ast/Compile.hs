@@ -13,8 +13,6 @@ import Ast.Type
   ( Ast (..),
     Definition (..),
     Function (..),
-    Operable (..),
-    Operation (CallFunc, CallStd),
     Structure (..),
     Type (..),
     numType,
