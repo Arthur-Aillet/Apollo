@@ -56,14 +56,20 @@ compCalculus op args count = case opeValidArgs args count Nothing of
   Left err -> Left err
   Right return_type ->
     (\a -> (a, Just return_type))
-      <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op op])
+      <$> ( (++)
+              <$> (concatInner (map (fst <$>) (reverse args)))
+              <*> Right [Op op]
+          )
 
 compEquality :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
 compEquality op args count = case opeValidArgs args count Nothing of
   Left err -> Left err
   Right _ ->
     (\a -> (a, Just TypeBool))
-      <$> ((++) <$> concatInner (map (fst <$>) args) <*> Right [Op op])
+      <$> ( (++)
+              <$> (concatInner (map (fst <$>) (reverse args)))
+              <*> Right [Op op]
+          )
 
 compOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l = case defsOp builtin of
@@ -71,13 +77,13 @@ compOperation (CallStd builtin ops) c l = case defsOp builtin of
   (OperatorDef argCount Equality) -> compEquality builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallFunc func ops) (Context ctx) l = case ctx !? func of
+compOperation (CallFunc func ops) (Context c) l = case c !? func of
   Nothing -> Left "Err: Function name not found"
   Just (nb, func_args, out) -> case argsHasError types func_args of
     Just err -> Left err
-    Nothing -> (\a -> (a, out)) <$> ((++) <$> f_comp_args <*> Right [CallD nb])
+    Nothing -> (\a -> (a, out)) <$> ((++) <$> fca <*> Right [CallD nb])
     where
-      f_comp_args = concat <$> listInner (map (fst <$>) args_compiled)
+      fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
-      args_compiled = map (\op -> compOperable op (Context ctx) l) ops
+      args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
 compOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a
