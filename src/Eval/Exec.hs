@@ -1,34 +1,19 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- Exec
---
+-}
 
-module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Builtins) where
+module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
 import Eval.Atom (Atom (..))
-import Eval.Instructions (Instruction (..), Insts, moveForward, Index, Func)
-import Eval.Builtins (Operator (..), execOperator, Stack, Value (..))
+import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
+import Eval.Operator (Operator (..), execOperator, Stack, Value (..))
 
-type Env = [(Int, Func)];
-type Args = [Value];
+type Env = [(Int, Func)]
 
-absFunc :: Func
-absFunc = [
-  PushI 0,
-  PushD (AtomI 0),
-  Op Less,
-  JumpIfFalse 2,
-  PushI 0,
-  Ret,
-  PushI 0,
-  PushD (AtomI (-1)),
-  Op Multiplication,
-  Ret]
-
-createEnv :: Env
-createEnv = [(1, absFunc)]
+type Args = [Value]
 
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
@@ -38,24 +23,29 @@ getElem nb list
   | otherwise = Right (last (take (nb + 1) list))
 
 exec :: Env -> Args -> Insts -> Stack -> IO (Either String Value)
-exec env args ((PushD val) : xs) stack = exec env args xs (VAtom val:stack)
+exec env args ((PushD val) : xs) stack = exec env args xs (VAtom val : stack)
 exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
   Left err -> return $ Left err
-  Right arg -> exec env args xs (arg:stack)
+  Right arg -> exec env args xs (arg : stack)
 exec env args ((Op op) : xs) stack = case execOperator stack op of
-  Right new_stack -> exec env args xs new_stack
   Left err -> return $ Left err
-exec env _ ((CallD func_index) : xs) stack = exec env start (insts ++ xs) end
-  where
-    (start, end) = splitAt args_nbr stack
-    (args_nbr, insts) = env !! func_index
-exec env args ((JumpIfFalse line) : xs) (VAtom y:ys) =
+  Right new_stack -> exec env args xs new_stack
+exec env args ((CallD func_index) : xs) stack = case getElem func_index env of
+  Left err -> return $ Left err
+  Right (args_nbr, insts) -> do
+    result <- exec env start insts []
+    case result of
+      Left err -> return $ Left err
+      Right value -> exec env args xs (value : end)
+    where
+      (start, end) = splitAt args_nbr stack
+exec env args ((JumpIfFalse line) : xs) (VAtom y : ys) =
   if y == 0
-  then case moveForward line xs of
+    then case moveForward line xs of
       Left a -> return $ Left a
       Right valid -> exec env args valid ys
-  else exec env args xs ys
-exec _ _ (Ret:_) (x:_) = return $ Right x
-exec _ _ (Ret:_) _ = return $ Left "Error: Return with empty stack"
+    else exec env args xs ys
+exec _ _ (Ret : _) (y : _) = return $ Right y
+exec _ _ (Ret : _) _ = return $ Left "Error: Return with empty stack"
 exec _ _ [] _ = return $ Left "Error: Missing return"
 exec _ _ _ _ = return $ Left "Error: Undefined Yet"

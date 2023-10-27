@@ -1,0 +1,52 @@
+
+<LetterMin>             = "a" | .. | "z";
+<LetterMaj>             = "A" | .. | "Z";
+<Letter>                = <LetterMin> | <LetterMaj>;
+<Decimal>               = "0" | .. | "9";
+<Hexadecimal>           = "0" | .. | "F";
+<SpecialCharCall>       = "_" | "-";
+<SpecialChars>          = "(" | ")" | "\\" | "/" | "[" |"]" | "\"" | "'" | <SpecialCharCall>;
+<String>                = {(<Letter> | <Decimal> | <SpecialCharCall>)}-;
+
+<PosNumber>             = {<Decimal>}-;
+<NegNumber>             = "-" <PosNumber>;
+<PosFloat>              = <PosNumber> "." <PosNumber>;
+<NegFloat>              = <NegNumber> "." <PosNumber>;
+
+<HexaNumber>            = "0x"{<Hexadecimal>}-;
+<Number>                = <PosNumber> | <NegNumber> | HexaNumber;
+<Float>                 = <PosFloat> | <NegFloat>;
+<StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
+<List>                  = "[" <ElemSeparateByComa> "]";
+<Bool>                  = "true" | "false";
+<Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
+
+<Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <FuncCall>;
+<ElemSeparateByComa>    = [<Elem>] | <Elem> {("," <Elem>)};
+
+<Predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">=";
+<BoolOperator>          = "&&" | "||";
+<Not>                   = "!";
+<Condition>             = [<Not>] <Elem> <Predicat> <Elem> | [<Not> "("] <Condition> <BoolOperator> <Condition> [")"];
+
+<DeclareVariable>       = <Type> <String>;
+<SetVariable>           = <DeclareVariable> = <Elem>;
+
+<Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
+
+<StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" [ "else {" <Instructions> "}" ];
+<DefaultCase>           = "default :" <Instructions>;
+<StructureCase>         = "case " <Elem> ": " <Instructions>;
+<StructureSwitch>       = "switch (" <Elem> ") {" {<StructureCase>} [<DefaultCase>] "}";
+<FunctionDef>           = "def" <String> "(" <Parameters> ")" "{" <Instructions> "}";
+
+<FuncCall>              = <string> "(" {<Elem>} ")";
+<ShellCall>             = "$"<String> "(" <ElemSeparateByComa> ")";
+<Call>                  = <FuncCall> | <ShellCall>
+
+<Return>                = "return (" <Elem> ");";
+<Then>                  = <Call> ">>" <Call>;
+<Bind>                  = <DeclareVariable> "<-" <Call>;
+
+<Instruction>           = <StructureIf> | <StructureSwitch> | <Call> | <Return> | <SetVariable> | <DeclareVariable>";";
+<Instructions>          = {<Instruction>};
