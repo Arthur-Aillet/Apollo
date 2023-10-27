@@ -9,12 +9,18 @@ module Eval.Builtins (
   execOperator,
   operate,
   Operator (..),
+  Value (..),
   Stack
 ) where
 
 import Eval.Atom (Atom (..))
 
-type Stack = [Atom];
+data Value
+  = VAtom Atom
+  -- | List [Atom]
+  deriving (Show)
+
+type Stack = [Value];
 
 data Operator
     = Addition
@@ -48,11 +54,18 @@ operatorArgCount Modulo          = 2
 operatorArgCount Eq              = 2
 operatorArgCount Less            = 2
 
+isAllAtoms :: [Value] -> Either String [Atom]
+isAllAtoms (VAtom x:xs) = (x:) <$> isAllAtoms xs
+isAllAtoms [] = Right []
+isAllAtoms _ = Left "Not all primitives"
+
 execOperator :: Stack -> Operator -> Either String Stack
 execOperator stack op = if length (take count stack) >= count
-        then case operate op top of
-            Right res -> Right (res : bottom)
+        then case isAllAtoms top of
             Left x -> Left x
+            Right top' -> case operate op top' of
+                Left x -> Left x
+                Right res -> Right (VAtom res : bottom)
         else Left "not enough arguments in the stack"
     where
         (top, bottom) = splitAt count stack
