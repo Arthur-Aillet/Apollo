@@ -48,9 +48,13 @@ exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
 exec env args ((Op op) : xs) stack = case execOperator stack op of
   Left err -> return $ Left err
   Right new_stack -> exec env args xs new_stack
-exec env _ ((CallD func_index) : xs) stack = case getElem func_index env of
+exec env args ((CallD func_index) : xs) stack = case getElem func_index env of
   Left err -> return $ Left err
-  Right (args_nbr, insts) -> exec env start (insts ++ xs) end
+  Right (args_nbr, insts) -> do
+    result <- exec env start insts []
+    case result of
+      Left err -> return $ Left err
+      Right atom -> exec env args xs (atom : end)
     where
       (start, end) = splitAt args_nbr stack
 exec env args ((JumpIfFalse line) : xs) (y : ys) =
@@ -59,7 +63,7 @@ exec env args ((JumpIfFalse line) : xs) (y : ys) =
       Left a -> return $ Left a
       Right valid -> exec env args valid ys
     else exec env args xs ys
-exec _ _ (Ret : _) (x : _) = return $ Right x
+exec _ _ (Ret : _) (y : _) = return $ Right y
 exec _ _ (Ret : _) _ = return $ Left "Error: Return with empty stack"
 exec _ _ [] _ = return $ Left "Error: Missing return"
 exec _ _ _ _ = return $ Left "Error: Undefined Yet"

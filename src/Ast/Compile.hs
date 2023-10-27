@@ -21,47 +21,8 @@ import Ast.Type
   )
 import Data.HashMap.Lazy (empty)
 import Eval.Exec
-import Eval.Operator
 
 data Binary = Binary Env Func deriving (Show)
-
-createMain :: Definition
-createMain =
-  FuncDefinition
-    "main"
-    ( Function
-        []
-        (Just TypeInt)
-        ( AstStructure $
-            Return $
-              OpOperation $
-                CallFunc
-                  "gcd"
-                  [OpValue (AtomI 4), OpValue (AtomI 2)]
-        )
-    )
-
-createGcd :: Definition
-createGcd =
-  FuncDefinition
-    "gcd"
-    ( Function
-        [("x", TypeInt), ("y", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure
-            ( If
-                (OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"])
-                (AstStructure $ Return $ OpVariable "x")
-                ( AstStructure $
-                    Return $
-                      OpOperation $
-                        CallFunc
-                          "gcd"
-                          [OpVariable "y", OpOperation (CallStd Modulo [OpVariable "x", OpVariable "y"])]
-                )
-            )
-        )
-    )
 
 compile :: [Definition] -> Either String Binary
 compile defs = case createCtx defs (Context empty) 0 of
@@ -124,7 +85,6 @@ compStruct (If op ast_then ast_else) c l = case compOperable op c l of
       compIf op_compiled (compAst ast_else c l) TypeBool then_insts
   Right (_, op_type) ->
     Left $ "Err: If wait boolean and not " ++ show op_type
-
 compStruct (Single _) _ _ = Left "Err: Single unsupported"
 compStruct (Block _ _) _ _ = Left "Err: Block unsupported"
 compStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"
