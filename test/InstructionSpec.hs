@@ -21,6 +21,23 @@ instructionTests =
     [ moveForwardTests
     ]
 
+absFunc :: Func
+absFunc =
+  [ PushI 0,
+    PushD (AtomI 0),
+    Op Less,
+    JumpIfFalse 2,
+    PushI 0,
+    Ret,
+    PushI 0,
+    PushD (AtomI (-1)),
+    Op Multiplication,
+    Ret
+  ]
+
+createEnv :: Env
+createEnv = [(1, absFunc)]
+
 moveForwardTests :: Test
 moveForwardTests =
   TestList
