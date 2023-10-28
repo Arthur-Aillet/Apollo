@@ -85,4 +85,4 @@ compStruct (If op ast_then ast_else) c l = case compOperable op c l of
     Left $ "Err: If wait boolean and not " ++ show op_type
 compStruct (Single _) _ _ = Left "Err: Single unsupported"
 compStruct (Block _ _) _ _ = Left "Err: Block unsupported"
-compStruct (Sequence _) _ _ = Left "Err: Sequence unsupported"
+compStruct (Sequence insts) c l = concatInner $ map (\a -> compAst a c l) insts

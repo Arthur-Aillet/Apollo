@@ -68,20 +68,6 @@ createSub =
         )
     )
 
-createMain :: Definition
-createMain =
-  FuncDefinition
-    "main"
-    ( Function
-        []
-        (Just TypeInt)
-        ( AstStructure $
-            Return $
-              OpOperation $
-                CallFunc "fib" [OpValue (AtomI 14)]
-        )
-    )
-
 createGcd :: Definition
 createGcd =
   FuncDefinition
@@ -101,6 +87,24 @@ createGcd =
                           [OpVariable "y", OpOperation (CallStd Modulo [OpVariable "x", OpVariable "y"])]
                 )
             )
+        )
+    )
+
+createMain :: Definition
+createMain =
+  FuncDefinition
+    "main"
+    ( Function
+        []
+        (Just TypeInt)
+        ( AstStructure $ Sequence [
+            AstOperation $
+              CallFunc "fib" [OpValue (AtomI 14)],
+            AstStructure $
+              Return $
+                OpOperation $
+                  CallFunc "fib" [OpValue (AtomI 14)]
+          ]
         )
     )
 
