@@ -68,10 +68,9 @@ atomCast f (AtomI a) b = case b of
 
 instance Num Atom where
   (+) (AtomB a) (AtomB b) = AtomB (a || b)
-  (+) (AtomC a sa) (AtomC b sb) =
-    if res <= 0
-      then AtomC (toEnum (abs res)) True
-      else AtomC (toEnum res) False
+  (+) (AtomC a sa) (AtomC b sb)
+    | res <= 0 = AtomC (toEnum (abs res)) True
+    | otherwise = AtomC (toEnum res) False
     where
       res =
         (if sa then negate else id) (fromEnum a)
@@ -82,10 +81,9 @@ instance Num Atom where
   (+) a b = atomCast (+) a b
 
   (*) (AtomB a) (AtomB b) = AtomB (a && b)
-  (*) (AtomC a sa) (AtomC b sb) =
-    if res <= 0
-      then AtomC (toEnum (abs res)) True
-      else AtomC (toEnum res) False
+  (*) (AtomC a sa) (AtomC b sb)
+    | res <= 0 = AtomC (toEnum (abs res)) True
+    | otherwise = AtomC (toEnum res) False
     where
       res =
         (if sa then negate else id) (fromEnum a)

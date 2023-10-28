@@ -20,7 +20,6 @@ import Ast.Type
   )
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
-import Data.Bool (Bool(False))
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -54,16 +53,15 @@ compAst (AstOperation op) c l =
   (\a -> (a, l)) <$> (fst <$> compOperation op c l)
 
 compIf :: Insts -> Either String Insts -> Type -> Insts -> Either String Insts
-compIf op_compiled else_comp op_type then_insts =
-  if numType op_type
-    then
+compIf op_compiled else_comp op_type then_insts
+  | numType op_type =
       concatInner
         [ Right op_compiled,
           Right [JumpIfFalse (length then_insts)],
           Right then_insts,
           else_comp
         ]
-    else Left "Err: Operator in if not numerical value"
+  | otherwise = Left "Err: Operator in if not numerical value"
 
 packCompIf :: Insts -> Ast -> Context -> LocalContext -> (Insts, LocalContext) -> Either String (Insts, LocalContext)
 packCompIf op_compiled ast_else c l then_insts =
@@ -78,10 +76,9 @@ compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Co
 compVarDefinition op hmap r vtype name c =
   case compOperable op c (LocalContext hmap r) of
     Left err -> Left err
-    Right (insts, op_type) ->
-      if op_type == vtype
-        then Right (insts ++ [Store], new_local)
-        else Left "Err: Variable recieved invalid type"
+    Right (insts, op_type)
+      | op_type == vtype -> Right (insts ++ [Store], new_local)
+      | otherwise -> Left "Err: Variable recieved invalid type"
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
@@ -93,10 +90,10 @@ compStruct (Return _) _ (LocalContext _ Nothing) =
 compStruct (Return ope) c (LocalContext a (Just fct_type)) =
   case compOperable ope c (LocalContext a (Just fct_type)) of
     Left err -> Left err
-    Right (op_compiled, op_type) ->
-      if op_type == fct_type
-        then Right (op_compiled ++ [Ret], LocalContext a (Just fct_type))
-        else Left "Err: Return invalid type"
+    Right (op_compiled, op_type)
+      | op_type == fct_type ->
+          Right (op_compiled ++ [Ret], LocalContext a (Just fct_type))
+      | otherwise -> Left "Err: Return invalid type"
 compStruct (If op ast_then ast_else) c l = case compOperable op c l of
   Left err -> Left err
   Right (op_compiled, TypeBool) -> case compAst ast_then c l of
@@ -113,10 +110,9 @@ compStruct (Sequence (x : xs)) c l = case compAst x c l of
       <$> Right (insts, new_local)
       <*> compStruct (Sequence xs) c new_local
 compStruct (Sequence []) _ l = Right ([], l)
-compStruct (VarDefinition name vtype content) c (LocalContext vs r) =
-  if name `member` vs
-    then Left "Err: Variable with name already exist"
-    else case content of
+compStruct (VarDefinition name vtype content) c (LocalContext vs r)
+  | name `member` vs = Left "Err: Variable with name already exist"
+  | otherwise = case content of
       Nothing ->
         Right
           ( [],
@@ -131,7 +127,7 @@ compStruct (VarAssignation name op) c (LocalContext hmap r) =
       Right (insts, rtype)
         | wtype == rtype ->
             Right
-              ( insts ++ [Assign index], LocalContext hmap r )
+              (insts ++ [Assign index], LocalContext hmap r)
         | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
     Just (_, wtype, False) -> case compOperable op c (LocalContext hmap r) of
       Left err -> Left err

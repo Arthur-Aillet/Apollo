@@ -64,12 +64,11 @@ defsOp Eq = OperatorDef 2 Equality
 defsOp Less = OperatorDef 2 Equality
 
 execOperator :: Stack -> Operator -> Either String Stack
-execOperator stack op =
-  if length (take count stack) >= count
-    then case operate op top of
+execOperator stack op
+  | length (take count stack) >= count = case operate op top of
       Right res -> Right (res : bottom)
       Left x -> Left x
-    else Left "not enough arguments in the stack"
+  | otherwise = Left "not enough arguments in the stack"
   where
     (top, bottom) = splitAt count stack
     (OperatorDef count _) = defsOp op
