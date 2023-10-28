@@ -20,8 +20,9 @@ import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
 compOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
-  Nothing -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (index, var_type) -> Right ([PushI index], var_type)
+  Nothing -> Left $ "Variable: " ++ name ++ " never declared"
+  Just (_, _, False) -> Left $ "Variable: " ++ name ++ " never defined"
+  Just (index, var_type, True) -> Right ([PushI index], var_type)
 compOperable (OpOperation op) c l = case compOperation op c l of
   Left err -> Left err
   Right (_, Nothing) -> Left "Err: op has no return type"
@@ -30,10 +31,9 @@ compOperable (OpIOPipe _) _ _ = Left "Err: OpIOPipe unsupported"
 
 argsHasError :: Either String [Type] -> [(String, Type)] -> Maybe String
 argsHasError (Left err) _ = Just err
-argsHasError (Right (given_type : xs)) ((arg_name, arg_type) : ys) =
-  if given_type == arg_type
-    then argsHasError (Right xs) ys
-    else Just $ "Err: " ++ arg_name ++ " invalid type"
+argsHasError (Right (given_type : xs)) ((arg_name, arg_type) : ys)
+  | given_type == arg_type = argsHasError (Right xs) ys
+  | otherwise = Just $ "Err: " ++ arg_name ++ " invalid type"
 argsHasError (Right []) (_ : _) = Just "Too few arguments"
 argsHasError (Right (_ : _)) [] = Just "Too many arguments"
 argsHasError (Right []) [] = Nothing
@@ -46,10 +46,9 @@ opeValidArgs (Right _ : _) 0 (Just _) = Left "Err: Builtin, Too many arguments"
 opeValidArgs [] _ Nothing = Left "Err: Builtin, No arguments given"
 opeValidArgs (Right (_, arg_type) : xs) nbr Nothing =
   opeValidArgs xs (nbr - 1) (Just arg_type)
-opeValidArgs (Right (_, arg_type) : xs) nbr (Just waited_type) =
-  if arg_type == waited_type
-    then opeValidArgs xs (nbr - 1) (Just waited_type)
-    else Left "Err: Builtin different types given"
+opeValidArgs (Right (_, arg_type) : xs) nbr (Just waited_type)
+  | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
+  | otherwise = Left "Err: Builtin different types given"
 
 compCalculus :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of
@@ -67,7 +66,7 @@ compEquality op args count = case opeValidArgs args count Nothing of
   Right _ ->
     (\a -> (a, Just TypeBool))
       <$> ( (++)
-              <$> (concatInner (map (fst <$>) (reverse args)))
+              <$> concatInner (map (fst <$>) (reverse args))
               <*> Right [Op op]
           )
 

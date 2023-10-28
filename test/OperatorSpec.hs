@@ -35,8 +35,8 @@ operateTest =
 execOperatorTest :: Test
 execOperatorTest =
   TestList
-    [ "execOperator 2 in stack" ~: execOperator [AtomI 1, AtomI 2] Addition ~?= Right [AtomI 3],
-      "execOperator 1 in stack" ~: execOperator [AtomI 1] Addition ~?= Left "not enough arguments in the stack",
+    [ "execOperator 2 in stack" ~: execOperator [VAtom (AtomI 1), VAtom (AtomI 2)] Addition ~?= Right [VAtom (AtomI 3)],
+      "execOperator 1 in stack" ~: execOperator [VAtom (AtomI 1)] Addition ~?= Left "not enough arguments in the stack",
       "execOperator 0 in stack" ~: execOperator [] Addition ~?= Left "not enough arguments in the stack",
-      "execOperator inf in stack" ~: head <$> execOperator (repeat (AtomI 1)) Addition ~?= Right (AtomI 2)
+      "execOperator inf in stack" ~: head <$> execOperator (repeat (VAtom (AtomI 1))) Addition ~?= Right (VAtom (AtomI 2))
     ]
