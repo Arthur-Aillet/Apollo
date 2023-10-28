@@ -21,10 +21,10 @@ import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
-  -- | List [Atom]
-  deriving (Show, Eq)
+  deriving (-- | List [Atom]
+            Show, Eq)
 
-type Stack = [Value];
+type Stack = [Value]
 
 type ArgsNbr = Int
 
@@ -36,14 +36,14 @@ data OperatorType
   deriving (Show, Eq)
 
 data Operator
-    = Addition
-    | Subtraction
-    | Multiplication
-    | Division
-    | Modulo
-    | Eq
-    | Less
-    deriving (Show, Eq)
+  = Addition
+  | Subtraction
+  | Multiplication
+  | Division
+  | Modulo
+  | Eq
+  | Less
+  deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
 operate Addition = Right . sum
@@ -55,8 +55,8 @@ operate Division = \[a, b] ->
     else Left "Division by zero"
 operate Modulo = \[a, b] ->
   if b /= 0
-      then Right (a `mod` b)
-      else Left "Modulo by zero"
+    then Right (a `mod` b)
+    else Left "Modulo by zero"
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Less = \[a, b] -> Right $ AtomB $ a < b
 
@@ -70,16 +70,16 @@ defsOp Eq = OperatorDef 2 Equality
 defsOp Less = OperatorDef 2 Equality
 
 operatorArgCount :: Operator -> Int
-operatorArgCount Addition        = 2
-operatorArgCount Subtraction     = 2
-operatorArgCount Multiplication  = 2
-operatorArgCount Division        = 2
-operatorArgCount Modulo          = 2
-operatorArgCount Eq              = 2
-operatorArgCount Less            = 2
+operatorArgCount Addition = 2
+operatorArgCount Subtraction = 2
+operatorArgCount Multiplication = 2
+operatorArgCount Division = 2
+operatorArgCount Modulo = 2
+operatorArgCount Eq = 2
+operatorArgCount Less = 2
 
 isAllAtoms :: [Value] -> Either String [Atom]
-isAllAtoms (VAtom x:xs) = (x:) <$> isAllAtoms xs
+isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
 isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 

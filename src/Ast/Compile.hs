@@ -7,7 +7,7 @@
 
 module Ast.Compile (module Ast.Compile) where
 
-import Ast.Context (Context (..), LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex, CurrentReturnType)
+import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
 import Ast.Operable (compOperable, compOperation, concatInner)
 import Ast.Type
   ( Ast (..),

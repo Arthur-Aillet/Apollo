@@ -9,7 +9,7 @@ module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, 
 
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
-import Eval.Operator (Operator (..), execOperator, Stack, Value (..))
+import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
 
 type Env = [(Int, Func)]
 
@@ -40,8 +40,8 @@ exec env args ((CallD func_index) : xs) stack = case getElem func_index env of
     where
       (start, end) = splitAt args_nbr stack
 exec env args ((JumpIfFalse line) : xs) (VAtom 0 : ys) = case moveForward line xs of
-      Left a -> return $ Left a
-      Right valid -> exec env args valid ys
+  Left a -> return $ Left a
+  Right valid -> exec env args valid ys
 exec env args ((JumpIfFalse _) : xs) (_ : ys) = exec env args xs ys
 exec env args (Store : xs) (y : ys) = exec env (args ++ [y]) xs ys
 exec env args (Assign idx : xs) (y : ys) = case getElem idx args of
