@@ -45,6 +45,7 @@ exec env args ((JumpIfFalse line) : xs) (y : ys) =
       Left a -> return $ Left a
       Right valid -> exec env args valid ys
     else exec env args xs ys
+exec env args (Store:xs) (y:ys) = exec env (args ++ [y]) xs ys
 exec _ _ (Ret : _) (y : _) = return $ Right y
 exec _ _ (Ret : _) _ = return $ Left "Error: Return with empty stack"
 exec _ _ [] _ = return $ Left "Error: Missing return"

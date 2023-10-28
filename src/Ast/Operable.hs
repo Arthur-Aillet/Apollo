@@ -20,8 +20,9 @@ import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
 compOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
-  Nothing -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (index, var_type) -> Right ([PushI index], var_type)
+  Nothing -> Left $ "Variable: " ++ name ++ " never declared"
+  Just (_, _, False) -> Left $ "Variable: " ++ name ++ " never defined"
+  Just (index, var_type, True) -> Right ([PushI index], var_type)
 compOperable (OpOperation op) c l = case compOperation op c l of
   Left err -> Left err
   Right (_, Nothing) -> Left "Err: op has no return type"
@@ -67,7 +68,7 @@ compEquality op args count = case opeValidArgs args count Nothing of
   Right _ ->
     (\a -> (a, Just TypeBool))
       <$> ( (++)
-              <$> (concatInner (map (fst <$>) (reverse args)))
+              <$> concatInner (map (fst <$>) (reverse args))
               <*> Right [Op op]
           )
 

@@ -23,6 +23,7 @@ type Func = [Instruction]
 
 data Instruction
   = PushD Atom
+  | Store
   | PushI Index
   | CallD Index
   | CallI Index

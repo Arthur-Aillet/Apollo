@@ -14,11 +14,11 @@ data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
   = FuncDefinition String Function -- define a function
-  | VarDefinition String Type -- define a variable
 
 data Structure -- layout, structure and connection of statements, having no value
 {- Useless? -}
   = Resolved -- expression resolving to no value
+  | VarDefinition String Type (Maybe Operable)
   | Return Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
   | Single Ast -- single operation or operable ({x})

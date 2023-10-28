@@ -98,12 +98,11 @@ createMain =
         []
         (Just TypeInt)
         ( AstStructure $ Sequence [
-            AstOperation $
-              CallFunc "fib" [OpValue (AtomI 14)],
+            AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 14)),
             AstStructure $
               Return $
                 OpOperation $
-                  CallFunc "fib" [OpValue (AtomI 14)]
+                  CallFunc "fib" [OpVariable "res"]
           ]
         )
     )
