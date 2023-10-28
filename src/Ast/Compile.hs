@@ -20,134 +20,137 @@ import Ast.Type
   )
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
+import Ast.Error (Compile(..), withW)
 
 data Binary = Binary Env Func deriving (Show)
 
-compile :: [Definition] -> Either String Binary
+compile :: [Definition] -> Compile Binary
 compile defs = case createCtx defs (Context empty) 0 of
-  Left str -> Left str
-  Right ctx -> case compAllFunc defs (Binary [] []) ctx of
-    Left err -> Left err
-    Right (Binary _ []) -> Left "Err: no main function found"
+  Ko warns err -> Ko warns err
+  Ok warns ctx -> case compAllFunc defs (Binary [] []) ctx of
+    Ko warns2 err -> withW warns $ Ko warns2 err
+    Ok warns2 (Binary _ []) -> withW warns $ Ko warns2 "no main function found"
     other -> other
 
-compAllFunc :: [Definition] -> Binary -> Context -> Either String Binary
+compAllFunc :: [Definition] -> Binary -> Context -> Compile Binary
 compAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx =
   case compFunc func ctx of
-    Left err -> Left err
-    Right function -> compAllFunc xs (Binary env function) ctx
+    Ko warns err -> Ko warns err
+    Ok w function -> withW w $ compAllFunc xs (Binary env function) ctx
 compAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env funcs) c =
   case compFunc (Function args y z) c of
-    Left err -> Left err
-    Right f -> compAllFunc xs (Binary (env ++ [(length args, f)]) funcs) c
-compAllFunc [] bin _ = Right bin
+    Ko warns err -> Ko warns err
+    Ok w f -> withW w $ compAllFunc xs (Binary (env ++ [(length args, f)]) funcs) c
+compAllFunc [] bin _ = Ok [] bin
 
-compFunc :: Function -> Context -> Either String Insts
+compFunc :: Function -> Context -> Compile Insts
 compFunc (Function args output ast) ctx = case createLocalContext args output of
-  Left err -> Left err
-  Right local -> fst <$> compAst ast ctx local
+  Ko warns err -> Ko warns err
+  Ok w local -> withW w $ fst <$> compAst ast ctx local
 
-compAst :: Ast -> Context -> LocalContext -> Either String (Insts, LocalContext)
+compAst :: Ast -> Context -> LocalContext -> Compile (Insts, LocalContext)
 compAst (AstStructure struct) c l = compStruct struct c l
 compAst (AstOperation op) c l =
   (\a -> (a, l)) <$> (fst <$> compOperation op c l)
 
-compIf :: Insts -> Either String Insts -> Type -> Insts -> Either String Insts
-compIf op_compiled else_comp op_type then_insts
+compIf :: Compile Insts -> Compile Insts -> Type -> Compile Insts -> Int -> Compile Insts
+compIf op_compiled else_comp op_type then_insts len
   | numType op_type =
       concatInner
-        [ Right op_compiled,
-          Right [JumpIfFalse (length then_insts)],
-          Right then_insts,
+        [ op_compiled,
+          Ok [] [JumpIfFalse len],
+          then_insts,
           else_comp
         ]
-  | otherwise = Left "Err: Operator in if not numerical value"
+  | otherwise = Ko [] "Operator in if not numerical value"
 
-packCompIf :: Insts -> Ast -> Context -> LocalContext -> (Insts, LocalContext) -> Either String (Insts, LocalContext)
-packCompIf op_compiled ast_else c l then_insts =
+packCompIf :: Compile Insts -> Compile Insts -> Ast -> Context -> LocalContext -> Int -> Compile (Insts, LocalContext)
+packCompIf op_compiled then_insts ast_else c l len =
   (\a -> (a, l))
     <$> compIf
       op_compiled
       (fst <$> compAst ast_else c l)
       TypeBool
-      (fst then_insts)
+      then_insts
+      len
 
-compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Either String (Insts, LocalContext)
+compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Compile (Insts, LocalContext)
 compVarDefinition op hmap r vtype name c =
   case compOperable op c (LocalContext hmap r) of
-    Left err -> Left err
-    Right (insts, op_type)
-      | op_type == vtype -> Right (insts ++ [Store], new_local)
-      | otherwise -> Left "Err: Variable recieved invalid type"
+    Ko warns err -> Ko warns err
+    Ok w (insts, op_type)
+      | op_type == vtype -> Ok w (insts ++ [Store], new_local)
+      | otherwise -> Ko w "Variable recieved invalid type"
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
 
-compFirstAssign :: Operable -> Context -> Variables -> CurrentReturnType -> Type -> String -> Either String (Insts, LocalContext)
+compFirstAssign :: Operable -> Context -> Variables -> CurrentReturnType -> Type -> String -> Compile (Insts, LocalContext)
 compFirstAssign op c hmap r wtype name =
   case compOperable op c (LocalContext hmap r) of
-    Left err -> Left err
-    Right (insts, rtype)
+    Ko warns err -> Ko warns err
+    Ok w (insts, rtype)
       | wtype == rtype ->
-          Right
+          Ok w
             ( insts ++ [Store],
               LocalContext (adjust (\(a, b, _) -> (a, b, True)) name hmap) r
             )
-      | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
+      | otherwise -> Ko w $ "Variable " ++ name ++ " type redefined"
 
-compStruct :: Structure -> Context -> LocalContext -> Either String (Insts, LocalContext)
-compStruct Resolved _ _ = Left "Err: Resolved unsupported"
+compStruct :: Structure -> Context -> LocalContext -> Compile (Insts, LocalContext)
+compStruct Resolved _ _ = Ko [] "Resolved unsupported"
 compStruct (Return _) _ (LocalContext _ Nothing) =
-  Left "Err: Return value in void function"
+  Ko [] "Return value in void function"
 compStruct (Return ope) c (LocalContext a (Just fct_type)) =
   case compOperable ope c (LocalContext a (Just fct_type)) of
-    Left err -> Left err
-    Right (op_compiled, op_type)
+    Ko warns err -> Ko warns err
+    Ok w (op_compiled, op_type)
       | op_type == fct_type ->
-          Right (op_compiled ++ [Ret], LocalContext a (Just fct_type))
-      | otherwise -> Left "Err: Return invalid type"
+          Ok w (op_compiled ++ [Ret], LocalContext a (Just fct_type))
+      | otherwise -> Ko w "Return invalid type"
 compStruct (If op ast_then ast_else) c l = case compOperable op c l of
-  Left err -> Left err
-  Right (op_compiled, TypeBool) -> case compAst ast_then c l of
-    Left err -> Left err
-    Right then_insts -> packCompIf op_compiled ast_else c l then_insts
-  Right (_, op_type) ->
-    Left $ "Err: If wait boolean and not " ++ show op_type
-compStruct (Single _) _ _ = Left "Err: Single unsupported"
-compStruct (Block _ _) _ _ = Left "Err: Block unsupported"
+  Ko warns err -> Ko warns err
+  Ok w (op_comp, TypeBool) -> case compAst ast_then c l of
+    Ko warns err -> Ko warns err
+    Ok w1 t_i ->
+      packCompIf (Ok w op_comp) (Ok w1 (fst t_i)) ast_else c l (length $ fst t_i)
+  Ok w (_, op_type) ->
+    Ko w $ "If wait boolean and not " ++ show op_type
+compStruct (Single _) _ _ = Ko [] "Single unsupported"
+compStruct (Block _ _) _ _ = Ko [] "Block unsupported"
 compStruct (Sequence (x : xs)) c l = case compAst x c l of
-  Left err -> Left err
-  Right (insts, new_local) ->
+  Ko warns err -> Ko warns err
+  Ok w (insts, new_local) ->
     (\(a_i, _) (b_i, f_l) -> (a_i ++ b_i, f_l))
-      <$> Right (insts, new_local)
+      <$> Ok w (insts, new_local)
       <*> compStruct (Sequence xs) c new_local
-compStruct (Sequence []) _ l = Right ([], l)
+compStruct (Sequence []) _ l = Ok [] ([], l)
 compStruct (VarDefinition name vtype content) c (LocalContext vs r)
-  | name `member` vs = Left "Err: Variable with name already exist"
+  | name `member` vs = Ko [] "Variable with name already exist"
   | otherwise = case content of
       Nothing ->
-        Right
+        Ok []
           ( [],
             LocalContext (insert name (firstValidIndex vs, vtype, False) vs) r
           )
       Just op -> compVarDefinition op vs r vtype name c
 compStruct (VarAssignation name op) c (LocalContext hmap r) =
   case hmap !? name of
-    Nothing -> Left $ "Err: Variable " ++ name ++ "undefined"
+    Nothing -> Ko [] $ "Variable " ++ name ++ "undefined"
     Just (idx, wtype, True) -> case compOperable op c (LocalContext hmap r) of
-      Left err -> Left err
-      Right (insts, rtype)
-        | wtype == rtype -> Right (insts ++ [Assign idx], LocalContext hmap r)
-        | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
+      Ko warns err -> Ko warns err
+      Ok w (insts, rtype)
+        | wtype == rtype -> Ok w (insts ++ [Assign idx], LocalContext hmap r)
+        | otherwise -> Ko [] $ "Variable " ++ name ++ " type redefined"
     Just (_, wtype, False) -> compFirstAssign op c hmap r wtype name
 
 {--
   case compOperable op c (LocalContext hmap r) of
-    Left err -> Left err
-    Right (insts, op_type) ->
+    Ko warns err -> Ko warns err
+    Ok w (insts, op_type) ->
       if op_type == vtype
-        then Right (insts ++ [Store], new_local)
-        else Left "Err: Variable recieved invalid type"
+        then Ok w (insts ++ [Store], new_local)
+        else Ko "Variable recieved invalid type"
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap

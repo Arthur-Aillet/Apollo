@@ -1,10 +1,10 @@
 module Main (main) where
 
 import Ast.Compile (Binary (..), compile)
+import Ast.Error (Compile(..))
 import Ast.Type
 import Eval
 import Prelude
-import Ast.Type
 
 createAbs :: Definition
 createAbs =
@@ -113,8 +113,9 @@ createMain =
 main :: IO ()
 main =
   case compile [createMain, createFib] of
-    Left a -> putStrLn a
-    Right (Binary env main_func) -> do
+    Ko w err -> print w >> putStrLn err
+    Ok w (Binary env main_func) -> do
+      print w
       result <- exec env [] main_func []
       case result of
         Left a -> putStrLn a

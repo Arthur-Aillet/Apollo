@@ -6,6 +6,7 @@
 -}
 
 module Ast.Utils ((+++), (++++), concatInner, listInner) where
+import Ast.Error (Compile(..))
 
 (+++) :: [a] -> [a] -> [a] -> [a]
 (+++) a b c = a ++ b ++ c
@@ -13,8 +14,8 @@ module Ast.Utils ((+++), (++++), concatInner, listInner) where
 (++++) :: [a] -> [a] -> [a] -> [a] -> [a]
 (++++) a b c d = a ++ b ++ c ++ d
 
-concatInner :: [Either a [b]] -> Either a [b]
-concatInner = foldl (\a b -> (++) <$> a <*> b) (Right [])
+concatInner :: [Compile [b]] -> Compile [b]
+concatInner = foldl (\a b -> (++) <$> a <*> b) (Ok [] [])
 
-listInner :: [Either a b] -> Either a [b]
-listInner = foldl (\a b -> (++) <$> a <*> ((: []) <$> b)) (Right [])
+listInner :: [Compile b] -> Compile [b]
+listInner = foldl (\a b -> (++) <$> a <*> ((: []) <$> b)) (Ok [] [])
