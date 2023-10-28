@@ -19,6 +19,7 @@ data Structure -- layout, structure and connection of statements, having no valu
 {- Useless? -}
   = Resolved -- expression resolving to no value
   | VarDefinition String Type (Maybe Operable)
+  | VarAssignation String Operable
   | Return Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
   | Single Ast -- single operation or operable ({x})

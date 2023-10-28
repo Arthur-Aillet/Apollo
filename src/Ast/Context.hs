@@ -5,7 +5,7 @@
 -- AST To Insts Contxt
 -}
 
-module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex) where
+module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined) where
 
 import Ast.Type
   ( Definition (..),
@@ -19,14 +19,17 @@ type Index = Int
 newtype Context = Context (HashMap String (Index, [(String, Type)], Maybe Type))
 
 type CurrentReturnType = (Maybe Type)
+
 type Defined = Bool
+
 type Variables = (HashMap String (Index, Type, Defined))
 
 data LocalContext = LocalContext Variables CurrentReturnType
 
 attachIndex :: [(String, Type)] -> Index -> [(String, (Index, Type, Defined))]
 attachIndex [] _ = []
-attachIndex ((str, t) : xs) acc = (str, (acc, t, True)) : attachIndex xs (acc + 1)
+attachIndex ((str, t) : xs) acc =
+  (str, (acc, t, True)) : attachIndex xs (acc + 1)
 
 createCtx :: [Definition] -> Context -> Int -> Either String Context
 createCtx (FuncDefinition "main" _ : xs) ctx nbr = createCtx xs ctx nbr
