@@ -39,9 +39,10 @@ exec env args ((CallD func_index) : xs) stack = case getElem func_index env of
       Right value -> exec env args xs (value : end)
     where
       (start, end) = splitAt args_nbr stack
-exec env args ((JumpIfFalse line) : xs) (VAtom 0 : ys) = case moveForward line xs of
-  Left a -> return $ Left a
-  Right valid -> exec env args valid ys
+exec env args ((JumpIfFalse line) : xs) (VAtom 0 : ys) =
+  case moveForward line xs of
+    Left a -> return $ Left a
+    Right valid -> exec env args valid ys
 exec env args ((JumpIfFalse _) : xs) (_ : ys) = exec env args xs ys
 exec env args (Store : xs) (y : ys) = exec env (args ++ [y]) xs ys
 exec env args (Assign idx : xs) (y : ys) = case getElem idx args of

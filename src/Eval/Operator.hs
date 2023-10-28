@@ -21,8 +21,11 @@ import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
-  deriving (-- | List [Atom]
-            Show, Eq)
+  deriving
+    ( -- | List [Atom]
+      Show,
+      Eq
+    )
 
 type Stack = [Value]
 

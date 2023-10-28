@@ -6,7 +6,8 @@
 -}
 
 module Ast.Utils ((+++), (++++), concatInner, listInner) where
-import Ast.Error (Compile(..))
+
+import Ast.Error (Compile (..))
 
 (+++) :: [a] -> [a] -> [a] -> [a]
 (+++) a b c = a ++ b ++ c

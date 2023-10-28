@@ -8,6 +8,7 @@
 module Ast.Compile (module Ast.Compile) where
 
 import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
+import Ast.Error (Compile (..), withW)
 import Ast.Operable (compOperable, compOperation, concatInner)
 import Ast.Type
   ( Ast (..),
@@ -20,7 +21,6 @@ import Ast.Type
   )
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
-import Ast.Error (Compile(..), withW)
 
 data Binary = Binary Env Func deriving (Show)
 
@@ -40,7 +40,8 @@ compAllFunc ((FuncDefinition "main" func) : xs) (Binary env []) ctx =
 compAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env funcs) c =
   case compFunc (Function args y z) c of
     Ko warns err -> Ko warns err
-    Ok w f -> withW w $ compAllFunc xs (Binary (env ++ [(length args, f)]) funcs) c
+    Ok w f ->
+      withW w $ compAllFunc xs (Binary (env ++ [(length args, f)]) funcs) c
 compAllFunc [] bin _ = Ok [] bin
 
 compFunc :: Function -> Context -> Compile Insts
@@ -85,16 +86,16 @@ compVarDefinition op hmap r vtype name c =
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
 
+setTrue :: (Index, Type, Bool) -> (Index, Type, Bool)
+setTrue (a, b, _) = (a, b, True)
+
 compFirstAssign :: Operable -> Context -> Variables -> CurrentReturnType -> Type -> String -> Compile (Insts, LocalContext)
 compFirstAssign op c hmap r wtype name =
   case compOperable op c (LocalContext hmap r) of
     Ko warns err -> Ko warns err
     Ok w (insts, rtype)
       | wtype == rtype ->
-          Ok w
-            ( insts ++ [Store],
-              LocalContext (adjust (\(a, b, _) -> (a, b, True)) name hmap) r
-            )
+          Ok w (insts ++ [Store], LocalContext (adjust setTrue name hmap) r)
       | otherwise -> Ko w $ "Variable " ++ name ++ " type redefined"
 
 compStruct :: Structure -> Context -> LocalContext -> Compile (Insts, LocalContext)
@@ -108,12 +109,12 @@ compStruct (Return ope) c (LocalContext a (Just fct_type)) =
       | op_type == fct_type ->
           Ok w (op_compiled ++ [Ret], LocalContext a (Just fct_type))
       | otherwise -> Ko w "Return invalid type"
-compStruct (If op ast_then ast_else) c l = case compOperable op c l of
+compStruct (If op ast_then a_else) c l = case compOperable op c l of
   Ko warns err -> Ko warns err
   Ok w (op_comp, TypeBool) -> case compAst ast_then c l of
     Ko warns err -> Ko warns err
     Ok w1 t_i ->
-      packCompIf (Ok w op_comp) (Ok w1 (fst t_i)) ast_else c l (length $ fst t_i)
+      packCompIf (Ok w op_comp) (Ok w1 (fst t_i)) a_else c l (length $ fst t_i)
   Ok w (_, op_type) ->
     Ko w $ "If wait boolean and not " ++ show op_type
 compStruct (Single _) _ _ = Ko [] "Single unsupported"
@@ -129,7 +130,8 @@ compStruct (VarDefinition name vtype content) c (LocalContext vs r)
   | name `member` vs = Ko [] "Variable with name already exist"
   | otherwise = case content of
       Nothing ->
-        Ok []
+        Ok
+          []
           ( [],
             LocalContext (insert name (firstValidIndex vs, vtype, False) vs) r
           )

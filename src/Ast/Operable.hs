@@ -4,19 +4,19 @@
 -- File description:
 -- AST To Insts Operable
 -}
-
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use tuple-section" #-}
 
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
+import Ast.Error (Compile (..))
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
-import Ast.Error (Compile(..))
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
 compOperable (OpValue val) _ _ = Ok [] ([PushD val], atomType val)

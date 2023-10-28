@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Ast.Compile (Binary (..), compile)
-import Ast.Error (Compile(..))
+import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Prelude

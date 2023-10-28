@@ -5,7 +5,7 @@
 -- AST To Insts Contxt
 -}
 
-module Ast.Error (Compile(..), withW) where
+module Ast.Error (Compile (..), withW) where
 
 import Control.Applicative ()
 
