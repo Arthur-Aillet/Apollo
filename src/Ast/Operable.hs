@@ -11,7 +11,7 @@
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
-import Ast.Error (Compile (..))
+import Ast.Error (Compile (..), withW)
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
@@ -30,7 +30,13 @@ compOperable (OpOperation op) c l = case compOperation op c l of
   Ok warns (a, Just b) -> Ok warns (a, b)
 compOperable (OpIOPipe _) _ _ = Ko [] "OpIOPipe unsupported"
 compOperable (OpCast op ntype) c l =
-  (\a -> (fst a, ntype)) <$> compOperable op c l
+  case compOperable op c l of
+    Ko w e -> Ko w e
+    Ok w (fop, ftype)
+      | ntype == ftype -> withW [warn] $ Ok w (fop, ntype)
+      | otherwise -> Ok w (fop, ntype)
+      where
+        warn = "Cast from " ++ show ntype ++ " to " ++ show ntype
 
 argsHasError :: Compile [Type] -> [(String, Type)] -> Compile ()
 argsHasError (Ko w err) _ = Ko w err

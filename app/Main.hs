@@ -101,7 +101,7 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $ VarAssignation "res" (OpCast (OpValue (AtomF 14.0)) TypeInt),
+                AstStructure $ VarAssignation "res" (OpCast (OpValue (AtomI 14)) TypeInt),
                 AstStructure $
                   Return $
                     OpOperation $
