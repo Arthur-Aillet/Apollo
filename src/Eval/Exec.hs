@@ -9,11 +9,11 @@ module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, 
 
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, Index, Instruction (..), Insts, moveForward)
-import Eval.Operator (Operator (..), Stack, execOperator)
+import Eval.Operator (Operator (..), execOperator, Stack, Value (..))
 
 type Env = [(Int, Func)]
 
-type Args = [Atom]
+type Args = [Value]
 
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
@@ -22,8 +22,8 @@ getElem nb list
   | nb < 0 = Left "Error: Element asked invalid"
   | otherwise = Right (last (take (nb + 1) list))
 
-exec :: Env -> Args -> Insts -> Stack -> IO (Either String Atom)
-exec env args ((PushD val) : xs) stack = exec env args xs (val : stack)
+exec :: Env -> Args -> Insts -> Stack -> IO (Either String Value)
+exec env args ((PushD val) : xs) stack = exec env args xs (VAtom val : stack)
 exec env args ((PushI arg_index) : xs) stack = case getElem arg_index args of
   Left err -> return $ Left err
   Right arg -> exec env args xs (arg : stack)
@@ -36,10 +36,10 @@ exec env args ((CallD func_index) : xs) stack = case getElem func_index env of
     result <- exec env start insts []
     case result of
       Left err -> return $ Left err
-      Right atom -> exec env args xs (atom : end)
+      Right value -> exec env args xs (value : end)
     where
       (start, end) = splitAt args_nbr stack
-exec env args ((JumpIfFalse line) : xs) (0 : ys) = case moveForward line xs of
+exec env args ((JumpIfFalse line) : xs) (VAtom 0 : ys) = case moveForward line xs of
       Left a -> return $ Left a
       Right valid -> exec env args valid ys
 exec env args ((JumpIfFalse _) : xs) (_ : ys) = exec env args xs ys

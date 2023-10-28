@@ -29,6 +29,8 @@ data Instruction
   | CallD Index
   | CallI Index
   | Op Operator
+  | PrintD Atom
+  | PrintI Index
   | JumpIfFalse Int
   | Ret
   deriving (Show, Eq)
