@@ -4,6 +4,7 @@ import Ast.Compile (Binary (..), compile)
 import Ast.Type
 import Eval
 import Prelude
+import Ast.Type
 
 createAbs :: Definition
 createAbs =
@@ -100,7 +101,7 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $ VarAssignation "res" (OpValue (AtomI 14)),
+                AstStructure $ VarAssignation "res" (OpCast (OpValue (AtomF 14.0)) TypeInt),
                 AstStructure $
                   Return $
                     OpOperation $

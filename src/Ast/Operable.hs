@@ -28,6 +28,8 @@ compOperable (OpOperation op) c l = case compOperation op c l of
   Right (_, Nothing) -> Left "Err: op has no return type"
   Right (a, Just b) -> Right (a, b)
 compOperable (OpIOPipe _) _ _ = Left "Err: OpIOPipe unsupported"
+compOperable (OpCast op ntype) c l =
+  (\a -> (fst a, ntype)) <$> compOperable op c l
 
 argsHasError :: Either String [Type] -> [(String, Type)] -> Maybe String
 argsHasError (Left err) _ = Just err
