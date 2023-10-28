@@ -7,7 +7,7 @@
 
 module Ast.Compile (module Ast.Compile) where
 
-import Ast.Context (Context (..), LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
+import Ast.Context (Context (..), LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex, CurrentReturnType)
 import Ast.Operable (compOperable, compOperation, concatInner)
 import Ast.Type
   ( Ast (..),
@@ -83,6 +83,18 @@ compVarDefinition op hmap r vtype name c =
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
 
+compFirstAssign :: Operable -> Context -> Variables -> CurrentReturnType -> Type -> String -> Either String (Insts, LocalContext)
+compFirstAssign op c hmap r wtype name =
+  case compOperable op c (LocalContext hmap r) of
+    Left err -> Left err
+    Right (insts, rtype)
+      | wtype == rtype ->
+          Right
+            ( insts ++ [Store],
+              LocalContext (adjust (\(a, b, _) -> (a, b, True)) name hmap) r
+            )
+      | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
+
 compStruct :: Structure -> Context -> LocalContext -> Either String (Insts, LocalContext)
 compStruct Resolved _ _ = Left "Err: Resolved unsupported"
 compStruct (Return _) _ (LocalContext _ Nothing) =
@@ -122,22 +134,12 @@ compStruct (VarDefinition name vtype content) c (LocalContext vs r)
 compStruct (VarAssignation name op) c (LocalContext hmap r) =
   case hmap !? name of
     Nothing -> Left $ "Err: Variable " ++ name ++ "undefined"
-    Just (index, wtype, True) -> case compOperable op c (LocalContext hmap r) of
+    Just (idx, wtype, True) -> case compOperable op c (LocalContext hmap r) of
       Left err -> Left err
       Right (insts, rtype)
-        | wtype == rtype ->
-            Right
-              (insts ++ [Assign index], LocalContext hmap r)
+        | wtype == rtype -> Right (insts ++ [Assign idx], LocalContext hmap r)
         | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
-    Just (_, wtype, False) -> case compOperable op c (LocalContext hmap r) of
-      Left err -> Left err
-      Right (insts, rtype)
-        | wtype == rtype ->
-            Right
-              ( insts ++ [Store],
-                LocalContext (adjust (\(a, b, _) -> (a, b, True)) name hmap) r
-              )
-        | otherwise -> Left $ "Err: Variable " ++ name ++ " type redefined"
+    Just (_, wtype, False) -> compFirstAssign op c hmap r wtype name
 
 {--
   case compOperable op c (LocalContext hmap r) of

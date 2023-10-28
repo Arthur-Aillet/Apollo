@@ -5,7 +5,7 @@
 -- AST To Insts Contxt
 -}
 
-module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined) where
+module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
 
 import Ast.Type
   ( Definition (..),
