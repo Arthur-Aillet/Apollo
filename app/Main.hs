@@ -1,8 +1,11 @@
 module Main (main) where
 
-import Ast.Compile (Binary (..), compile)
+import Ast.Compile (Binary (..))
+import Ast.Display (compile)
+import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
+import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 
 createAbs :: Definition
@@ -100,21 +103,19 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $ VarAssignation "res" (OpValue (AtomI 14)),
                 AstStructure $
-                  Return $
-                    OpOperation $
-                      CallFunc "fib" [OpVariable "res"]
+                  While
+                    (OpOperation $ CallStd Less [OpValue (AtomI (-5)), OpVariable "res"])
+                    (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Subtraction [OpVariable "res", OpValue (AtomI 1)])
+                    -- , AstStructure $ Return $ OpVariable "res"
               ]
         )
     )
 
 main :: IO ()
-main =
-  case compile [createMain, createFib] of
+main = do
+  (Binary env main_f) <- compile [createMain, createAbs]
+  result <- exec env [] main_f [] []
+  case result of
     Left a -> putStrLn a
-    Right (Binary env main_func) -> do
-      result <- exec env [] main_func []
-      case result of
-        Left a -> putStrLn a
-        Right a -> print a
+    Right a -> print a

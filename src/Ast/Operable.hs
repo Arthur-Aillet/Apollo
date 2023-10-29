@@ -11,78 +11,87 @@
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
+import Ast.Error (Compile (..), withW)
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 
-compOperable :: Operable -> Context -> LocalContext -> Either String (Insts, Type)
-compOperable (OpValue val) _ _ = Right ([PushD val], atomType val)
+compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
+compOperable (OpValue val) _ _ = Ok [] ([PushD val], atomType val)
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
-  Nothing -> Left $ "Variable: " ++ name ++ " never declared"
-  Just (_, _, False) -> Left $ "Variable: " ++ name ++ " never defined"
-  Just (index, var_type, True) -> Right ([PushI index], var_type)
+  Nothing -> Ko [] $ "Variable \"" ++ name ++ "\" never declared"
+  Just (_, _, False) -> Ko [] $ "Variable \"" ++ name ++ "\" never defined"
+  Just (index, var_type, True) -> Ok [] ([PushI index], var_type)
 compOperable (OpOperation op) c l = case compOperation op c l of
-  Left err -> Left err
-  Right (_, Nothing) -> Left "Err: op has no return type"
-  Right (a, Just b) -> Right (a, b)
-compOperable (OpIOPipe _) _ _ = Left "Err: OpIOPipe unsupported"
+  Ko warns err -> Ko warns err
+  Ok warns (_, Nothing) -> Ko warns "Op has no return type"
+  Ok warns (a, Just b) -> Ok warns (a, b)
+compOperable (OpIOPipe _) _ _ = Ko [] "OpIOPipe unsupported"
+compOperable (OpCast op ntype) c l =
+  case compOperable op c l of
+    Ko w e -> Ko w e
+    Ok w (fop, ftype)
+      | ntype == ftype -> withW [warn] $ Ok w (fop, ntype)
+      | otherwise -> Ok w (fop, ntype)
+      where
+        warn = "Cast from " ++ show ntype ++ " to " ++ show ntype
 
-argsHasError :: Either String [Type] -> [(String, Type)] -> Maybe String
-argsHasError (Left err) _ = Just err
-argsHasError (Right (given_type : xs)) ((arg_name, arg_type) : ys)
-  | given_type == arg_type = argsHasError (Right xs) ys
-  | otherwise = Just $ "Err: " ++ arg_name ++ " invalid type"
-argsHasError (Right []) (_ : _) = Just "Too few arguments"
-argsHasError (Right (_ : _)) [] = Just "Too many arguments"
-argsHasError (Right []) [] = Nothing
+argsHasError :: Compile [Type] -> [(String, Type)] -> Compile ()
+argsHasError (Ko w err) _ = Ko w err
+argsHasError (Ok w (given_type : xs)) ((arg_name, arg_type) : ys)
+  | given_type == arg_type = argsHasError (Ok w xs) ys
+  | otherwise = Ko w $ arg_name ++ " has invalid type"
+argsHasError (Ok w []) (_ : _) = Ko w "Too few arguments"
+argsHasError (Ok w (_ : _)) [] = Ko w "Too many arguments"
+argsHasError (Ok w []) [] = Ok w ()
 
-opeValidArgs :: [Either String (Insts, Type)] -> Int -> Maybe Type -> Either String Type
-opeValidArgs (Left err : _) _ _ = Left err
-opeValidArgs [] 0 (Just waited_type) = Right waited_type
-opeValidArgs [] _ (Just _) = Left "Err: Builtin, Not enough arguments"
-opeValidArgs (Right _ : _) 0 (Just _) = Left "Err: Builtin, Too many arguments"
-opeValidArgs [] _ Nothing = Left "Err: Builtin, No arguments given"
-opeValidArgs (Right (_, arg_type) : xs) nbr Nothing =
+opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
+opeValidArgs (Ko w err : _) _ _ = Ko w err
+opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
+opeValidArgs [] _ (Just _) = Ko [] "Builtin, Not enough arguments"
+opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w "Builtin, Too many arguments"
+opeValidArgs [] _ Nothing = Ko [] "Builtin, No arguments given"
+opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs xs (nbr - 1) (Just arg_type)
-opeValidArgs (Right (_, arg_type) : xs) nbr (Just waited_type)
+opeValidArgs (Ok w (_, arg_type) : xs) nbr (Just waited_type)
   | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
-  | otherwise = Left "Err: Builtin different types given"
+  | otherwise = Ko w "Builtin different types given"
 
-compCalculus :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
+compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of
-  Left err -> Left err
-  Right return_type ->
+  Ko warns err -> Ko warns err
+  Ok w return_type ->
     (\a -> (a, Just return_type))
       <$> ( (++)
-              <$> (concatInner (map (fst <$>) (reverse args)))
-              <*> Right [Op op]
+              <$> concatInner (map (fst <$>) (reverse args))
+              <*> Ok w [Op op]
           )
 
-compEquality :: Operator -> [Either String (Insts, Type)] -> Int -> Either String (Insts, Maybe Type)
+compEquality :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compEquality op args count = case opeValidArgs args count Nothing of
-  Left err -> Left err
-  Right _ ->
+  Ko warns err -> Ko warns err
+  Ok w _ ->
     (\a -> (a, Just TypeBool))
       <$> ( (++)
               <$> concatInner (map (fst <$>) (reverse args))
-              <*> Right [Op op]
+              <*> Ok w [Op op]
           )
 
-compOperation :: Operation -> Context -> LocalContext -> Either String (Insts, Maybe Type)
+compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l = case defsOp builtin of
   (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
   (OperatorDef argCount Equality) -> compEquality builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
-  Nothing -> Left "Err: Function name not found"
+  Nothing -> Ko [] "Function name not found"
   Just (nb, func_args, out) -> case argsHasError types func_args of
-    Just err -> Left err
-    Nothing -> (\a -> (a, out)) <$> ((++) <$> fca <*> Right [CallD nb])
+    Ko w err -> Ko w err
+    Ok w _ -> (\a -> (a, out)) <$> ((++) <$> fca <*> Ok w [CallD nb])
     where
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
-compOperation a _ _ = Left $ "Err: Operation unsupported" ++ show a
+compOperation a _ _ = Ko [] $ "Operation unsupported" ++ show a

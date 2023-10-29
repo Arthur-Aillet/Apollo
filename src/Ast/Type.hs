@@ -22,6 +22,7 @@ data Structure -- layout, structure and connection of statements, having no valu
   | VarAssignation String Operable
   | Return Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
+  | While Operable Ast
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
   | Sequence [Ast] -- several actions ordered by precedence ({x >> y})
@@ -37,6 +38,7 @@ data Operation -- statement involving an action, resulting in a value
 
 data Operable -- statement having a value
   = OpVariable String -- Variable reffering to single known value
+  | OpCast Operable Type
   | OpValue Atom -- Single known value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder

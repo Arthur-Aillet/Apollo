@@ -50,7 +50,7 @@ parseNotChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
     | x == char ->
         Left
-          ( ("Not Found: charactere is not '" ++ [x] ++ "'"),
+          ( "Not Found: charactere is not '" ++ [x] ++ "'",
             moveCursor pos False
           )
     | otherwise -> Right (char, new_str, new_pos)
