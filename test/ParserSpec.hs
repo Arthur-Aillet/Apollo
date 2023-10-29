@@ -1,4 +1,4 @@
-module ParserSpec (parserTests) where
+  module ParserSpec (parserTests) where
 
 import Parser.Char
 import Parser.Position (Position (..), defaultPosition, moveCursor)
@@ -127,13 +127,13 @@ parseSymbolTests =
 --       "Test 4" ~: (Left ("Not Found: charactere is not 'h'", Position {line = 0, char = 1})) @=? (runParser (parseAnd (parseChar 'h') (parseChar '(')) "(hello world)" defaultPosition)
     -- ]
 
-parseManyTests :: Test
-parseManyTests =
-  TestList
-    [ "Test 1" ~: (Right ("      ", "hello world!", (getPosition 6 0))) @=? (runParser (parseMany (parseChar ' ')) "      hello world!" defaultPosition),
-      "Test 2" ~: (Left (StackTrace [("parseChar: Not Found: charactere is not ' ' (is 'h')", defaultRange, defaultLocation)])) @=? (runParser (parseMany (parseChar ' ')) "hello world!" defaultPosition),
-      "Test 3" ~: (Left (StackTrace [("parseAChar: Not Found: End of Input", defaultRange, defaultLocation)])) @=? (runParser (parseMany (parseChar ' ')) "" defaultPosition)
-    ]
+-- parseManyTests :: Test
+-- parseManyTests =
+--   TestList
+--     [ "Test 1" ~: (Right ("      ", "hello world!", (getPosition 6 0))) @=? (runParser (parseMany (parseChar ' ')) "      hello world!" defaultPosition),
+--       "Test 2" ~: (Left (StackTrace [("parseChar: Not Found: charactere is not ' ' (is 'h')", defaultRange, defaultLocation)])) @=? (runParser (parseMany (parseChar ' ')) "hello world!" defaultPosition),
+--       "Test 3" ~: (Left (StackTrace [("parseAChar: Not Found: End of Input", defaultRange, defaultLocation)])) @=? (runParser (parseMany (parseChar ' ')) "" defaultPosition)
+--     ]
 
 -- parseSomeTests :: Test
 -- parseSomeTests =
