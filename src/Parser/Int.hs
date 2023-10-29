@@ -11,7 +11,7 @@ import Control.Applicative (Alternative ((<|>)))
 import Parser.Char (parseChar, parseDigit)
 import Parser.Type (Parser (..))
 import Parser.Syntax (parseMany, parseSome)
-import Atom.Atom (Atom (..))
+import Eval.Atom (Atom (..))
 parseStringInt :: Parser String
 parseStringInt = parseSome parseDigit
 

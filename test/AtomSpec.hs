@@ -11,7 +11,7 @@ module AtomSpec
   )
 where
 
-import Atom.Atom (Atom (..), atomCast, bAtom, cAtom, fAtom, iAtom)
+import Eval.Atom (Atom (..), atomCast, bAtom, cAtom, fAtom, iAtom)
 import Test.HUnit
 import Text.Read (readMaybe)
 
@@ -159,7 +159,7 @@ atomNumTests =
       "Char - Char" ~: cAtom (AtomI 645) - cAtom (AtomI 758) ~?= cAtom (AtomI (645 - 758)),
       "signum Float" ~: signum (AtomF 6.45) ~?= signum 6.45,
       "abs Bool" ~: abs (AtomB True) ~?= AtomB True,
-      "fromInteger" ~: (fromInteger 58 :: Atom) ~?= AtomI 58
+      "fromInteger" ~: (58 :: Atom) ~?= AtomI 58
     ]
 
 readAtomTests :: Test

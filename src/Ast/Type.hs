@@ -5,22 +5,24 @@
 -- AST
 -}
 
-module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..)) where
+module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
 
-import Atom.Atom (Atom)
-import Eval.Builtin (Builtin)
+import Eval.Atom (Atom (..))
+import Eval.Operator (Operator)
 
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
-  = FuncDefinition String Function -- define a function
-  | VarDefinition String Type -- define a variable
-  deriving (Show, Eq)
+  = FuncDefinition String Function deriving (Show) -- define a function
 
 data Structure -- layout, structure and connection of statements, having no value
+{- Useless? -}
   = Resolved -- expression resolving to no value
+  | VarDefinition String Type (Maybe Operable)
+  | VarAssignation String Operable
   | Return Operable
   | If Operable Ast Ast -- branching condition (if (x) {} {})
+  | While Operable Ast
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
   | Sequence [Ast] -- several actions ordered by precedence ({x >> y})
@@ -28,14 +30,15 @@ data Structure -- layout, structure and connection of statements, having no valu
 
 data Operation -- statement involving an action, resulting in a value
   = Interrupt String -- Interrupt program flow
-  | CallStd Builtin [Operable] -- call a standard or builtin operation (x(y))
+  | CallStd Operator [Operable] -- call a standard or operator operation (x(y))
   | CallFunc String [Operable] -- call a function, exposes both inherent IOPipes (x(y))
-  | CallSH String [Operable] -- syscall of builtin program ($x(y)), exposes both IOPipes
+  | CallSH String [Operable] -- syscall of Operator program ($x(y)), exposes both IOPipes
   | Pipe Operable Operable -- stdout mapped to stdin ({x.y}, {x <- y})
   deriving (Show, Eq)
 
 data Operable -- statement having a value
   = OpVariable String -- Variable reffering to single known value
+  | OpCast Operable Type
   | OpValue Atom -- Single known value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
@@ -47,6 +50,20 @@ data Type
   | TypeInt
   | TypeFloat
   deriving (Show, Eq)
+
+numType :: Type -> Bool
+numType TypeBool = True
+numType TypeChar = True
+numType TypeInt = True
+numType TypeFloat = True
+
+-- numType _ = False
+
+atomType :: Atom -> Type
+atomType (AtomB _) = TypeBool
+atomType (AtomC _ _) = TypeChar
+atomType (AtomI _) = TypeInt
+atomType (AtomF _) = TypeFloat
 
 data Ast
   = AstStructure Structure -- structure block ({})

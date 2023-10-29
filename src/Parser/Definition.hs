@@ -39,16 +39,16 @@ isgoodType parser = Parser $ \s p -> case runParser parser s p of
 parseType :: Parser String
 parseType = parseSymbol "int" <|> parseSymbol "float" <|> parseSymbol "bool" <|> parseSymbol "char"
 
-createVarDef :: Parser Type -> Parser String -> Parser Definition
-createVarDef  parType parStr = Parser $ \s p -> case runParser parType s p of
+createVarDef :: Parser Type -> Parser String -> (Maybe Operable) -> Parser Structure
+createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right(typ, str, pos) -> case runParser parStr str pos of
-    Right(name, string, position) -> Right ((VarDefinition name typ), string, position)
+    Right(name, string, position) -> Right ((VarDefinition name typ op), string, position)
     Left a -> Left a
   Left a -> Left a
 
 
-parseDeclareVar :: Parser Definition
-parseDeclareVar = createVarDef (isgoodType (goodType <$> parseType)) (parseDefinitionName)
+parseDeclareVar :: Parser Structure
+parseDeclareVar = createVarDef (isgoodType (goodType <$> parseType)) (parseDefinitionName) Nothing
 
 parseParameter :: Parser (String, Type)
 parseParameter =
