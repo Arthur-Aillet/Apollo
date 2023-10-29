@@ -113,11 +113,8 @@ createMain =
 
 main :: IO ()
 main = do
-  bin <- compile [createMain, createFib]
-  case bin of
-    Nothing -> exitWith (ExitFailure 1)
-    Just (Binary env main) -> do
-      result <- exec env [] main []
-      case result of
-        Left a -> putStrLn a
-        Right a -> print a
+  (Binary env main) <- compile [createMain, createFib]
+  result <- exec env [] main []
+  case result of
+    Left a -> putStrLn a
+    Right a -> print a

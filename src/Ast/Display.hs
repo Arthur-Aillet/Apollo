@@ -10,6 +10,7 @@ module Ast.Display (compile) where
 import Ast.Error (Error, Warning, Compile(..))
 import Ast.Compile (Binary(..), generateBinary)
 import Ast.Type (Definition)
+import System.Exit (exitWith, ExitCode(ExitFailure))
 
 yellow :: String
 yellow = "\x1b[33m"
@@ -30,12 +31,13 @@ displayError err =
   putStrLn $
     red ++ "Error during compilation:\n" ++ resetColor ++ "\t" ++ err
 
-compile :: [Definition] -> IO (Maybe Binary)
+
+compile :: [Definition] -> IO Binary
 compile defs = case generateBinary defs of
     Ko w err ->
       displayWarnings w >>
       displayError err >>
-      return Nothing
+      exitWith (ExitFailure 1)
     Ok w bin ->
       displayWarnings w >>
-      return (Just bin)
+      return bin
