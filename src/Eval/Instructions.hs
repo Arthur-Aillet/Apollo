@@ -11,6 +11,7 @@ module Eval.Instructions
     moveForward,
     Index,
     Func,
+    History,
   )
 where
 
@@ -32,12 +33,16 @@ data Instruction
   | PrintD Atom
   | PrintI Index
   | JumpIfFalse Int
+  | Jump Int
   | Ret
   deriving (Show, Eq)
 
 type Insts = [Instruction]
 
-moveForward :: Int -> Insts -> Either String Insts
-moveForward 0 insts = Right insts
-moveForward nb [] = Left ("Error: Jump too far (" ++ show nb ++ ")")
-moveForward nb (_ : xs) = moveForward (nb - 1) xs
+type History = [Instruction]
+
+moveForward :: Int -> Insts -> Either String (Insts, Insts)
+moveForward nb insts
+  | nb < 0 = Left $ "Error: Jump before zero (" ++ show nb ++ ")"
+  | nb > length insts = Left $ "Error: Jump too far (" ++ show nb ++ ")"
+  | otherwise = Right $ splitAt nb insts
