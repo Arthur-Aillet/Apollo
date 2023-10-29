@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Ast.Compile (Binary (..), compile)
+import Ast.Display (displayWarnings)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
@@ -113,9 +114,9 @@ createMain =
 main :: IO ()
 main =
   case compile [createMain, createFib] of
-    Ko w err -> print w >> putStrLn err
+    Ko w err -> displayWarnings w >> putStrLn err
     Ok w (Binary env main_func) -> do
-      print w
+      displayWarnings w
       result <- exec env [] main_func []
       case result of
         Left a -> putStrLn a

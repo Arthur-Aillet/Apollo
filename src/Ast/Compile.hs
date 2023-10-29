@@ -2,7 +2,7 @@
 -- EPITECH PROJECT, 2023
 -- glados
 -- File description:
--- AST To Insts
+-- AST Compilation
 -}
 
 module Ast.Compile (module Ast.Compile) where
