@@ -21,8 +21,8 @@ import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
 compOperable (OpValue val) _ _ = Ok [] ([PushD val], atomType val)
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
-  Nothing -> Ko [] $ "Variable: " ++ name ++ " never declared"
-  Just (_, _, False) -> Ko [] $ "Variable: " ++ name ++ " never defined"
+  Nothing -> Ko [] $ "Variable \"" ++ name ++ "\" never declared"
+  Just (_, _, False) -> Ko [] $ "Variable \"" ++ name ++ "\" never defined"
   Just (index, var_type, True) -> Ok [] ([PushI index], var_type)
 compOperable (OpOperation op) c l = case compOperation op c l of
   Ko warns err -> Ko warns err

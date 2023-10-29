@@ -5,9 +5,11 @@
 -- AST display
 -}
 
-module Ast.Display (displayWarnings, displayError) where
+module Ast.Display (compile) where
 
-import Ast.Error (Error, Warning)
+import Ast.Error (Error, Warning, Compile(..))
+import Ast.Compile (Binary(..), generateBinary)
+import Ast.Type (Definition)
 
 yellow :: String
 yellow = "\x1b[33m"
@@ -27,3 +29,13 @@ displayError :: Error -> IO ()
 displayError err =
   putStrLn $
     red ++ "Error during compilation:\n" ++ resetColor ++ "\t" ++ err
+
+compile :: [Definition] -> IO (Maybe Binary)
+compile defs = case generateBinary defs of
+    Ko w err ->
+      displayWarnings w >>
+      displayError err >>
+      return Nothing
+    Ok w bin ->
+      displayWarnings w >>
+      return (Just bin)

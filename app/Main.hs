@@ -1,11 +1,12 @@
 module Main (main) where
 
-import Ast.Compile (Binary (..), compile)
-import Ast.Display (displayError, displayWarnings)
+import Ast.Compile (Binary (..))
+import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Prelude
+import System.Exit (exitWith, ExitCode(ExitFailure))
 
 createAbs :: Definition
 createAbs =
@@ -111,12 +112,12 @@ createMain =
     )
 
 main :: IO ()
-main =
-  case compile [createMain, createFib] of
-    Ko w err -> displayWarnings w >> displayError err
-    Ok w (Binary env main_func) -> do
-      displayWarnings w
-      result <- exec env [] main_func []
+main = do
+  bin <- compile [createMain, createFib]
+  case bin of
+    Nothing -> exitWith (ExitFailure 1)
+    Just (Binary env main) -> do
+      result <- exec env [] main []
       case result of
         Left a -> putStrLn a
         Right a -> print a

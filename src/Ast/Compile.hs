@@ -24,8 +24,8 @@ import Eval.Exec
 
 data Binary = Binary Env Func deriving (Show)
 
-compile :: [Definition] -> Compile Binary
-compile defs = case createCtx defs (Context empty) 0 of
+generateBinary :: [Definition] -> Compile Binary
+generateBinary defs = case createCtx defs (Context empty) 0 of
   Ko warns err -> Ko warns err
   Ok warns ctx -> case compAllFunc defs (Binary [] []) ctx of
     Ko warns2 err -> withW warns $ Ko warns2 err
