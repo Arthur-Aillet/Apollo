@@ -103,9 +103,11 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $ While (OpOperation $ CallStd Less [OpValue (AtomI (-5)), OpVariable "res"])
-                  (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Subtraction [OpVariable "res", OpValue (AtomI 1)] ),
-                AstStructure $ Return $ OpVariable "res"
+                AstStructure $
+                  While
+                    (OpOperation $ CallStd Less [OpValue (AtomI (-5)), OpVariable "res"])
+                    (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Subtraction [OpVariable "res", OpValue (AtomI 1)])
+                    -- , AstStructure $ Return $ OpVariable "res"
               ]
         )
     )

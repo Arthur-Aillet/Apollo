@@ -149,20 +149,9 @@ compStruct (While op ast) c l = case compOperable op c l of
   Ko warns err -> Ko warns err
   Ok w (op_i, TypeBool) -> case compAst ast c l of
     Ko warns err -> Ko warns err
-    Ok w2 (t_i, _) -> withW w2 $ Ok w (op_i ++ jumpIfFalse ++ t_i ++ jump , l)
+    Ok w2 (t_i, _) -> withW w2 $ Ok w (op_i ++ jumpIfFalse ++ t_i ++ jump, l)
       where
         jumpIfFalse = [JumpIfFalse (length t_i + 1)]
         jump = [Jump ((length op_i + length t_i + 1) * (-1))]
   Ok w (_, op_type) ->
     Ko w $ "If wait boolean and not " ++ show op_type
-{--
-  case compOperable op c (LocalContext hmap r) of
-    Ko warns err -> Ko warns err
-    Ok w (insts, op_type) ->
-      if op_type == vtype
-        then Ok w (insts ++ [Store], new_local)
-        else Ko "Variable recieved invalid type"
-  where
-    new_local = LocalContext new_hmap r
-    new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
---}
