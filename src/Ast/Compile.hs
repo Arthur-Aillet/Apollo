@@ -99,7 +99,7 @@ compFirstAssign op c hmap r wtype name =
       | otherwise -> Ko w $ "Type of variable \"" ++ name ++ "\" redefined"
 
 compStruct :: Structure -> Context -> LocalContext -> Compile (Insts, LocalContext)
-compStruct Resolved _ _ = Ko [] "Resolved unsupported"
+compStruct Resolved _ l = Ok [] ([], l)
 compStruct (Return _) _ (LocalContext _ Nothing) =
   Ko [] "Return value in void function"
 compStruct (Return ope) c (LocalContext a (Just fct_type)) =
@@ -145,7 +145,16 @@ compStruct (VarAssignation name op) c (LocalContext hmap r) =
         | wtype == rtype -> Ok w (insts ++ [Assign idx], LocalContext hmap r)
         | otherwise -> Ko [] $ "Type of variable \"" ++ name ++ "\" redefined"
     Just (_, wtype, False) -> compFirstAssign op c hmap r wtype name
-
+compStruct (While op ast) c l = case compOperable op c l of
+  Ko warns err -> Ko warns err
+  Ok w (op_i, TypeBool) -> case compAst ast c l of
+    Ko warns err -> Ko warns err
+    Ok w2 (t_i, _) -> withW w2 $ Ok w (op_i ++ jumpIfFalse ++ t_i ++ jump , l)
+      where
+        jumpIfFalse = [JumpIfFalse (length t_i + 1)]
+        jump = [Jump ((length op_i + length t_i + 1) * (-1))]
+  Ok w (_, op_type) ->
+    Ko w $ "If wait boolean and not " ++ show op_type
 {--
   case compOperable op c (LocalContext hmap r) of
     Ko warns err -> Ko warns err

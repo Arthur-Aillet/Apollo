@@ -7,13 +7,13 @@
 
 module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
 
-import Ast.Error (Compile (..))
 import Ast.Type
   ( Definition (..),
     Function (..),
     Type,
   )
 import Data.HashMap.Lazy (HashMap, fromList, insert)
+import Ast.Error (Compile(..))
 
 type Index = Int
 

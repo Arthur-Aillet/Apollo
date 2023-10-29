@@ -5,8 +5,8 @@ import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
+import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
-import System.Exit (exitWith, ExitCode(ExitFailure))
 
 createAbs :: Definition
 createAbs =
@@ -103,18 +103,17 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $
-                  Return $
-                    OpOperation $
-                      CallFunc "fib" [OpVariable "res"]
+                AstStructure $ While (OpOperation $ CallStd Less [OpValue (AtomI (-5)), OpVariable "res"])
+                  (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Subtraction [OpVariable "res", OpValue (AtomI 1)] ),
+                AstStructure $ Return $ OpVariable "res"
               ]
         )
     )
 
 main :: IO ()
 main = do
-  (Binary env main) <- compile [createMain, createFib]
-  result <- exec env [] main []
+  (Binary env main_f) <- compile [createMain, createAbs]
+  result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a
     Right a -> print a
