@@ -18,15 +18,23 @@ import Parser.Syntax(parseMany, parseWithSpace, parseSome)
 import Parser.Char(parseAnyChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Position(Position(..))
 import Parser.Int(parseInt)
+import Parser.Error(failingWith)
 
 parseDefinitionName :: Parser String
 parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
 
-goodType :: String -> Type
-goodType "int" = TypeInt
-goodType "float" = TypeFloat
-goodType "char" = TypeChar
-goodType "bool" = TypeBool
+goodType :: String -> (Maybe Type)
+goodType "int" = Just TypeInt
+goodType "float" = Just TypeFloat
+goodType "char" = Just TypeChar
+goodType "bool" = Just TypeBool
+goodType _ = Nothing
+
+isgoodType :: Parser (Maybe Type) -> Parser Type
+isgoodType parser = Parser $ \s p -> case runParser parser s p of
+  Right (Just typ, str, pos) -> Right (typ, str, pos)
+  Right (Nothing, _, pos) -> Left (StackTrace [("This type doesn't exist: ", (Range p pos), defaultLocation)])
+  Left a -> Left a
 
 parseType :: Parser String
 parseType = parseSymbol "int" <|> parseSymbol "float" <|> parseSymbol "bool" <|> parseSymbol "char"
@@ -40,13 +48,13 @@ createVarDef  parType parStr = Parser $ \s p -> case runParser parType s p of
 
 
 parseDeclareVar :: Parser Definition
-parseDeclareVar = createVarDef (goodType <$> parseType) (parseDefinitionName)
+parseDeclareVar = createVarDef (isgoodType (goodType <$> parseType)) (parseDefinitionName)
 
 parseParameter :: Parser (String, Type)
 parseParameter =
   (swap <$> ((,) <$> typ <*> str))
     where
-      typ = goodType <$> parseType
+      typ = isgoodType (goodType <$> parseType)
       str = parseDefinitionName
 
 parseParameterWithComa :: Parser (String, Type)
@@ -69,9 +77,21 @@ parseInstruction = AstStructure <$> (returnVar <$> parseWithSpace (parseSymbol "
     returnVar :: String -> Operable -> Structure
     returnVar _ expr = Return expr
 
-parseFunction :: (Maybe Type) -> Parser Function
-parseFunction typ = Function <$> parseParameters <*> pure typ <*> parseInstruction
+parseInstructions :: Parser Ast
+parseInstructions =
+  parseWithSpace
+  (parseOpeningCurlyBraquet
+  *> parseWithSpace parseInstruction
+  <* parseClosingCurlyBraquet)
 
+parseFunction :: Maybe Type -> Parser Function
+parseFunction typ = Function <$> parseParameters <*> pure typ <*> parseInstructions
 
--- parseFuncDefinition :: Parser FuncDefinition
--- parseFuncDefinition = parseFunction
+parseFuncDefinition :: Parser Definition
+parseFuncDefinition = Parser $ \s p -> case runParser (goodType <$> parseType) s p of
+  Right (typ, str, pos) -> case runParser parseDefinitionName str pos of
+    Right (name, string, position) -> case runParser (parseFunction typ) string position of
+      Right (func, new_str, new_pos) -> Right ((FuncDefinition name func), new_str, new_pos)
+      Left a -> Left a
+    Left a -> Left a
+  Left a -> Left a
