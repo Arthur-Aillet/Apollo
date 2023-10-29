@@ -81,7 +81,7 @@ compVarDefinition op hmap r vtype name c =
     Ko warns err -> Ko warns err
     Ok w (insts, op_type)
       | op_type == vtype -> Ok w (insts ++ [Store], new_local)
-      | otherwise -> Ko w "Variable recieved invalid type"
+      | otherwise -> Ko w $ "Type of variable \"" ++ name ++ "\" redefined"
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
@@ -96,7 +96,7 @@ compFirstAssign op c hmap r wtype name =
     Ok w (insts, rtype)
       | wtype == rtype ->
           Ok w (insts ++ [Store], LocalContext (adjust setTrue name hmap) r)
-      | otherwise -> Ko w $ "Variable " ++ name ++ " type redefined"
+      | otherwise -> Ko w $ "Type of variable \"" ++ name ++ "\" redefined"
 
 compStruct :: Structure -> Context -> LocalContext -> Compile (Insts, LocalContext)
 compStruct Resolved _ _ = Ko [] "Resolved unsupported"
@@ -127,7 +127,7 @@ compStruct (Sequence (x : xs)) c l = case compAst x c l of
       <*> compStruct (Sequence xs) c new_local
 compStruct (Sequence []) _ l = Ok [] ([], l)
 compStruct (VarDefinition name vtype content) c (LocalContext vs r)
-  | name `member` vs = Ko [] "Variable with name already exist"
+  | name `member` vs = Ko [] $ "Variable \"" ++ name ++ "\"  already exist"
   | otherwise = case content of
       Nothing ->
         Ok
@@ -138,12 +138,12 @@ compStruct (VarDefinition name vtype content) c (LocalContext vs r)
       Just op -> compVarDefinition op vs r vtype name c
 compStruct (VarAssignation name op) c (LocalContext hmap r) =
   case hmap !? name of
-    Nothing -> Ko [] $ "Variable " ++ name ++ "undefined"
+    Nothing -> Ko [] $ "Variable \"" ++ name ++ "\" undefined"
     Just (idx, wtype, True) -> case compOperable op c (LocalContext hmap r) of
       Ko warns err -> Ko warns err
       Ok w (insts, rtype)
         | wtype == rtype -> Ok w (insts ++ [Assign idx], LocalContext hmap r)
-        | otherwise -> Ko [] $ "Variable " ++ name ++ " type redefined"
+        | otherwise -> Ko [] $ "Type of variable \"" ++ name ++ "\" redefined"
     Just (_, wtype, False) -> compFirstAssign op c hmap r wtype name
 
 {--

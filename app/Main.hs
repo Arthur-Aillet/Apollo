@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Ast.Compile (Binary (..), compile)
-import Ast.Display (displayWarnings)
+import Ast.Display (displayError, displayWarnings)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
@@ -102,7 +102,6 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $ VarAssignation "res" (OpCast (OpValue (AtomI 14)) TypeInt),
                 AstStructure $
                   Return $
                     OpOperation $
@@ -114,7 +113,7 @@ createMain =
 main :: IO ()
 main =
   case compile [createMain, createFib] of
-    Ko w err -> displayWarnings w >> putStrLn err
+    Ko w err -> displayWarnings w >> displayError err
     Ok w (Binary env main_func) -> do
       displayWarnings w
       result <- exec env [] main_func []
