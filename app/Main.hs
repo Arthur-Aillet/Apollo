@@ -5,6 +5,7 @@ import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
+import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 
@@ -17,8 +18,8 @@ createAbs =
         (Just TypeInt)
         ( AstStructure
             ( If
-                (OpOperation $ CallStd Less [OpVariable "n", OpValue (AtomI 0)])
-                (AstStructure $ Return $ OpOperation $ CallStd Multiplication [OpVariable "n", OpValue (AtomI (-1))])
+                (OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)])
+                (AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))])
                 (AstStructure $ Return $ OpVariable "n")
             )
         )
@@ -43,9 +44,9 @@ createFib =
                           Return $
                             OpOperation $
                               CallStd
-                                Addition
-                                [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Subtraction [OpVariable "n", OpValue (AtomI 1)]],
-                                  OpOperation $ CallFunc "fib" [OpOperation $ CallStd Subtraction [OpVariable "n", OpValue (AtomI 2)]]
+                                Add
+                                [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 1)]],
+                                  OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 2)]]
                                 ]
                       )
                 )
@@ -64,7 +65,7 @@ createSub =
             Return $
               OpOperation $
                 CallStd
-                  Subtraction
+                  Sub
                   [ OpVariable "a",
                     OpVariable "b"
                   ]
@@ -87,7 +88,7 @@ createGcd =
                       OpOperation $
                         CallFunc
                           "gcd"
-                          [OpVariable "y", OpOperation (CallStd Modulo [OpVariable "x", OpVariable "y"])]
+                          [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
                 )
             )
         )
@@ -105,9 +106,9 @@ createMain =
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
                 AstStructure $
                   While
-                    (OpOperation $ CallStd Less [OpValue (AtomI (-5)), OpVariable "res"])
-                    (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Subtraction [OpVariable "res", OpValue (AtomI 1)])
-                    -- , AstStructure $ Return $ OpVariable "res"
+                    (OpOperation $ CallStd Gt [OpVariable "res", OpValue (AtomI (-5))])
+                    (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Sub [OpVariable "res", OpValue (AtomI 1)]),
+                AstStructure $ Return $ OpVariable "res"
               ]
         )
     )
