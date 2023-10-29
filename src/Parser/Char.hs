@@ -37,6 +37,14 @@ parseClosingParenthesis :: Parser Char
 parseClosingParenthesis =
   withErr "parseClosingParenthesis: Not Found: Missing closing Parenthesis" (parseChar ')')
 
+parseOpeningCurlyBraquet :: Parser Char
+parseOpeningCurlyBraquet =
+  withErr "parseOpeningCurlyBraquet: Not Found: Missing opening curlybraquet" (parseChar '{')
+
+parseClosingCurlyBraquet :: Parser Char
+parseClosingCurlyBraquet =
+  withErr "parseClosingCurlyBraquet: Not Found: Missing closing curlybraquet" (parseChar '}')
+
 parseChar :: Char -> Parser Char
 parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)

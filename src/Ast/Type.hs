@@ -10,11 +10,12 @@ module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (
 import Atom.Atom (Atom)
 import Eval.Builtin (Builtin)
 
-data Function = Function [(String, Type)] (Maybe Type) Ast
+data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
   = FuncDefinition String Function -- define a function
   | VarDefinition String Type -- define a variable
+  deriving (Show, Eq)
 
 data Structure -- layout, structure and connection of statements, having no value
   = Resolved -- expression resolving to no value

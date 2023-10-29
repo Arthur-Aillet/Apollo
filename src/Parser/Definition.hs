@@ -5,17 +5,21 @@
 -- Definition.hs
 -}
 
-module Parser.Definition (parseDeclareVar) where
+module Parser.Definition (module Parser.Definition) where
 
+import Data.Tuple (swap)
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
 import Ast.Type(Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..))
 import Parser.Symbol (parseSymbol)
 import Parser.StackTrace (StackTrace(..), defaultLocation)
 import Parser.Range (Range(..))
-import Parser.Syntax(parseMany, parseWithSpace)
-import Parser.Char(parseAnyChar)
+import Parser.Syntax(parseMany, parseWithSpace, parseSome)
+import Parser.Char(parseAnyChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
+import Parser.Position(Position(..))
 
+parseDefinitionName :: Parser String
+parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
 
 goodType :: String -> Type
 goodType "int" = TypeInt
@@ -24,12 +28,34 @@ goodType "char" = TypeChar
 goodType "bool" = TypeBool
 
 parseType :: Parser String
-parseType = Parser $ \s p -> runParser (parseSymbol "int" <|> parseSymbol "float" <|> parseSymbol "bool" <|> parseSymbol "char") s p
+parseType = parseSymbol "int" <|> parseSymbol "float" <|> parseSymbol "bool" <|> parseSymbol "char"
+
+createVarDef :: Parser Type -> Parser String -> Parser Definition
+createVarDef  parType parStr = Parser $ \s p -> case runParser parType s p of
+  Right(typ, str, pos) -> case runParser parStr str pos of
+    Right(name, string, position) -> Right ((VarDefinition name typ), string, position)
+    Left a -> Left a
+  Left a -> Left a
+
 
 parseDeclareVar :: Parser Definition
-parseDeclareVar = Parser $ \s p -> case runParser parseType s p of
-    Right (tp, str, new_pos) -> case runParser (parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))) str new_pos  of
-        Right (var, end_str, end_pos) -> Right (VarDefinition var (goodType tp), end_str, end_pos)
-        Left (StackTrace [((_, (Range _ end), src))]) -> Left (StackTrace [("Invalid Syntax: " ++ show s, Range p end, src)])
-    Left (StackTrace [(_, (Range _ e), src)]) -> Left (StackTrace [("Invalid Syntax: this type doesn't exist: " ++ show s, Range p e, src)])
+parseDeclareVar = createVarDef (goodType <$> parseType) (parseDefinitionName)
+
+parseParameter :: Parser (String, Type)
+parseParameter =
+  (swap <$> ((,) <$> typ <*> str))
+    where
+      typ = goodType <$> parseType
+      str = parseDefinitionName
+
+parseParameterWithComa :: Parser (String, Type)
+parseParameterWithComa = parseParameter <* parseChar ','
+
+
+parseParameters :: Parser [(String, Type)]
+parseParameters =
+  parseWithSpace
+  (parseOpeningParenthesis
+  *>  parseMany (parseWithSpace (parseParameterWithComa <|> parseParameter))
+  <* parseClosingParenthesis)
 
