@@ -17,6 +17,7 @@ import Parser.Range (Range(..))
 import Parser.Syntax(parseMany, parseWithSpace, parseSome)
 import Parser.Char(parseAnyChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Position(Position(..))
+import Parser.Int(parseInt)
 
 parseDefinitionName :: Parser String
 parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
@@ -59,3 +60,18 @@ parseParameters =
   *>  parseMany (parseWithSpace (parseParameterWithComa <|> parseParameter))
   <* parseClosingParenthesis)
 
+parseOperable :: Parser Operable
+parseOperable = OpValue <$> parseInt
+
+parseInstruction :: Parser Ast
+parseInstruction = AstStructure <$> (returnVar <$> parseWithSpace (parseSymbol "return") <*> parseOperable)
+  where
+    returnVar :: String -> Operable -> Structure
+    returnVar _ expr = Return expr
+
+parseFunction :: (Maybe Type) -> Parser Function
+parseFunction typ = Function <$> parseParameters <*> pure typ <*> parseInstruction
+
+
+-- parseFuncDefinition :: Parser FuncDefinition
+-- parseFuncDefinition = parseFunction
