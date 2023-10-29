@@ -8,6 +8,9 @@ import Eval
 import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
+import PreProcess
+
+import System.Environment
 
 createAbs :: Definition
 createAbs =
@@ -115,6 +118,8 @@ createMain =
 
 main :: IO ()
 main = do
+  args <- getArgs
+  files <- readFiles args
   (Binary env main_f) <- compile [createMain, createAbs]
   result <- exec env [] main_f [] []
   case result of

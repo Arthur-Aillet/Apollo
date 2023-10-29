@@ -1,9 +1,9 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- InstructionSpec
---
+-}
 
 module InstructionSpec
   ( instructionTests,
