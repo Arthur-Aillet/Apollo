@@ -24,13 +24,13 @@ absFunc :: Func
 absFunc =
   [ PushI 0,
     PushD (AtomI 0),
-    Op Less,
+    Op Lt,
     JumpIfFalse 2,
     PushI 0,
     Ret,
     PushI 0,
     PushD (AtomI (-1)),
-    Op Multiplication,
+    Op Mul,
     Ret
   ]
 
