@@ -105,7 +105,7 @@ createMain =
         ( AstStructure $
             Sequence
               [
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomB False), OpValue (AtomB False)]
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpValue (AtomB False)]
               ]
         )
     )

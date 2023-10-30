@@ -49,7 +49,13 @@ data Type
   | TypeChar
   | TypeInt
   | TypeFloat
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show Type where
+   show TypeBool = "Bool"
+   show TypeChar = "Char"
+   show TypeInt = "Int"
+   show TypeFloat = "Float"
 
 numType :: Type -> Bool
 numType TypeBool = True
