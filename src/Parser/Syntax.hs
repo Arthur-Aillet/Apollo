@@ -7,14 +7,8 @@
 
 module Parser.Syntax (module Parser.Syntax) where
 
--- import Parser.Range (Range (..))
--- import Parser.StackTrace (StackTrace (..))
 import Parser.Type (Parser (..))
 import Parser.Char (parseAnyChar)
--- NOTE - ParseMany moins laxiste. ex: ParseMany Parse Bool => True -> True -> Error
--- NOTE Ne renvoie pas d'erreur
-
--- Refaire tout les parsers
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of

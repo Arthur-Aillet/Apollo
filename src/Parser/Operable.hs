@@ -27,7 +27,7 @@ parseCast:: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> (parseWithSpace parseType))
 
 parseOp :: Parser Operable
-parseOp = (OpValue <$> parseAtom) <|> (OpVariable <$> parseDefinitionName)
+parseOp = (OpValue <$> (parseWithSpace parseAtom)) <|> (OpVariable <$> (parseWithSpace  parseDefinitionName))
 
 parseOperable :: Parser Operable
 parseOperable = (OpCast <$> parseOp <*> parseCast) <|> parseOp
