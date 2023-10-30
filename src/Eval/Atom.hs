@@ -1,11 +1,11 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- Atom
---
+-}
 
-module Atom.Atom
+module Eval.Atom
   ( Atom (..),
     bAtom,
     cAtom,
@@ -53,26 +53,24 @@ fAtom x = case iAtom x of
 atomCast :: (Atom -> Atom -> a) -> Atom -> Atom -> a
 atomCast f (AtomF a) b = f (AtomF a) (fAtom b)
 atomCast f a (AtomF b) = f (fAtom a) (AtomF b)
-atomCast f a b = case a of
-  AtomB _ -> case b of
-    AtomB _ -> f a b
-    AtomC _ _ -> f (cAtom a) b
-    AtomI _ -> f (iAtom a) b
-  AtomC _ _ -> case b of
-    AtomB _ -> f a (cAtom b)
-    AtomC _ _ -> f a b
-    AtomI _ -> f a (cAtom b)
-  AtomI _ -> case b of
-    AtomB _ -> f a (iAtom b)
-    AtomC _ _ -> f (cAtom a) b
-    AtomI _ -> f a b
+atomCast f (AtomB a) b = case b of
+  AtomB _ -> f (AtomB a) b
+  AtomC _ _ -> f (cAtom (AtomB a)) b
+  AtomI _ -> f (iAtom (AtomB a)) b
+atomCast f (AtomC a a2) b = case b of
+  AtomB _ -> f (AtomC a a2) (cAtom b)
+  AtomC _ _ -> f (AtomC a a2) b
+  AtomI _ -> f (AtomC a a2) (cAtom b)
+atomCast f (AtomI a) b = case b of
+  AtomB _ -> f (AtomI a) (iAtom b)
+  AtomC _ _ -> f (cAtom (AtomI a)) b
+  AtomI _ -> f (AtomI a) b
 
 instance Num Atom where
   (+) (AtomB a) (AtomB b) = AtomB (a || b)
-  (+) (AtomC a sa) (AtomC b sb) =
-    if res <= 0
-      then AtomC (toEnum (abs res)) True
-      else AtomC (toEnum res) False
+  (+) (AtomC a sa) (AtomC b sb)
+    | res <= 0 = AtomC (toEnum (abs res)) True
+    | otherwise = AtomC (toEnum res) False
     where
       res =
         (if sa then negate else id) (fromEnum a)
@@ -83,10 +81,9 @@ instance Num Atom where
   (+) a b = atomCast (+) a b
 
   (*) (AtomB a) (AtomB b) = AtomB (a && b)
-  (*) (AtomC a sa) (AtomC b sb) =
-    if res <= 0
-      then AtomC (toEnum (abs res)) True
-      else AtomC (toEnum res) False
+  (*) (AtomC a sa) (AtomC b sb)
+    | res <= 0 = AtomC (toEnum (abs res)) True
+    | otherwise = AtomC (toEnum res) False
     where
       res =
         (if sa then negate else id) (fromEnum a)
@@ -137,6 +134,27 @@ instance Fractional Atom where
   (/) a b = atomCast (/) a b
 
   fromRational x = AtomF $ fromRational x
+
+instance Real Atom where
+  toRational x = case fAtom x of
+    (AtomF y) -> toRational y
+    _ -> error ""
+
+instance Enum Atom where
+  fromEnum x = case iAtom x of
+    (AtomI y) -> fromEnum y
+    _ -> error ""
+  toEnum = AtomI
+
+instance Integral Atom where
+  quotRem (AtomI x) (AtomI y) = (AtomI x', AtomI y')
+    where
+      (x', y') = quotRem x y
+  quotRem x y = quotRem (iAtom x) (iAtom y)
+
+  toInteger x = case iAtom x of
+    (AtomI y) -> toInteger y
+    _ -> error ""
 
 readSAtomB :: ReadS Atom
 readSAtomB ('#' : 't' : xs) = [(AtomB True, xs)]

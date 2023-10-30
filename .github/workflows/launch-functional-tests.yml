@@ -1,0 +1,27 @@
+name: launch-functional-tests
+run-name: ${{ github.actor }} is running functional tests out our GLaDOS 🤖
+on:
+  push:
+    paths:
+      - 'test/samples/*'
+jobs:
+  Run-Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Haskell
+        uses: haskell/actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Cache dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - name: Build and run functional tests
+        run: "make func-test"
+  

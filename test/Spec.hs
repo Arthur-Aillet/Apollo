@@ -1,5 +1,7 @@
 import AtomSpec (atomTests)
 import Control.Monad
+import InstructionSpec (instructionTests)
+import OperatorSpec (operatorTests)
 import ParserSpec (parserTests)
 import Test.HUnit
 
@@ -10,5 +12,7 @@ tests :: Test
 tests =
   TestList
     [ parserTests,
-      atomTests
+      atomTests,
+      operatorTests,
+      instructionTests
     ]
