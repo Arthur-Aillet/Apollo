@@ -19,11 +19,11 @@ createAbs =
     ( Function
         [("n", TypeInt)]
         (Just TypeInt)
-        ( AstStructure
+        (AstStructure
             ( If
-                (OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)])
-                (AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))])
-                (AstStructure $ Return $ OpVariable "n")
+                [(OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)],
+                AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))])]
+                (Just $ AstStructure $ Return $ OpVariable "n")
             )
         )
     )
@@ -37,13 +37,11 @@ createFib =
         (Just TypeInt)
         ( AstStructure
             ( If
-                (OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 0)])
-                (AstStructure $ Return $ OpValue (AtomI 0))
-                ( AstStructure $
-                    If
-                      (OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 1)])
-                      (AstStructure $ Return $ OpValue (AtomI 1))
-                      ( AstStructure $
+                [(OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 0)],
+                AstStructure $ Return $ OpValue (AtomI 0)),
+                (OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 1)],
+                  AstStructure $ Return $ OpValue (AtomI 1))]
+                (Just $ AstStructure $
                           Return $
                             OpOperation $
                               CallStd
@@ -55,7 +53,6 @@ createFib =
                 )
             )
         )
-    )
 
 createSub :: Definition
 createSub =
@@ -84,9 +81,9 @@ createGcd =
         (Just TypeInt)
         ( AstStructure
             ( If
-                (OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"])
-                (AstStructure $ Return $ OpVariable "x")
-                ( AstStructure $
+                [(OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"],
+                AstStructure $ Return $ OpVariable "x")]
+                (Just $ AstStructure $
                     Return $
                       OpOperation $
                         CallFunc
@@ -106,12 +103,8 @@ createMain =
         (Just TypeInt)
         ( AstStructure $
             Sequence
-              [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue (AtomI 10)),
-                AstStructure $
-                  While
-                    (OpOperation $ CallStd Gt [OpVariable "res", OpValue (AtomI (-5))])
-                    (AstStructure $ VarAssignation "res" $ OpOperation $ CallStd Sub [OpVariable "res", OpValue (AtomI 1)]),
-                AstStructure $ Return $ OpVariable "res"
+              [
+                AstStructure $ Return $ OpOperation $ CallFunc "fib" [OpValue (AtomI 14)]
               ]
         )
     )
@@ -120,7 +113,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain, createAbs]
+  (Binary env main_f) <- compile [createMain, createFib]
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a

@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Haskell
-        uses: haskell/actions/setup@v2
+        uses: haskell-actions/setup@v2
         with:
           enable-stack: true
           stack-version: 'latest'
@@ -22,7 +22,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
       - name: Build and run unit tests
-        run: | 
+        run: |
           stack test --fast --no-terminal --system-ghc 2>/tmp/ci-test-output
           cat /tmp/ci-test-output
           ! grep "Failure in" /tmp/ci-test-output

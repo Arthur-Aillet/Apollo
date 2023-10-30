@@ -21,7 +21,7 @@ data Structure -- layout, structure and connection of statements, having no valu
   | VarDefinition String Type (Maybe Operable)
   | VarAssignation String Operable
   | Return Operable
-  | If Operable Ast Ast -- branching condition (if (x) {} {})
+  | If [(Operable, Ast)] (Maybe Ast) -- branching condition (if (x) {} {})
   | While Operable Ast
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})

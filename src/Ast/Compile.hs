@@ -17,7 +17,6 @@ import Ast.Type
     Operable (..),
     Structure (..),
     Type (..),
-    numType,
   )
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
@@ -54,26 +53,29 @@ compAst (AstStructure struct) c l = compStruct struct c l
 compAst (AstOperation op) c l =
   (\a -> (a, l)) <$> (fst <$> compOperation op c l)
 
-compIf :: Compile Insts -> Compile Insts -> Type -> Compile Insts -> Int -> Compile Insts
-compIf op_compiled else_comp op_type then_insts len
-  | numType op_type =
-      concatInner
-        [ op_compiled,
-          Ok [] [JumpIfFalse len],
-          then_insts,
-          else_comp
-        ]
-  | otherwise = Ko [] "Operator in if not numerical value"
+compIfOp :: Operable -> Context -> LocalContext -> (Compile Insts, Int)
+compIfOp op c l = case compOperable op c l of
+  Ko w e -> (Ko w e, 0)
+  Ok w (op_insts, TypeBool) -> (Ok w op_insts, length op_insts)
+  Ok w (_, op_type) ->
+    (Ko w $ "If contain invalid type \"" ++ show op_type ++ "\" instead of Bool", 0)
 
-packCompIf :: Compile Insts -> Compile Insts -> Ast -> Context -> LocalContext -> Int -> Compile (Insts, LocalContext)
-packCompIf op_compiled then_insts ast_else c l len =
-  (\a -> (a, l))
-    <$> compIf
-      op_compiled
-      (fst <$> compAst ast_else c l)
-      TypeBool
-      then_insts
-      len
+compIfAst :: Ast -> Context -> LocalContext -> (Compile Insts, Int)
+compIfAst ast c l = case compAst ast c l of
+  Ko w e -> (Ko w e, 0)
+  Ok w (insts, _) -> (Ok w insts, length insts)
+
+compIf :: [(Operable, Ast)] -> Maybe Ast -> Context -> LocalContext -> (Compile Insts, Int)
+compIf ((op, then'):xs) e c l =
+  (concatInner [op_insts, Ok [] [JumpIfFalse (ast_len + plus_one)], ast_insts, jump_next, next_insts], ast_len + op_len + next_len)
+  where
+    plus_one = if next_len == 0 then 0 else 1
+    jump_next = if next_len == 0 then Ok [] [] else Ok [] [Jump next_len]
+    (next_insts, next_len) = compIf xs e c l
+    (op_insts, op_len) = compIfOp op c l
+    (ast_insts, ast_len) = compIfAst then' c l
+compIf [] (Just else') c l = compIfAst else' c l
+compIf [] Nothing _ _ = (Ok [] [], 0)
 
 compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Compile (Insts, LocalContext)
 compVarDefinition op hmap r vtype name c =
@@ -109,14 +111,7 @@ compStruct (Return ope) c (LocalContext a (Just fct_type)) =
       | op_type == fct_type ->
           Ok w (op_compiled ++ [Ret], LocalContext a (Just fct_type))
       | otherwise -> Ko w "Return invalid type"
-compStruct (If op ast_then a_else) c l = case compOperable op c l of
-  Ko warns err -> Ko warns err
-  Ok w (op_comp, TypeBool) -> case compAst ast_then c l of
-    Ko warns err -> Ko warns err
-    Ok w1 t_i ->
-      packCompIf (Ok w op_comp) (Ok w1 (fst t_i)) a_else c l (length $ fst t_i)
-  Ok w (_, op_type) ->
-    Ko w $ "If wait boolean and not " ++ show op_type
+compStruct (If ops else') c l = (\a -> (a, l)) <$> fst (compIf ops else' c l)
 compStruct (Single _) _ _ = Ko [] "Single unsupported"
 compStruct (Block _ _) _ _ = Ko [] "Block unsupported"
 compStruct (Sequence (x : xs)) c l = case compAst x c l of
