@@ -7,8 +7,8 @@
 
 module Parser.Syntax (module Parser.Syntax) where
 
-import Parser.Range (Range (..))
-import Parser.StackTrace (StackTrace (..))
+-- import Parser.Range (Range (..))
+-- import Parser.StackTrace (StackTrace (..))
 import Parser.Type (Parser (..))
 import Parser.Char (parseAnyChar)
 -- NOTE - ParseMany moins laxiste. ex: ParseMany Parse Bool => True -> True -> Error
