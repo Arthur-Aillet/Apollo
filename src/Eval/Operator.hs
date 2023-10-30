@@ -18,6 +18,7 @@ module Eval.Operator
 where
 
 import Eval.Atom (Atom (..))
+import Data.Bits (And)
 
 data Value
   = VAtom Atom
@@ -34,8 +35,9 @@ type ArgsNbr = Int
 data OperatorDef = OperatorDef ArgsNbr OperatorType
 
 data OperatorType
-  = Equality
-  | Calculus
+  = Equality -- [a] -> Bool
+  | Logical -- [Bool] -> Bool
+  | Calculus -- [a] -> a
   deriving (Show, Eq)
 
 data Operator
@@ -50,6 +52,9 @@ data Operator
   | Gt
   | GEt
   | NEq
+  | And
+  | Or
+  | Not
   deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
@@ -70,6 +75,9 @@ operate Gt = \[a, b] -> Right $ AtomB $ a > b
 operate GEt = \[a, b] -> Right $ AtomB $ a >= b
 operate GEt = \[a, b] -> Right $ AtomB $ a >= b
 operate NEq = \[a, b] -> Right $ AtomB $ a /= b
+operate And = \[AtomB a, AtomB b] -> Right $ AtomB $ a && b
+operate Or = \[AtomB a, AtomB b] -> Right $ AtomB $ a || b
+operate Not = \[AtomB a] -> Right $ AtomB $ not a
 
 defsOp :: Operator -> OperatorDef
 defsOp Add = OperatorDef 2 Calculus
@@ -83,6 +91,9 @@ defsOp LEt = OperatorDef 2 Equality
 defsOp Gt = OperatorDef 2 Equality
 defsOp GEt = OperatorDef 2 Equality
 defsOp NEq = OperatorDef 2 Equality
+defsOp And = OperatorDef 2 Logical
+defsOp Or = OperatorDef 2 Logical
+defsOp Not = OperatorDef 1 Logical
 
 isAllAtoms :: [Value] -> Either String [Atom]
 isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs

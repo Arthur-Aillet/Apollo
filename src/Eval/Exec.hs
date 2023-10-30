@@ -10,7 +10,6 @@ module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, 
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
-import Debug.Trace
 
 type Env = [(Int, Func)]
 

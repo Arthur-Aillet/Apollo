@@ -5,12 +5,13 @@ import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
-import Eval.Exec (Operator (Add, Sub))
+import Eval.Exec (Operator (Add, Sub, Or))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 import PreProcess
 
 import System.Environment
+import Eval.Exec
 
 createAbs :: Definition
 createAbs =
@@ -100,11 +101,11 @@ createMain =
     "main"
     ( Function
         []
-        (Just TypeInt)
+        (Just TypeBool)
         ( AstStructure $
             Sequence
               [
-                AstStructure $ Return $ OpOperation $ CallFunc "fib" [OpValue (AtomI 14)]
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomB False), OpValue (AtomB False)]
               ]
         )
     )

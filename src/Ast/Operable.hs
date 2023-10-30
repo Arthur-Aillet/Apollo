@@ -50,14 +50,14 @@ argsHasError (Ok w []) [] = Ok w ()
 opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs (Ko w err : _) _ _ = Ko w err
 opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
-opeValidArgs [] _ (Just _) = Ko [] "Builtin, Not enough arguments"
-opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w "Builtin, Too many arguments"
-opeValidArgs [] _ Nothing = Ko [] "Builtin, No arguments given"
+opeValidArgs [] _ (Just _) = Ko [] "Builtin: Not enough arguments"
+opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w "Builtin: Too many arguments"
+opeValidArgs [] _ Nothing = Ko [] "Builtin: No arguments given"
 opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs xs (nbr - 1) (Just arg_type)
 opeValidArgs (Ok w (_, arg_type) : xs) nbr (Just waited_type)
   | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
-  | otherwise = Ko w "Builtin different types given"
+  | otherwise = Ko w $ "Builtin: recieved "  ++ show arg_type ++ " when " ++ show waited_type ++ " was awaited"
 
 compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of
@@ -79,10 +79,21 @@ compEquality op args count = case opeValidArgs args count Nothing of
               <*> Ok w [Op op]
           )
 
+compLogical :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compLogical op args count = case opeValidArgs args count (Just TypeBool) of
+  Ko warns err -> Ko warns err
+  Ok w _ ->
+    (\a -> (a, Just TypeBool))
+      <$> ( (++)
+              <$> concatInner (map (fst <$>) (reverse args))
+              <*> Ok w [Op op]
+          )
+
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l = case defsOp builtin of
   (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
   (OperatorDef argCount Equality) -> compEquality builtin args argCount
+  (OperatorDef argCount Logical) -> compLogical builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
