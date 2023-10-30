@@ -23,9 +23,8 @@ withW ws (Ko w e) = Ko (ws ++ w) e
 
 failingComp :: Compile a -> [Warning] -> [Error] -> Compile c
 failingComp a warns1 err1 = case a of
-    Ok warns2 _ -> Ko (warns1 ++ warns2) err1
-    Ko warns2 err2 -> Ko (warns1 ++ warns2) $ err1 ++ err2
-
+  Ok warns2 _ -> Ko (warns1 ++ warns2) err1
+  Ko warns2 err2 -> Ko (warns1 ++ warns2) $ err1 ++ err2
 
 instance Functor Compile where
   fmap fct compiler = case compiler of

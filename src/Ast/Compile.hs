@@ -8,7 +8,7 @@
 module Ast.Compile (module Ast.Compile) where
 
 import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), withW, failingComp)
+import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Operable (compOperable, compOperation, concatInner)
 import Ast.Type
   ( Ast (..),
@@ -58,10 +58,12 @@ compIfOp op c l = case compOperable op c l of
   Ko w e -> (Ko w e, 0)
   Ok w (op_insts, TypeBool) -> (Ok w op_insts, length op_insts)
   Ok w (_, op_type) ->
-    ( Ko w [
-        "If contain invalid type \""
-          ++ show op_type
-          ++ "\" instead of Bool"],
+    ( Ko
+        w
+        [ "If contain invalid type \""
+            ++ show op_type
+            ++ "\" instead of Bool"
+        ],
       0
     )
 

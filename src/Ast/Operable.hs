@@ -58,12 +58,14 @@ opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
 opeValidArgs (Ok w (_, arg_type) : xs) nbr (Just waited_type)
   | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
   | otherwise =
-      Ko w [
-        "Builtin: recieved "
-          ++ show arg_type
-          ++ " when "
-          ++ show waited_type
-          ++ " was awaited"]
+      Ko
+        w
+        [ "Builtin: recieved "
+            ++ show arg_type
+            ++ " when "
+            ++ show waited_type
+            ++ " was awaited"
+        ]
 
 compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of
