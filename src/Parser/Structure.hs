@@ -22,15 +22,17 @@ parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition
 
 ----------------------------------------------------------------
 -- FIXME - VarDefinition (Maybe Operable)
-createVarDef :: Parser Type -> Parser String -> (Maybe Operable) -> Parser Structure
+createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
 createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right(typ, str, pos) -> case runParser parStr str pos of
-    Right(name, string, position) -> Right ((VarDefinition name typ op), string, position)
+    Right(name, string, position) -> case runParser op string position of
+        Right(ope, new_str, new_pos) -> Right((VarDefinition name typ ope), new_str, new_pos)
+        Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = createVarDef parseType parseDefinitionName Nothing
+parseVarDefinition = createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)
 
 ----------------------------------------------------------------
 
