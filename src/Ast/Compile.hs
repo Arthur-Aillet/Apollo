@@ -53,19 +53,14 @@ compAst (AstStructure struct) c l = compStruct struct c l
 compAst (AstOperation op) c l =
   (\a -> (a, l)) <$> (fst <$> compOperation op c l)
 
+ifOpErr :: Type -> String
+ifOpErr ot = "If contain invalid type \"" ++ show ot ++ "\" instead of Bool"
+
 compIfOp :: Operable -> Context -> LocalContext -> (Compile Insts, Int)
 compIfOp op c l = case compOperable op c l of
   Ko w e -> (Ko w e, 0)
   Ok w (op_insts, TypeBool) -> (Ok w op_insts, length op_insts)
-  Ok w (_, op_type) ->
-    ( Ko
-        w
-        [ "If contain invalid type \""
-            ++ show op_type
-            ++ "\" instead of Bool"
-        ],
-      0
-    )
+  Ok w (_, op_type) -> ( Ko w [ifOpErr op_type], 0 )
 
 compIfAst :: Ast -> Context -> LocalContext -> (Compile Insts, Int)
 compIfAst ast c l = case compAst ast c l of

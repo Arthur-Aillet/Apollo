@@ -15,7 +15,6 @@ import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
-import Debug.Trace
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 
@@ -48,6 +47,14 @@ argsHasError (Ok w []) (_ : _) = Ko w ["Too few arguments"]
 argsHasError (Ok w (_ : _)) [] = Ko w ["Too many arguments"]
 argsHasError (Ok w []) [] = Ok w ()
 
+typeErr :: Type -> Type -> String
+typeErr at wt =
+  "Builtin: recieved "
+    ++ show at
+    ++ " when "
+    ++ show wt
+    ++ " was awaited"
+
 opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs xs (nbr - 1) type') w err
@@ -59,27 +66,11 @@ opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w ["Builtin: Too many arguments"]
 opeValidArgs [] _ Nothing = Ko [] ["Builtin: No arguments given"]
 opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs xs (nbr - 1) (Just arg_type)
-opeValidArgs (Ok w (_, arg_type) : xs) nbr (Just waited_type)
-  | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
-  | otherwise = case opeValidArgs xs (nbr - 1) (Just waited_type) of
-      Ok w2 _ ->
-        Ko
-          (w ++ w2)
-          [ "Builtin: recieved "
-              ++ show arg_type
-              ++ " when "
-              ++ show waited_type
-              ++ " was awaited"
-          ]
-      Ko w2 e2 ->
-        Ko (w ++ w2) $
-          ( "Builtin: recieved "
-              ++ show arg_type
-              ++ " when "
-              ++ show waited_type
-              ++ " was awaited"
-          )
-            : e2
+opeValidArgs (Ok w (_, at) : xs) nbr (Just wt)
+  | at == wt = opeValidArgs xs (nbr - 1) (Just wt)
+  | otherwise = case opeValidArgs xs (nbr - 1) (Just wt) of
+      Ok w2 _ -> Ko (w ++ w2) [typeErr at wt]
+      Ko w2 e2 -> Ko (w ++ w2) $ typeErr at wt : e2
 
 compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of

@@ -4,7 +4,6 @@
 -- File description:
 -- AST
 -}
-{-# LANGUAGE InstanceSigs #-}
 
 module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
 
@@ -52,7 +51,6 @@ data Type
   deriving (Eq)
 
 instance Show Type where
-  show :: Type -> String
   show TypeBool = "Bool"
   show TypeChar = "Char"
   show TypeInt = "Int"

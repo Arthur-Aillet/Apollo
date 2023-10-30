@@ -24,9 +24,18 @@ resetColor = "\x1b[0m"
 displayWarnings :: [Warning] -> IO ()
 displayWarnings [] = pure ()
 displayWarnings [warn] =
-  putStrLn $ yellow ++ "Warning found during compilation:\n" ++ resetColor ++ "\t" ++ warn
+  putStrLn $
+    yellow
+      ++ "Warning found during compilation:\n"
+      ++ resetColor
+      ++ "\t"
+      ++ warn
 displayWarnings warns =
-  putStrLn $ yellow ++ "Warnings found during compilation:\n" ++ resetColor ++ concatMap (\x -> '\t' : x ++ "\n") warns
+  putStrLn $
+    yellow
+      ++ "Warnings found during compilation:\n"
+      ++ resetColor
+      ++ concatMap (\x -> '\t' : x ++ "\n") warns
 
 displayError :: [Error] -> IO ()
 displayError [] = pure ()
@@ -35,7 +44,10 @@ displayError [err] =
     red ++ "Error found during compilation:\n" ++ resetColor ++ "\t" ++ err
 displayError err =
   putStrLn $
-    red ++ "Errors found during compilation:\n" ++ resetColor ++ concatMap (\x -> '\t' : x ++ "\n") err
+    red
+      ++ "Errors found during compilation:\n"
+      ++ resetColor
+      ++ concatMap (\x -> '\t' : x ++ "\n") err
 
 compile :: [Definition] -> IO Binary
 compile defs = case generateBinary defs of
