@@ -3,9 +3,10 @@ module Main (main) where
 -- import Data.Either (Either (Right))
 -- import Eval
 import Parser.StackTrace (StackTrace (..))
-import Parser.Position (Position (..))
+import Parser.Position (Position (..), defaultPosition)
 import System.IO (BufferMode (..), hGetContents', hIsTerminalDevice, hSetBuffering, stdin, stdout)
 import Prelude
+import Parser.Type (Parser(..))
 import System.Console.Haskeline
     ( getInputLine,
       completeWord,
@@ -18,6 +19,8 @@ import Control.Monad.IO.Class
 
 import Data.HashMap.Internal.Strict (keys)
 import Data.List (isPrefixOf)
+-- import Parser.String (parseStringWithHandleBackslash)
+import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
 
 keywords :: [String]
 keywords = []
@@ -50,10 +53,10 @@ getresult = Right (12, "12", Position 12 12)
 getInstructions :: IO ()
 getInstructions = do
   new_line <- runInputT newSettings haskelineGetline
-  -- do something with newline
-  case getresult of
+  case runParser parseCondOperation new_line defaultPosition of
     Right (i, str, pos) -> do
       print(new_line)
+      print(i)
       print(str)
       getInstructions
     Left a -> do
