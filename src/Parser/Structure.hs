@@ -7,16 +7,21 @@
 
 module Parser.Structure (module Parser.Structure) where
 
+import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
-import Ast.Type(Structure(..), Type(..), Operable(..))
-import Parser.Symbol(parseType)
+import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
+import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable)
-import Parser.Syntax(parseWithSpace)
+import Parser.Syntax(parseWithSpace, parseMany)
 import Parser.Char(parseChar)
-import Parser.Symbol(parseSymbol)
 
 ----------------------------------------------------------------
 
+parseAstStructure :: Parser Ast
+parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn)
+
+----------------------------------------------------------------
+-- FIXME - VarDefinition (Maybe Operable)
 createVarDef :: Parser Type -> Parser String -> (Maybe Operable) -> Parser Structure
 createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right(typ, str, pos) -> case runParser parStr str pos of
@@ -37,3 +42,8 @@ parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> 
 parseReturn :: Parser Structure
 parseReturn = Return <$> ((parseWithSpace (parseSymbol "return")) *> parseOperable)
 
+----------------------------------------------------------------
+
+-- FIXME - Change parseAstStructure by parseAst
+parseSequence :: Parser Structure
+parseSequence = Sequence <$> (parseMany parseAstStructure)
