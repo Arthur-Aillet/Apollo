@@ -9,14 +9,14 @@ import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 import Parser.Type (Parser(..), StackTrace)
-import System.Console.Haskeline
-    ( getInputLine,
-      completeWord,
-      simpleCompletion,
-      runInputT,
-      Completion,
-      InputT,
-      Settings(Settings, autoAddHistory, complete, historyFile) )
+-- import System.Console.Haskeline
+--     ( getInputLine,
+--       completeWord,
+--       simpleCompletion,
+--       runInputT,
+--       Completion,
+--       InputT,
+--       Settings(Settings, autoAddHistory, complete, historyFile) )
 import Control.Monad.IO.Class
 
 import Data.HashMap.Internal.Strict (keys)

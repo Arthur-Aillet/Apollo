@@ -13,14 +13,27 @@ import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
 import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable)
 import Parser.Syntax(parseWithSpace, parseMany)
-import Parser.Char(parseChar)
+import Parser.Char(parseChar, parseAnyChar, parseAChar)
 
 ----------------------------------------------------------------
 
 parseAstStructure :: Parser Ast
-parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn)
+parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn <|> parseSequence)
 
 ----------------------------------------------------------------
+
+acceptableCharacters :: [Char]
+acceptableCharacters = ['a'..'z']
+                    ++ ['A'..'Z']
+                    ++ ['0'..'9']
+                    ++ ['|', '/', '[', ']', '(', ')', '{', '}', '-', '_', '"', '\'']
+                    ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
+
+parseStringWithHandleBackslash :: Parser String
+parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar)
+
+----------------------------------------------------------------
+
 -- FIXME - VarDefinition (Maybe Operable)
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
 createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
@@ -47,5 +60,12 @@ parseReturn = Return <$> ((parseWithSpace (parseSymbol "return")) *> parseOperab
 ----------------------------------------------------------------
 
 -- FIXME - Change parseAstStructure by parseAst
+parseSingle :: Parser Structure
+parseSingle = Single <$> parseAstStructure
+
 parseSequence :: Parser Structure
 parseSequence = Sequence <$> (parseMany parseAstStructure)
+
+----------------------------------------------------------------
+
+
