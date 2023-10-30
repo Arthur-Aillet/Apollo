@@ -1,12 +1,5 @@
 module Main (main) where
 
-<<<<<<< HEAD
--- import Data.Either (Either (Right))
--- import Eval
-import Parser.StackTrace (StackTrace (..))
-import Parser.Position (Position (..), defaultPosition)
-import System.IO (BufferMode (..), hGetContents', hIsTerminalDevice, hSetBuffering, stdin, stdout)
-=======
 import Ast.Compile (Binary (..))
 import Ast.Display (compile)
 import Ast.Error (Compile (..))
@@ -14,9 +7,8 @@ import Ast.Type
 import Eval
 import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
->>>>>>> 1e7e5c2184edb2cbeb9936f05af8490267583c1d
 import Prelude
-import Parser.Type (Parser(..))
+import Parser.Type (Parser(..), StackTrace)
 import System.Console.Haskeline
     ( getInputLine,
       completeWord,
@@ -32,45 +24,45 @@ import Data.List (isPrefixOf)
 -- import Parser.String (parseStringWithHandleBackslash)
 import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
 
-keywords :: [String]
-keywords = []
+-- keywords :: [String]
+-- keywords = []
 
-search :: [String] -> String -> [Completion]
-search symbols str = map simpleCompletion $
-    filter (str `isPrefixOf`) (keywords ++ symbols)
+-- search :: [String] -> String -> [Completion]
+-- search symbols str = map simpleCompletion $
+--     filter (str `isPrefixOf`) (keywords ++ symbols)
 
-inputKey :: String
-inputKey = "\ESC[33mApollo\ESC[28m> "
+-- inputKey :: String
+-- inputKey = "\ESC[33mApollo\ESC[28m> "
 
-haskelineGetline :: InputT IO String
-haskelineGetline = do
-                    input <- getInputLine inputKey
-                    case input of
-                      Nothing -> return ""
-                      Just str -> return str
+-- haskelineGetline :: InputT IO String
+-- haskelineGetline = do
+--                     input <- getInputLine inputKey
+--                     case input of
+--                       Nothing -> return ""
+--                       Just str -> return str
 
-newSettings ::  MonadIO m => Settings m
-newSettings = Settings {
-                  complete = completeWord Nothing " \t" $
-                    return . search [],
-                  historyFile = Just ".history",
-                  autoAddHistory = True
-                }
+-- newSettings ::  MonadIO m => Settings m
+-- newSettings = Settings {
+--                   complete = completeWord Nothing " \t" $
+--                     return . search [],
+--                   historyFile = Just ".history",
+--                   autoAddHistory = True
+--                 }
 
-getresult :: Either StackTrace (Int , String, Position)
-getresult = Right (12, "12", Position 12 12)
+-- getresult :: Either StackTrace (Int , String, Position)
+-- getresult = Right (12, "12", Position 12 12)
 
-getInstructions :: IO ()
-getInstructions = do
-  new_line <- runInputT newSettings haskelineGetline
-  case runParser parseCondOperation new_line defaultPosition of
-    Right (i, str, pos) -> do
-      print(new_line)
-      print(i)
-      print(str)
-      getInstructions
-    Left a -> do
-      print a
+-- getInstructions :: IO ()
+-- getInstructions = do
+--   new_line <- runInputT newSettings haskelineGetline
+--   case runParser parseCondOperation new_line defaultPosition of
+--     Right (i, str, pos) -> do
+--       print(new_line)
+--       print(i)
+--       print(str)
+--       getInstructions
+--     Left a -> do
+--       print a
 
 createAbs :: Definition
 createAbs =

@@ -9,26 +9,26 @@ module Parser.Condition (module Parser.Condition) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
-import Atom.Atom(Atom(..))
 import Ast.Type(Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..))
 import Parser.Symbol (parseSymbol)
 import Parser.Int(parseInt)
 import Parser.Char(parseAChar)
 import Parser.Int(parseFloat)
 import Parser.Bool(parseBool)
-import Eval.Builtin (Builtin(..))
+import Eval.Atom (Atom (..))
+import Eval.Operator (Operator(..))
 import Parser.StackTrace (StackTrace(..), defaultLocation)
 import Parser.Range (Range(..))
 import Parser.Syntax(parseMany, parseWithSpace)
 import Parser.Char(parseAnyChar)
 
-getPredicat :: String -> (Maybe Builtin)
-getPredicat "<" = Just Less
-getPredicat ">" = Nothing
+getPredicat :: String -> (Maybe Operator)
+getPredicat "<" = Just Lt
+getPredicat ">" = Just Gt
 getPredicat "==" = Just Eq
-getPredicat "!=" = Nothing
-getPredicat "<=" = Nothing
-getPredicat ">=" = Nothing
+getPredicat "!=" = Just NEq
+getPredicat "<=" = Just LEt
+getPredicat ">=" = Just GEt
 getpredicat _ = Nothing
 
 parsePredicat :: Parser String
@@ -39,14 +39,14 @@ parsePredicat = parseSymbol "<"
                 <|> parseSymbol "<="
                 <|> parseSymbol ">="
 
-checkPredicat :: Parser String -> Parser Builtin
+checkPredicat :: Parser String -> Parser Operator
 checkPredicat parser = Parser $ \s p -> case runParser parser s p of
   Right (predicatstr, str, pos) -> case getPredicat predicatstr of
     Just a -> Right (a, str, pos)
     Nothing -> Left (StackTrace [("Invalid Operand : ", Range p pos, defaultLocation)])
   Left a -> Left a
 
-parseApredicat :: Parser Builtin
+parseApredicat :: Parser Operator
 parseApredicat = Parser $ \s p -> case runParser (checkPredicat parsePredicat) s p of
   Right (result, str, pos) -> Right(result, str, pos)
   Left a -> Left a
