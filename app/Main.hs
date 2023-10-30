@@ -128,7 +128,7 @@ createSnd =
         ( AstStructure $
             Sequence
               [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpVariable "res", OpValue (AtomI 3), OpVariable "res"]
               ]
         )
     )
@@ -142,8 +142,7 @@ createMain =
         (Just TypeBool)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
+              [ AstStructure $ Return $ OpOperation $ CallStd Not [OpValue (AtomB True)]
               ]
         )
     )
@@ -152,7 +151,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain, createFst, createSnd]
+  (Binary env main_f) <- compile [createMain]
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a

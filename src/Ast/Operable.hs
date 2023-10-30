@@ -11,10 +11,11 @@
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
-import Ast.Error (Compile (..), withW)
+import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
+import Debug.Trace
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp)
 
@@ -48,24 +49,37 @@ argsHasError (Ok w (_ : _)) [] = Ko w ["Too many arguments"]
 argsHasError (Ok w []) [] = Ok w ()
 
 opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
-opeValidArgs (Ko w err : _) _ _ = Ko w err
+opeValidArgs (Ko w err : xs) nbr type' =
+  failingComp (opeValidArgs xs (nbr - 1) type') w err
 opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
-opeValidArgs [] _ (Just _) = Ko [] ["Builtin: Not enough arguments"]
+opeValidArgs [] nbr (Just _)
+  | nbr < 0 = Ko [] ["Builtin: Too many arguments"]
+  | otherwise = Ko [] ["Builtin: Not enough arguments"]
 opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w ["Builtin: Too many arguments"]
 opeValidArgs [] _ Nothing = Ko [] ["Builtin: No arguments given"]
 opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs xs (nbr - 1) (Just arg_type)
 opeValidArgs (Ok w (_, arg_type) : xs) nbr (Just waited_type)
   | arg_type == waited_type = opeValidArgs xs (nbr - 1) (Just waited_type)
-  | otherwise =
-      Ko
-        w
-        [ "Builtin: recieved "
-            ++ show arg_type
-            ++ " when "
-            ++ show waited_type
-            ++ " was awaited"
-        ]
+  | otherwise = case opeValidArgs xs (nbr - 1) (Just waited_type) of
+      Ok w2 _ ->
+        Ko
+          (w ++ w2)
+          [ "Builtin: recieved "
+              ++ show arg_type
+              ++ " when "
+              ++ show waited_type
+              ++ " was awaited"
+          ]
+      Ko w2 e2 ->
+        Ko (w ++ w2) $
+          ( "Builtin: recieved "
+              ++ show arg_type
+              ++ " when "
+              ++ show waited_type
+              ++ " was awaited"
+          )
+            : e2
 
 compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compCalculus op args count = case opeValidArgs args count Nothing of
