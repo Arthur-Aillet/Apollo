@@ -13,6 +13,7 @@ import Parser.Symbol(parseType)
 import Parser.Operable(parseDefinitionName, parseOperable)
 import Parser.Syntax(parseWithSpace)
 import Parser.Char(parseChar)
+import Parser.Symbol(parseSymbol)
 
 ----------------------------------------------------------------
 
@@ -30,3 +31,9 @@ parseVarDefinition = createVarDef parseType parseDefinitionName Nothing
 
 parseVarAssignation :: Parser Structure
 parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable)
+
+----------------------------------------------------------------
+
+parseReturn :: Parser Structure
+parseReturn = Return <$> ((parseWithSpace (parseSymbol "return")) *> parseOperable)
+
