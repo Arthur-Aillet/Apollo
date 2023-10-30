@@ -23,7 +23,8 @@ getElem nb list
   | otherwise = Right $ last $ take (nb + 1) list
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
-exec env args ((PushD val) : xs) h stack = exec env args xs (PushD val : h) (VAtom val : stack)
+exec env args ((PushD val) : xs) h stack =
+  exec env args xs (PushD val : h) (VAtom val : stack)
 exec env args ((PushI arg_index) : xs) h stack = case getElem arg_index args of
   Left err -> return $ Left err
   Right arg -> exec env args xs (PushI arg_index : h) (arg : stack)
@@ -42,7 +43,8 @@ exec env args ((CallD func_index) : xs) h stack = case getElem func_index env of
 exec env args ((JumpIfFalse line) : xs) h (VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> return $ Left a
-      Right (start, end) -> exec env args end (reverse start ++ JumpIfFalse line : h) ys
+      Right (start, end) ->
+        exec env args end (reverse start ++ JumpIfFalse line : h) ys
   | otherwise = case moveForward (line * (-1)) h of
       Left a -> return $ Left a
       Right (start, end) ->

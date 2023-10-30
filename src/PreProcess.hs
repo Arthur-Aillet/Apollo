@@ -9,7 +9,7 @@ module PreProcess (readFiles) where
 
 readFiles :: [String] -> IO String
 readFiles [] = return []
-readFiles (x:xs) = do
-    file <- readFile x
-    other <- readFiles xs
-    return $ file ++ other
+readFiles (x : xs) = do
+  file <- readFile x
+  other <- readFiles xs
+  return $ file ++ other

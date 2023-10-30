@@ -11,10 +11,9 @@ module OperatorSpec
 where
 
 import Eval.Atom
+import Eval.Exec
 import Eval.Operator
 import Test.HUnit
-import Eval.Operator
-import Eval.Exec
 
 operatorTests :: Test
 operatorTests =

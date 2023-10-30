@@ -52,10 +52,10 @@ data Type
   deriving (Eq)
 
 instance Show Type where
-   show TypeBool = "Bool"
-   show TypeChar = "Char"
-   show TypeInt = "Int"
-   show TypeFloat = "Float"
+  show TypeBool = "Bool"
+  show TypeChar = "Char"
+  show TypeInt = "Int"
+  show TypeFloat = "Float"
 
 numType :: Type -> Bool
 numType TypeBool = True

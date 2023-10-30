@@ -58,7 +58,12 @@ compIfOp op c l = case compOperable op c l of
   Ko w e -> (Ko w e, 0)
   Ok w (op_insts, TypeBool) -> (Ok w op_insts, length op_insts)
   Ok w (_, op_type) ->
-    (Ko w $ "If contain invalid type \"" ++ show op_type ++ "\" instead of Bool", 0)
+    ( Ko w $
+        "If contain invalid type \""
+          ++ show op_type
+          ++ "\" instead of Bool",
+      0
+    )
 
 compIfAst :: Ast -> Context -> LocalContext -> (Compile Insts, Int)
 compIfAst ast c l = case compAst ast c l of
@@ -66,14 +71,15 @@ compIfAst ast c l = case compAst ast c l of
   Ok w (insts, _) -> (Ok w insts, length insts)
 
 compIf :: [(Operable, Ast)] -> Maybe Ast -> Context -> LocalContext -> (Compile Insts, Int)
-compIf ((op, then'):xs) e c l =
-  (concatInner [op_insts, Ok [] [JumpIfFalse (ast_len + plus_one)], ast_insts, jump_next, next_insts], ast_len + op_len + next_len)
+compIf ((op, then') : xs) e c l =
+  (concatInner [op_i, j_f, ast_i, jump_n, next_i], ast_len + op_len + next_len)
   where
+    j_f = Ok [] [JumpIfFalse (ast_len + plus_one)]
     plus_one = if next_len == 0 then 0 else 1
-    jump_next = if next_len == 0 then Ok [] [] else Ok [] [Jump next_len]
-    (next_insts, next_len) = compIf xs e c l
-    (op_insts, op_len) = compIfOp op c l
-    (ast_insts, ast_len) = compIfAst then' c l
+    jump_n = if next_len == 0 then Ok [] [] else Ok [] [Jump next_len]
+    (next_i, next_len) = compIf xs e c l
+    (op_i, op_len) = compIfOp op c l
+    (ast_i, ast_len) = compIfAst then' c l
 compIf [] (Just else') c l = compIfAst else' c l
 compIf [] Nothing _ _ = (Ok [] [], 0)
 

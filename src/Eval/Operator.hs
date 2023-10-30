@@ -17,8 +17,8 @@ module Eval.Operator
   )
 where
 
-import Eval.Atom (Atom (..))
 import Data.Bits (And)
+import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
