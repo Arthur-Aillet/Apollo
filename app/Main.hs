@@ -103,6 +103,36 @@ createGcd =
         )
     )
 
+createFst :: Definition
+createFst =
+  FuncDefinition
+    "main"
+    ( Function
+        []
+        (Just TypeBool)
+        ( AstStructure $
+            Sequence
+              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
+              ]
+        )
+    )
+
+createSnd :: Definition
+createSnd =
+  FuncDefinition
+    "main"
+    ( Function
+        []
+        (Just TypeBool)
+        ( AstStructure $
+            Sequence
+              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
+              ]
+        )
+    )
+
 createMain :: Definition
 createMain =
   FuncDefinition
@@ -112,7 +142,8 @@ createMain =
         (Just TypeBool)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpValue (AtomB False)]
+              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
               ]
         )
     )
@@ -121,7 +152,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain, createFib]
+  (Binary env main_f) <- compile [createMain, createFst, createSnd]
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a

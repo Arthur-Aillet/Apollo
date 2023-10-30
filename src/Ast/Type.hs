@@ -4,6 +4,7 @@
 -- File description:
 -- AST
 -}
+{-# LANGUAGE InstanceSigs #-}
 
 module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
 
@@ -16,7 +17,6 @@ data Definition
   = FuncDefinition String Function -- define a function
 
 data Structure -- layout, structure and connection of statements, having no value
-{- Useless? -}
   = Resolved -- expression resolving to no value
   | VarDefinition String Type (Maybe Operable)
   | VarAssignation String Operable
@@ -52,6 +52,7 @@ data Type
   deriving (Eq)
 
 instance Show Type where
+  show :: Type -> String
   show TypeBool = "Bool"
   show TypeChar = "Char"
   show TypeInt = "Int"

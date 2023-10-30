@@ -38,9 +38,8 @@ createCtx (FuncDefinition name (Function args rval _) : xs) (Context ctx) nbr =
   createCtx xs (Context $ insert name (nbr, args, rval) ctx) (nbr + 1)
 createCtx [] ctx _ = Ok [] ctx
 
-createLocalContext :: [(String, Type)] -> Maybe Type -> Compile LocalContext
-createLocalContext args output =
-  Ok [] $ LocalContext (fromList (attachIndex args 0)) output
+createLocalContext :: [(String, Type)] -> Maybe Type -> LocalContext
+createLocalContext args = LocalContext (fromList (attachIndex args 0))
 
 firstValidIndex :: Variables -> Index
 firstValidIndex = foldl (\var (idx, _, _) -> max var idx) 0
