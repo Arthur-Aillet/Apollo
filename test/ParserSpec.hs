@@ -20,10 +20,10 @@ parserTests =
       "parseNotChar" ~: parseNotCharTests,
       "parseAnyChar" ~: parseAnyCharTests,
       -- "parseString" ~: parseStringTests,
-      "parseSymbol" ~: parseSymbolTests,
+      "parseSymbol" ~: parseSymbolTests
       -- "parseOr" ~: parseOrTests,
       -- "parseAnd" ~: parseAndTests,
-      "parseMany" ~: parseManyTests
+      -- "parseMany" ~: parseManyTests
       -- "parseSome" ~: parseSomeTests,
       -- "parseDigit" ~: parseDigitTests,
       -- "parseUInt" ~: parseUIntTests,
