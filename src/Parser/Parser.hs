@@ -7,14 +7,14 @@
 
 module Parser.Parser (parser) where
 
-import Parser.Definition(parseFuncDefinition)
-import Parser.Syntax(parseMany, parseWithSpace)
-import Parser.Type(Parser(..))
-import Parser.Position(Position(..), defaultPosition)
-import Ast.Type (Definition(..))
+import Ast.Type (Definition (..))
+import Parser.Definition (parseFuncDefinition)
+import Parser.Position (defaultPosition)
+import Parser.Syntax (parseManyValidOrEmpty)
+import Parser.Type (Parser (..))
+import System.Exit (ExitCode (ExitFailure), exitWith)
 
-parser :: String -> [Definition]
-parser str = case runParser (parseMany parseFuncDefinition) str defaultPosition of
-    Right (def, str, pos) -> def
-    Left a -> []
-
+parser :: String -> IO [Definition]
+parser str = case runParser (parseManyValidOrEmpty parseFuncDefinition) str defaultPosition of
+  Right (def, _, _) -> return def
+  Left a -> print a >> exitWith (ExitFailure 1)
