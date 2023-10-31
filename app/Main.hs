@@ -9,20 +9,22 @@ import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 import Parser.Type (Parser(..), StackTrace)
-import System.Console.Haskeline
-    ( getInputLine,
-      completeWord,
-      simpleCompletion,
-      runInputT,
-      Completion,
-      InputT,
-      Settings(Settings, autoAddHistory, complete, historyFile) )
+import System.Exit ( ExitCode(ExitFailure), exitSuccess, exitWith )
+import System.IO (BufferMode (..), hGetContents', hIsTerminalDevice, hSetBuffering, stdin, stdout)
+-- import System.Console.Haskeline
+--     ( getInputLine,
+--       completeWord,
+--       simpleCompletion,
+--       runInputT,
+--       Completion,
+--       InputT,
+--       Settings(Settings, autoAddHistory, complete, historyFile) )
 import Control.Monad.IO.Class
-
 import Data.HashMap.Internal.Strict (keys)
 import Data.List (isPrefixOf)
 -- import Parser.String (parseStringWithHandleBackslash)
 import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
+import Parser.Position(defaultPosition)
 
 -- keywords :: [String]
 -- keywords = []
@@ -48,9 +50,6 @@ import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
 --                   historyFile = Just ".history",
 --                   autoAddHistory = True
 --                 }
-
--- getresult :: Either StackTrace (Int , String, Position)
--- getresult = Right (12, "12", Position 12 12)
 
 -- getInstructions :: IO ()
 -- getInstructions = do
@@ -168,13 +167,13 @@ createMain =
         )
     )
 
-main :: IO ()
-main = do
-  (Binary env main_f) <- compile [createMain, createAbs]
-  result <- exec env [] main_f [] []
-  case result of
-    Left a -> putStrLn a
-    Right a -> print a
+-- main :: IO ()
+-- main = do
+--   (Binary env main_f) <- compile [createMain, createAbs]
+--   result <- exec env [] main_f [] []
+--   case result of
+--     Left a -> putStrLn a
+--     Right a -> print a
 
 -- main :: IO ()
 -- main = do

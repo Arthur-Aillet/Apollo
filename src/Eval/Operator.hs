@@ -44,6 +44,9 @@ data Operator
   | Mul
   | Div
   | Mod
+  | BAnd
+  | BOr
+  | BNot
   | Eq
   | Lt
   | LEt
@@ -64,6 +67,9 @@ operate Mod = \[a, b] ->
   if b /= 0
     then Right (a `mod` b)
     else Left "Modulo by zero"
+operate BAnd = \[AtomB a, AtomB b] -> Right $ AtomB (a && b)
+operate BOr = \[AtomB a, AtomB b] -> Right $ AtomB (a || b)
+operate BNot = \[AtomB a] -> Right $ AtomB $ not a
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Lt = \[a, b] -> Right $ AtomB $ a < b
 operate Gt = \[a, b] -> Right $ AtomB $ a > b
@@ -77,6 +83,9 @@ defsOp Sub = OperatorDef 2 Calculus
 defsOp Mul = OperatorDef 2 Calculus
 defsOp Div = OperatorDef 2 Calculus
 defsOp Mod = OperatorDef 2 Calculus
+defsOp BAnd = OperatorDef 2 Calculus
+defsOp BOr = OperatorDef 2 Calculus
+defsOp BNot = OperatorDef 1 Calculus
 defsOp Eq = OperatorDef 2 Equality
 defsOp Lt = OperatorDef 2 Equality
 defsOp LEt = OperatorDef 2 Equality
