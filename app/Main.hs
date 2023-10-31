@@ -9,8 +9,6 @@ import Eval.Exec (Operator (Add, Sub))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 import Parser.Type (Parser(..), StackTrace)
-import System.Exit ( ExitCode(ExitFailure), exitSuccess, exitWith )
-import System.IO (BufferMode (..), hGetContents', hIsTerminalDevice, hSetBuffering, stdin, stdout)
 -- import System.Console.Haskeline
 --     ( getInputLine,
 --       completeWord,
