@@ -26,6 +26,7 @@ import Data.List (isPrefixOf)
 -- import Parser.String (parseStringWithHandleBackslash)
 import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
 import Parser.Position(defaultPosition)
+import Parser.Parser(parser)
 
 -- keywords :: [String]
 -- keywords = []
@@ -203,7 +204,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain]
+  (Binary env main_f) <- compile (parser files)
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a
