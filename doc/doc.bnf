@@ -31,13 +31,17 @@
 <Condition>             = ["("] <Operation> [")"];
 
 <DeclareVariable>       = <Type> <String>;
-<DefineVariable>           = <DeclareVariable> = <Elem>;
-<AssigneVariable>
-= <DeclareVariable> = <Elem>;
+<DefineVariable>        = <DeclareVariable> "=" <Elem>;
+<AssigneVariable>       = <String> = <Elem>;
 
 <Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
 
-<StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" { "elif (" <Condition> ")" <Instructions> "}" } [ "else {" <Instructions> "}" ];
+<StructureIf>           =
+"if" ["("] <Condition> [")"] "{"
+    <Instructions> "}"
+{ "elif" ["("] <Condition> [")"] "{" <Instructions> "}" }
+[ "elif {" <Instructions> "}" ];
+<StructureIf>           = "while" ["("] <Condition> [")"] "{" <Instructions> "}";
 <FunctionDef>           = "@" <String> "(" <Parameters> ")" "{" <Instructions> "}";
 
 <FuncArgs>              = {<Elem> ","} <Elem>
@@ -46,8 +50,8 @@
 <Call>                  = <FuncCall> | <ShellCall>
 
 <Return>                = "return (" <Elem> ")";
-<Then>                  = <Call> ">>" <Call>;
-<Bind>                  = <DeclareVariable> "<-" <Call>;
+# <Then>                  = <Call> ">>" <Call>;
+# <Bind>                  = <DeclareVariable> "<-" <Call>;
 
 <Instruction>           = <StructureIf> | <StructureSwitch> | <Call> | <Return> | <SetVariable> | <DeclareVariable>";";
 <Instructions>          = {<Instruction>};
