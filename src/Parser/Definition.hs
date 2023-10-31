@@ -48,14 +48,8 @@ parseInstructions =
         <* parseClosingCurlyBraquet
     )
 
-parseFunction :: Maybe Type -> Parser Function
-parseFunction typ = Function <$> parseParameters <*> pure typ <*> parseInstructions
+parseFunction :: Parser Function
+parseFunction = Function <$> parseParameters <*> parseMaybeType <*> parseInstructions
 
 parseFuncDefinition :: Parser Definition
-parseFuncDefinition = Parser $ \s p -> case runParser parseMaybeType s p of
-  Right (typ, str, pos) -> case runParser parseDefinitionName str pos of
-    Right (name, string, position) -> case runParser (parseFunction typ) string position of
-      Right (func, new_str, new_pos) -> Right ((FuncDefinition name func), new_str, new_pos)
-      Left a -> Left a
-    Left a -> Left a
-  Left a -> Left a
+parseFuncDefinition = FuncDefinition <$> ((parseChar '@') *> parseDefinitionName) <*> parseFunction
