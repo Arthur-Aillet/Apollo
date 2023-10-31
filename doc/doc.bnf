@@ -19,32 +19,33 @@
 <StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
 <List>                  = "[" <ElemSeparateByComa> "]";
 <Bool>                  = "true" | "false";
-<Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
+<Type>                  = "char" | "String" | "bool" | "int" | "float" | "[" <Type> "]";
 
-<Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <FuncCall>;
-<ElemSeparateByComa>    = [<Elem>] | <Elem> {("," <Elem>)};
+<Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <FuncCall> |<Condition>;
 
-<Predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">=";
-<BoolOperator>          = "&&" | "||";
-<Not>                   = "!";
-<Condition>             = [<Not>] <Elem> <Predicat> <Elem> | [<Not> "("] <Condition> <BoolOperator> <Condition> [")"];
+<EqualityPredicate>     = "<" | ">" | "==" | "!=" | "<=" | ">=";
+<LogicalPredicate>      = "&&" | "||";
+<CalculusPredicate>     = "/" | "%" | "-" | "+";
+<UnaryPredicate>        = "!"
+<Operation>             = <Elem> <BinaryPredicate> <Elem> | <UnaryPredicate> <Elem>
+<Condition>             = ["("] <Operation> [")"];
 
 <DeclareVariable>       = <Type> <String>;
-<SetVariable>           = <DeclareVariable> = <Elem>;
+<DefineVariable>           = <DeclareVariable> = <Elem>;
+<AssigneVariable>
+= <DeclareVariable> = <Elem>;
 
 <Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
 
-<StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" [ "else {" <Instructions> "}" ];
-<DefaultCase>           = "default :" <Instructions>;
-<StructureCase>         = "case " <Elem> ": " <Instructions>;
-<StructureSwitch>       = "switch (" <Elem> ") {" {<StructureCase>} [<DefaultCase>] "}";
-<FunctionDef>           = "def" <String> "(" <Parameters> ")" "{" <Instructions> "}";
+<StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" { "elif (" <Condition> ")" <Instructions> "}" } [ "else {" <Instructions> "}" ];
+<FunctionDef>           = "@" <String> "(" <Parameters> ")" "{" <Instructions> "}";
 
-<FuncCall>              = <string> "(" {<Elem>} ")";
-<ShellCall>             = "$"<String> "(" <ElemSeparateByComa> ")";
+<FuncArgs>              = {<Elem> ","} <Elem>
+<FuncCall>              = "@"<String> "(" <FuncArgs> ")";
+<ShellCall>             = "$"<String> "(" <FuncArgs> ")";
 <Call>                  = <FuncCall> | <ShellCall>
 
-<Return>                = "return (" <Elem> ");";
+<Return>                = "return (" <Elem> ")";
 <Then>                  = <Call> ">>" <Call>;
 <Bind>                  = <DeclareVariable> "<-" <Call>;
 

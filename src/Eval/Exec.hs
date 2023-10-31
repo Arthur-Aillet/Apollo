@@ -43,23 +43,28 @@ exec env args ((CallD func_index) : xs) h stack = case getElem func_index env of
 exec env args ((JumpIfFalse line) : xs) h (VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> return $ Left a
-      Right (start, end) -> exec env args end (start ++ h) ys
+      Right (start, end) ->
+        exec env args end (reverse start ++ JumpIfFalse line : h) ys
   | otherwise = case moveForward (line * (-1)) h of
       Left a -> return $ Left a
       Right (start, end) ->
         exec env args (reverse start ++ JumpIfFalse line : xs) end ys
 exec env args ((JumpIfFalse a) : xs) h (_ : ys) =
   exec env args xs (JumpIfFalse a : h) ys
+exec _ _ ((JumpIfFalse _) : _) _ [] =
+  return $ Left "Error: JumpIf on empty stack"
 exec env args ((Jump line) : xs) h stack
   | line >= 0 = case moveForward line xs of
       Left a -> return $ Left a
-      Right (start, end) -> exec env args end (start ++ h) stack
+      Right (start, end) ->
+        exec env args end (start ++ h) stack
   | otherwise = case moveForward (line * (-1)) h of
       Left a -> return $ Left a
       Right (start, end) ->
         exec env args (reverse start ++ Jump line : xs) end stack
 exec env args (Store : xs) h (y : ys) =
   exec env (args ++ [y]) xs (Store : h) ys
+exec _ _ (Store : _) _ [] = return $ Left "Error: Store with empty stack"
 exec env args (Assign i : xs) h (y : ys) = case getElem i args of
   Left err -> return $ Left err
   Right _ ->
