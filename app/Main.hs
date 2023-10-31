@@ -4,14 +4,6 @@ import Ast.Compile (Binary (..))
 import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
-import Eval
-import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Sub))
-import PreProcess
-import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
-import Prelude
-import Parser.Type (Parser(..), StackTrace)
 -- import System.Console.Haskeline
 --     ( getInputLine,
 --       completeWord,
@@ -23,10 +15,18 @@ import Parser.Type (Parser(..), StackTrace)
 import Control.Monad.IO.Class
 import Data.HashMap.Internal.Strict (keys)
 import Data.List (isPrefixOf)
+import Eval
+import Eval.Exec
+import Eval.Exec (Operator (Add, Or, Sub))
 -- import Parser.String (parseStringWithHandleBackslash)
-import Parser.Condition(parseOperable, parseApredicat, parseCondOperation)
-import Parser.Position(defaultPosition)
-import Parser.Parser(parser)
+import Parser.Condition (parseApredicat, parseCondOperation, parseOperable)
+import Parser.Parser (parser)
+import Parser.Position (defaultPosition)
+import Parser.Type (Parser (..), StackTrace)
+import PreProcess
+import System.Environment
+import System.Exit (ExitCode (ExitFailure), exitWith)
+import Prelude
 
 -- keywords :: [String]
 -- keywords = []
@@ -204,7 +204,8 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile (parser files)
+  defs <- parser files
+  (Binary env main_f) <- compile defs
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a

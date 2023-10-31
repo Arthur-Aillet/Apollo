@@ -37,4 +37,3 @@ module Parser.String (module Parser.String) where
 
 -- parseStringQuote :: Parser String
 -- parseStringQuote =  parseChar '\"' *> parseSome parseDigit <* parseChar '\"'
-
