@@ -34,7 +34,6 @@ parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\'
 
 ----------------------------------------------------------------
 
--- FIXME - VarDefinition (Maybe Operable)
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
 createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right(typ, str, pos) -> case runParser parStr str pos of
@@ -45,12 +44,12 @@ createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)
+parseVarDefinition = (createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';'
 
 ----------------------------------------------------------------
 
 parseVarAssignation :: Parser Structure
-parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable)
+parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';')
 
 ----------------------------------------------------------------
 
