@@ -44,7 +44,7 @@
                             [ "elif {" <Instructions> "}" ];
 <StructureWhile>        = "while" ["("] <Condition> [")"] "{" <Instructions> "}";
 <StructureFor>          = "for" <String> "in" <Iterable> "{" <Instructions> "}"
-<FunctionDef>           = "@" <String> "(" <Parameters> ")" "{" <Instructions> "}";
+<FunctionDef>           = "@" <String> "(" <Parameters> ")" <Type> "{" <Instructions> "}";
 
 <FuncArgs>              = {<Elem> ","} <Elem>
 <FuncCall>              = "@"<String> "(" <FuncArgs> ")";
