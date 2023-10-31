@@ -8,10 +8,11 @@
 module Parser.Int (module Parser.Int) where
 
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar, parseDigit)
-import Parser.Type (Parser (..))
-import Parser.Syntax (parseMany, parseSome)
 import Eval.Atom (Atom (..))
+import Parser.Char (parseChar, parseDigit)
+import Parser.Syntax (parseMany, parseSome)
+import Parser.Type (Parser (..))
+
 parseStringInt :: Parser String
 parseStringInt = parseSome parseDigit
 

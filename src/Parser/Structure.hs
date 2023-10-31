@@ -7,13 +7,13 @@
 
 module Parser.Structure (module Parser.Structure) where
 
+import Ast.Type (Ast (..), Operable (..), Structure (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Type (Parser(..))
-import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
-import Parser.Symbol(parseType, parseSymbol)
-import Parser.Operable(parseDefinitionName, parseOperable)
-import Parser.Syntax(parseWithSpace, parseMany)
-import Parser.Char(parseChar, parseAnyChar, parseAChar)
+import Parser.Char (parseAChar, parseAnyChar, parseChar)
+import Parser.Operable (parseDefinitionName, parseOperable)
+import Parser.Symbol (parseSymbol, parseType)
+import Parser.Syntax (parseMany, parseWithSpace)
+import Parser.Type (Parser (..))
 
 ----------------------------------------------------------------
 
@@ -23,11 +23,12 @@ parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition
 ----------------------------------------------------------------
 
 acceptableCharacters :: [Char]
-acceptableCharacters = ['a'..'z']
-                    ++ ['A'..'Z']
-                    ++ ['0'..'9']
-                    ++ ['|', '/', '[', ']', '(', ')', '{', '}', '-', '_', '"', '\'']
-                    ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
+acceptableCharacters =
+  ['a' .. 'z']
+    ++ ['A' .. 'Z']
+    ++ ['0' .. '9']
+    ++ ['|', '/', '[', ']', '(', ')', '{', '}', '-', '_', '"', '\'']
+    ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
 
 parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar)
@@ -36,11 +37,11 @@ parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\'
 
 -- FIXME - VarDefinition (Maybe Operable)
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
-createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
-  Right(typ, str, pos) -> case runParser parStr str pos of
-    Right(name, string, position) -> case runParser op string position of
-        Right(ope, new_str, new_pos) -> Right((VarDefinition name typ ope), new_str, new_pos)
-        Left a -> Left a
+createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
+  Right (typ, str, pos) -> case runParser parStr str pos of
+    Right (name, string, position) -> case runParser op string position of
+      Right (ope, new_str, new_pos) -> Right ((VarDefinition name typ ope), new_str, new_pos)
+      Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 
@@ -67,5 +68,3 @@ parseSequence :: Parser Structure
 parseSequence = Sequence <$> (parseMany parseAstStructure)
 
 ----------------------------------------------------------------
-
-

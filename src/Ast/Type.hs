@@ -13,7 +13,8 @@ import Eval.Operator (Operator)
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
-  = FuncDefinition String Function deriving (Show) -- define a function
+  = FuncDefinition String Function
+  deriving (Show) -- define a function
 
 data Structure -- layout, structure and connection of statements, having no value
   = Resolved -- expression resolving to no value

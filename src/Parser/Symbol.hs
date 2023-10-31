@@ -7,12 +7,12 @@
 
 module Parser.Symbol (module Parser.Symbol) where
 
+import Ast.Type (Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Char (parseChar)
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
-import Ast.Type(Type(..))
-import Parser.StackTrace(StackTrace(..), defaultLocation)
-import Parser.Range (Range(..))
 
 parseSymbol :: String -> Parser String
 parseSymbol str
@@ -24,7 +24,6 @@ parseSymbol (x : xs) = Parser $ \s p -> case runParser (parseChar x) s p of
   Right (new, new_str, new_pos) -> case runParser (parseSymbol xs) new_str new_pos of
     Left err -> Left err
     Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
-
 
 goodType :: String -> (Maybe Type)
 goodType "int" = Just TypeInt

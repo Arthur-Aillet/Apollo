@@ -7,8 +7,8 @@
 
 module Parser.Syntax (module Parser.Syntax) where
 
-import Parser.Type (Parser (..))
 import Parser.Char (parseAnyChar)
+import Parser.Type (Parser (..))
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
