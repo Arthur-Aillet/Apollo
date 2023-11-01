@@ -12,15 +12,15 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType, valueType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Instructions (Instruction (..), Insts)
-import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp, operate)
+import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp, operate, Value(..))
 import Eval.Atom (Atom)
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
-compOperable (OpValue val) _ _ = Ok [] ([PushD val], atomType val)
+compOperable (OpValue val) _ _ = Ok [] ([PushD val], valueType val)
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
   Nothing -> Ko [] ["Variable \"" ++ name ++ "\" never declared"]
   Just (_, _, False) -> Ko [] ["Variable \"" ++ name ++ "\" never defined"]
@@ -127,21 +127,21 @@ evalCalculus op args count = case allOfType args count Nothing of
   Ko warns err -> Ko warns err
   Ok w return_type ->
     withW w $ (\a -> (a, Just return_type))
-      <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
+      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalEquality :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalEquality op args count = case allOfType args count Nothing of
   Ko warns err -> Ko warns err
   Ok w _ ->
     withW w $ (\a -> (a, Just TypeBool))
-      <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
+      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalLogical :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalLogical op args count = case allOfType args count (Just TypeBool) of
   Ko warns err -> Ko warns err
   Ok w _ ->
     withW w $ (\a -> (a, Just TypeBool))
-      <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
+      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 allValue :: [Operable] -> Bool
 allValue = foldl (\bool op -> case (op, bool) of
@@ -150,7 +150,7 @@ allValue = foldl (\bool op -> case (op, bool) of
 
 toVa :: [Operable] -> [Atom]
 toVa = foldl (\arr op -> case op of
-  (OpValue atom) -> arr ++ [atom]
+  (OpValue (VAtom atom)) -> arr ++ [atom]
   _ -> []) []
 
 -- operate :: Operator -> ([Atom] -> Either String Atom)

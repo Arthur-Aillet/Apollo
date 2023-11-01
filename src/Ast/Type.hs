@@ -5,10 +5,10 @@
 -- AST
 -}
 
-module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
+module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
 
 import Eval.Atom (Atom (..))
-import Eval.Operator (Operator)
+import Eval.Operator (Operator, Value (..))
 
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
@@ -38,7 +38,7 @@ data Operation -- statement involving an action, resulting in a value
 data Operable -- statement having a value
   = OpVariable String -- Variable reffering to single known value
   | OpCast Operable Type
-  | OpValue Atom -- Single known value
+  | OpValue Value -- Single known value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
@@ -48,21 +48,27 @@ data Type
   | TypeChar
   | TypeInt
   | TypeFloat
+  | TypeList (Maybe Type)
   deriving (Eq)
 
 instance Show Type where
-  show TypeBool = "Bool"
-  show TypeChar = "Char"
-  show TypeInt = "Int"
-  show TypeFloat = "Float"
+  show TypeBool = "bool"
+  show TypeChar = "char"
+  show TypeInt = "int"
+  show TypeFloat = "float"
+  show (TypeList type') = "[" ++ show type' ++ "]"
 
 numType :: Type -> Bool
 numType TypeBool = True
 numType TypeChar = True
 numType TypeInt = True
 numType TypeFloat = True
+numType _ = False
 
--- numType _ = False
+valueType :: Value -> Type
+valueType (VAtom a) = atomType a
+valueType (VList []) = TypeList Nothing
+valueType (VList (x:_)) = TypeList $ Just $ valueType x
 
 atomType :: Atom -> Type
 atomType (AtomB _) = TypeBool

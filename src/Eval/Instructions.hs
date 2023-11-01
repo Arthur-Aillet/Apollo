@@ -15,22 +15,21 @@ module Eval.Instructions
   )
 where
 
-import Eval.Atom (Atom (..))
-import Eval.Operator (Operator (..))
+import Eval.Operator (Operator (..), Value)
 
 type Index = Int
 
 type Func = [Instruction]
 
 data Instruction
-  = PushD Atom
+  = PushD Value
   | Store
   | Assign Index
   | PushI Index
   | CallD Index
   | CallI Index
   | Op Operator
-  | PrintD Atom
+  | PrintD Value
   | PrintI Index
   | JumpIfFalse Int
   | Jump Int

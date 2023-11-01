@@ -17,13 +17,13 @@ module Eval.Operator
   )
 where
 
-import Data.Bits (And)
 import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
+  | VList [Value]
   deriving
-    ( -- | List [Atom]
+    (
       Show,
       Eq
     )

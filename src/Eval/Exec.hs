@@ -24,7 +24,7 @@ getElem nb list
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
 exec env args ((PushD val) : xs) h stack =
-  exec env args xs (PushD val : h) (VAtom val : stack)
+  exec env args xs (PushD val : h) (val : stack)
 exec env args ((PushI arg_index) : xs) h stack = case getElem arg_index args of
   Left err -> return $ Left err
   Right arg -> exec env args xs (PushI arg_index : h) (arg : stack)
