@@ -12,12 +12,12 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool), atomType, valueType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeList), atomType, valueType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
-import Eval.Instructions (Instruction (..), Insts)
-import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), defsOp, operate, Value(..))
 import Eval.Atom (Atom)
+import Eval.Instructions (Instruction (..), Insts)
+import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
 compOperable (OpValue val) _ _ = Ok [] ([PushD val], valueType val)
@@ -59,6 +59,14 @@ typeErr at wt =
 opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs xs (nbr - 1) type') w err
+opeValidArgs (Ok w _ : xs) nbr (Just (TypeList type')) =
+  failingComp
+    (opeValidArgs xs (nbr - 1) type')
+    w
+    [ "Operators can't be applied to lists but "
+        ++ show (TypeList type')
+        ++ " was given"
+    ]
 opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
 opeValidArgs [] nbr (Just _)
   | nbr < 0 = Ko [] ["Builtin: Too many arguments"]
@@ -126,45 +134,56 @@ evalCalculus :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalCalculus op args count = case allOfType args count Nothing of
   Ko warns err -> Ko warns err
   Ok w return_type ->
-    withW w $ (\a -> (a, Just return_type))
-      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+    withW w $
+      (\a -> (a, Just return_type))
+        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalEquality :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalEquality op args count = case allOfType args count Nothing of
   Ko warns err -> Ko warns err
   Ok w _ ->
-    withW w $ (\a -> (a, Just TypeBool))
-      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+    withW w $
+      (\a -> (a, Just TypeBool))
+        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalLogical :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalLogical op args count = case allOfType args count (Just TypeBool) of
   Ko warns err -> Ko warns err
   Ok w _ ->
-    withW w $ (\a -> (a, Just TypeBool))
-      <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+    withW w $
+      (\a -> (a, Just TypeBool))
+        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 allValue :: [Operable] -> Bool
-allValue = foldl (\bool op -> case (op, bool) of
-  (OpValue _, True) -> True
-  _ -> False) True
+allValue =
+  foldl
+    ( \bool op -> case (op, bool) of
+        (OpValue _, True) -> True
+        _ -> False
+    )
+    True
 
 toVa :: [Operable] -> [Atom]
-toVa = foldl (\arr op -> case op of
-  (OpValue (VAtom atom)) -> arr ++ [atom]
-  _ -> []) []
+toVa =
+  foldl
+    ( \arr op -> case op of
+        (OpValue (VAtom atom)) -> arr ++ [atom]
+        _ -> []
+    )
+    []
 
 -- operate :: Operator -> ([Atom] -> Either String Atom)
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l
   | allValue ops = case defsOp builtin of
-    (OperatorDef argCount Calculus) -> evalCalculus builtin (toVa ops) argCount
-    (OperatorDef argCount Equality) -> evalEquality builtin (toVa ops) argCount
-    (OperatorDef argCount Logical) -> evalLogical builtin (toVa ops) argCount
+      (OperatorDef argCount Calculus) -> evalCalculus builtin (toVa ops) argCount
+      (OperatorDef argCount Equality) -> evalEquality builtin (toVa ops) argCount
+      (OperatorDef argCount Logical) -> evalLogical builtin (toVa ops) argCount
   | otherwise = case defsOp builtin of
-    (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
-    (OperatorDef argCount Equality) -> compEquality builtin args argCount
-    (OperatorDef argCount Logical) -> compLogical builtin args argCount
+      (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
+      (OperatorDef argCount Equality) -> compEquality builtin args argCount
+      (OperatorDef argCount Logical) -> compLogical builtin args argCount
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of

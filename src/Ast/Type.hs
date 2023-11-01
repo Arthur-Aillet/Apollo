@@ -56,7 +56,8 @@ instance Show Type where
   show TypeChar = "char"
   show TypeInt = "int"
   show TypeFloat = "float"
-  show (TypeList type') = "[" ++ show type' ++ "]"
+  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
+  show (TypeList Nothing) = "[]"
 
 numType :: Type -> Bool
 numType TypeBool = True
@@ -68,7 +69,7 @@ numType _ = False
 valueType :: Value -> Type
 valueType (VAtom a) = atomType a
 valueType (VList []) = TypeList Nothing
-valueType (VList (x:_)) = TypeList $ Just $ valueType x
+valueType (VList (x : _)) = TypeList $ Just $ valueType x
 
 atomType :: Atom -> Type
 atomType (AtomB _) = TypeBool

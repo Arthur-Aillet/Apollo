@@ -7,7 +7,7 @@ import Ast.Type
 import Eval
 import Eval.Exec
 import Eval.Exec (Operator (Add, Or, Sub))
-import Eval.Operator(Value(..))
+import Eval.Operator (Value (..))
 import PreProcess
 import System.Environment
 import System.Exit (ExitCode (ExitFailure), exitWith)
@@ -143,7 +143,8 @@ createMain =
         (Just TypeInt)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Div [OpValue $ VAtom (AtomI 3), OpValue $ VAtom (AtomI 3)]
+              [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue $ VAtom (AtomI 3)),
+                AstStructure $ Return $ OpOperation $ CallStd Add [OpValue $ VList [VAtom (AtomI 3)], OpVariable "res"]
               ]
         )
     )

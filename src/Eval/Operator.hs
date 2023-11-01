@@ -23,8 +23,7 @@ data Value
   = VAtom Atom
   | VList [Value]
   deriving
-    (
-      Show,
+    ( Show,
       Eq
     )
 
