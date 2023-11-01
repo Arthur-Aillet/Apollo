@@ -16,21 +16,20 @@
 <HexaNumber>            = "0x"{<Hexadecimal>}-;
 <Number>                = <PosNumber> | <NegNumber> | <HexaNumber>;
 <Float>                 = <PosFloat> | <NegFloat>;
-<StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
-<List>                  = "[" <ElemSeparateByComa> "]";
-<Range>                 = <Number>..<Number>[":"Number]
+<StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\""; # \ handle
+<List>                  = "[" {<Elem> ","} <Elem> "]";
+<Range>                 = <Number>".."<Number>[":"Number]
 <Bool>                  = "true" | "false";
 <Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
 
 <Iterable>              = <List> | <Range>;
-<Elem>                  = <StringType> | <Number> | <Float> | <Bool> | <Call> | <Condition> | <List> | <Range>;
+<Elem>                  = <StringType> | <Number> | <Float> | <Bool> | <Call> | <Operation> | <List> | <Range>;
 
 <EqualityPredicate>     = "<" | ">" | "==" | "!=" | "<=" | ">=";
 <LogicalPredicate>      = "&&" | "||";
 <CalculusPredicate>     = "/" | "%" | "-" | "+";
 <UnaryPredicate>        = "!"
-<Operation>             = <Elem> <BinaryPredicate> <Elem> | <UnaryPredicate> <Elem>
-<Condition>             = ["("] <Operation> [")"];
+<Operation>             = ["("] <Elem> <BinaryPredicate> <Elem> [")"] | ["("] <UnaryPredicate> <Elem> [")"]
 
 <DeclareVariable>       = <Type> <String>;
 <DefineVariable>        = <DeclareVariable> "=" <Elem>;
@@ -38,20 +37,26 @@
 
 <Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
 
-<StructureIf>           =   "if" ["("] <Condition> [")"] "{"
+<StructureIf>           =   "if" <Operation> "{"
                                 <Instructions> "}"
-                            { "elif" ["("] <Condition> [")"] "{" <Instructions> "}" }
+                            { "elif" <Operation> "{" <Instructions> "}" }
                             [ "elif {" <Instructions> "}" ];
-<StructureWhile>        = "while" ["("] <Condition> [")"] "{" <Instructions> "}";
+<StructureWhile>        = "while" <Operation> "{" <Instructions> "}";
 <StructureFor>          = "for" <String> "in" <Iterable> "{" <Instructions> "}"
 <FunctionDef>           = "@" <String> "(" <Parameters> ")" "{" <Instructions> "}";
 
 <FuncArgs>              = {<Elem> ","} <Elem>
 <FuncCall>              = "@"<String> "(" <FuncArgs> ")";
+<FuncCallWith0Args>     = "@"<String>;
+<FuncCallWithPipedArg>  = "@"<String>;
 <ShellCall>             = "$"<String> "(" <FuncArgs> ")";
+<ShellCallWith0Args>    = "$"<String>;
+<ShellCallWithPipedArg> = "$"<String>;
 <Call>                  = <FuncCall> | <ShellCall>
 
-<Return>                = "return (" <Elem> ")";
+<Return>                = "return" ["("] <Elem> [")"];
+<ChainCalls>            = <Call>"."<Call>
+
 # <Then>                  = <Call> ">>" <Call>;
 # <Bind>                  = <DeclareVariable> "<-" <Call>;
 
