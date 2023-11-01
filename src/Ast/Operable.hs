@@ -158,7 +158,7 @@ allValue :: [Operable] -> Bool
 allValue =
   foldl
     ( \bool op -> case (op, bool) of
-        (OpValue _, True) -> True
+        (OpValue (VAtom _), True) -> True
         _ -> False
     )
     True

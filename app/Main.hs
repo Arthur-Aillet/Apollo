@@ -144,7 +144,7 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue $ VAtom (AtomI 3)),
-                AstStructure $ Return $ OpOperation $ CallStd Add [OpValue $ VList [VAtom (AtomI 3)], OpVariable "res"]
+                AstStructure $ Return $ OpOperation $ CallStd Add [OpValue $ VList [VAtom (AtomI 3)], OpValue $ VAtom (AtomI 2)]
               ]
         )
     )
