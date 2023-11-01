@@ -14,39 +14,46 @@
 <NegFloat>              = <NegNumber> "." <PosNumber>;
 
 <HexaNumber>            = "0x"{<Hexadecimal>}-;
-<Number>                = <PosNumber> | <NegNumber> | HexaNumber;
+<Number>                = <PosNumber> | <NegNumber> | <HexaNumber>;
 <Float>                 = <PosFloat> | <NegFloat>;
 <StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
 <List>                  = "[" <ElemSeparateByComa> "]";
+<Range>                 = <Number>..<Number>[":"Number]
 <Bool>                  = "true" | "false";
 <Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
 
-<Elem>                  = <StringType> | <Number> | <Float> | <List> | <Bool> | <FuncCall>;
-<ElemSeparateByComa>    = [<Elem>] | <Elem> {("," <Elem>)};
+<Iterable>              = <List> | <Range>;
+<Elem>                  = <StringType> | <Number> | <Float> | <Bool> | <Call> | <Condition> | <List> | <Range>;
 
-<Predicat>              = "<" | ">" | "==" | "!=" | "<=" | ">=";
-<BoolOperator>          = "&&" | "||";
-<Not>                   = "!";
-<Condition>             = [<Not>] <Elem> <Predicat> <Elem> | [<Not> "("] <Condition> <BoolOperator> <Condition> [")"];
+<EqualityPredicate>     = "<" | ">" | "==" | "!=" | "<=" | ">=";
+<LogicalPredicate>      = "&&" | "||";
+<CalculusPredicate>     = "/" | "%" | "-" | "+";
+<UnaryPredicate>        = "!"
+<Operation>             = <Elem> <BinaryPredicate> <Elem> | <UnaryPredicate> <Elem>
+<Condition>             = ["("] <Operation> [")"];
 
 <DeclareVariable>       = <Type> <String>;
-<SetVariable>           = <DeclareVariable> = <Elem>;
+<DefineVariable>        = <DeclareVariable> "=" <Elem>;
+<AssigneVariable>       = <String> = <Elem>;
 
 <Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
 
-<StructureIf>           = "if (" <Condition> ") {" <Instructions> "}" [ "else {" <Instructions> "}" ];
-<DefaultCase>           = "default :" <Instructions>;
-<StructureCase>         = "case " <Elem> ": " <Instructions>;
-<StructureSwitch>       = "switch (" <Elem> ") {" {<StructureCase>} [<DefaultCase>] "}";
-<FunctionDef>           = "def" <String> "(" <Parameters> ")" "{" <Instructions> "}";
+<StructureIf>           =   "if" ["("] <Condition> [")"] "{"
+                                <Instructions> "}"
+                            { "elif" ["("] <Condition> [")"] "{" <Instructions> "}" }
+                            [ "elif {" <Instructions> "}" ];
+<StructureWhile>        = "while" ["("] <Condition> [")"] "{" <Instructions> "}";
+<StructureFor>          = "for" <String> "in" <Iterable> "{" <Instructions> "}"
+<FunctionDef>           = "@" <String> "(" <Parameters> ")" <Type> "{" <Instructions> "}";
 
-<FuncCall>              = <string> "(" {<Elem>} ")";
-<ShellCall>             = "$"<String> "(" <ElemSeparateByComa> ")";
+<FuncArgs>              = {<Elem> ","} <Elem>
+<FuncCall>              = "@"<String> "(" <FuncArgs> ")";
+<ShellCall>             = "$"<String> "(" <FuncArgs> ")";
 <Call>                  = <FuncCall> | <ShellCall>
 
-<Return>                = "return (" <Elem> ");";
-<Then>                  = <Call> ">>" <Call>;
-<Bind>                  = <DeclareVariable> "<-" <Call>;
+<Return>                = "return (" <Elem> ")";
+# <Then>                  = <Call> ">>" <Call>;
+# <Bind>                  = <DeclareVariable> "<-" <Call>;
 
-<Instruction>           = <StructureIf> | <StructureSwitch> | <Call> | <Return> | <SetVariable> | <DeclareVariable>";";
+<Instruction>           = <StructureIf> ";" | <Call> ";" | <Return> ";" | <SetVariable> ";" | <DeclareVariable> ";" | <AssigneVariable> ";";
 <Instructions>          = {<Instruction>};

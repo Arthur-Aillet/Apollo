@@ -13,7 +13,7 @@ import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
 import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable)
 import Parser.Syntax(parseWithSpace, parseMany)
-import Parser.Char(parseChar, parseAnyChar, parseAChar)
+import Parser.Char(parseChar, parseAnyChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis)
 
 ----------------------------------------------------------------
 
@@ -34,7 +34,6 @@ parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\'
 
 ----------------------------------------------------------------
 
--- FIXME - VarDefinition (Maybe Operable)
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
 createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right(typ, str, pos) -> case runParser parStr str pos of
@@ -45,17 +44,23 @@ createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)
+parseVarDefinition = (createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';'
 
 ----------------------------------------------------------------
 
 parseVarAssignation :: Parser Structure
-parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable)
+parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';')
 
 ----------------------------------------------------------------
 
+parseReturnWithParenthesis :: Parser Operable
+parseReturnWithParenthesis = parseWithSpace (parseSymbol "return") *> parseOpeningParenthesis *> parseOperable <* parseWithSpace parseClosingParenthesis
+
+parseReturnWithoutParenthesis :: Parser Operable
+parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseOperable
+
 parseReturn :: Parser Structure
-parseReturn = Return <$> ((parseWithSpace (parseSymbol "return")) *> parseOperable)
+parseReturn = Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';')
 
 ----------------------------------------------------------------
 

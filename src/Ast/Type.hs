@@ -13,15 +13,15 @@ import Eval.Operator (Operator)
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
-  = FuncDefinition String Function deriving (Show) -- define a function
+  = FuncDefinition String Function
+  deriving (Show) -- define a function
 
 data Structure -- layout, structure and connection of statements, having no value
-{- Useless? -}
   = Resolved -- expression resolving to no value
   | VarDefinition String Type (Maybe Operable)
   | VarAssignation String Operable
   | Return Operable
-  | If Operable Ast Ast -- branching condition (if (x) {} {})
+  | If [(Operable, Ast)] (Maybe Ast) -- branching condition (if ((x) {}, ...) {})
   | While Operable Ast
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
@@ -49,7 +49,13 @@ data Type
   | TypeChar
   | TypeInt
   | TypeFloat
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show Type where
+  show TypeBool = "Bool"
+  show TypeChar = "Char"
+  show TypeInt = "Int"
+  show TypeFloat = "Float"
 
 numType :: Type -> Bool
 numType TypeBool = True

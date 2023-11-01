@@ -7,21 +7,18 @@
 
 module Parser.Condition (module Parser.Condition) where
 
+import Ast.Type (Ast (..), Definition (..), Function (..), Operable (..), Operation (..), Structure (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Type (Parser(..))
-import Ast.Type(Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..))
-import Parser.Symbol (parseSymbol)
-import Parser.Int(parseInt)
-import Parser.Char(parseAChar, parseOpeningParenthesis, parseClosingParenthesis)
-import Parser.Int(parseFloat)
-import Parser.Bool(parseBool)
 import Eval.Atom (Atom (..))
-import Eval.Operator (Operator(..))
-import Parser.StackTrace (StackTrace(..), defaultLocation)
-import Parser.Range (Range(..))
-import Parser.Syntax(parseMany, parseWithSpace)
-import Parser.Char(parseAnyChar)
-import Debug.Trace (traceM)
+import Eval.Operator (Operator (..))
+import Parser.Bool (parseBool)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis)
+import Parser.Int (parseFloat, parseInt)
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..), defaultLocation)
+import Parser.Symbol (parseSymbol)
+import Parser.Syntax (parseMany, parseWithSpace)
+import Parser.Type (Parser (..))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -63,7 +60,7 @@ checkPredicat parser = Parser $ \s p -> case runParser parser s p of
 
 parseApredicat :: Parser Operator
 parseApredicat = Parser $ \s p -> case runParser (checkPredicat parsePredicat) s p of
-  Right (result, str, pos) -> Right(result, str, pos)
+  Right (result, str, pos) -> Right (result, str, pos)
   Left a -> Left a
 
 -- parseAtomOperation :: Parser Operation

@@ -1,4 +1,4 @@
-  module ParserSpec (parserTests) where
+module ParserSpec (parserTests) where
 
 import Parser.Char
 import Parser.Position (Position (..), defaultPosition, moveCursor)
@@ -20,10 +20,10 @@ parserTests =
       "parseNotChar" ~: parseNotCharTests,
       "parseAnyChar" ~: parseAnyCharTests,
       -- "parseString" ~: parseStringTests,
-      "parseSymbol" ~: parseSymbolTests,
+      "parseSymbol" ~: parseSymbolTests
       -- "parseOr" ~: parseOrTests,
       -- "parseAnd" ~: parseAndTests,
-      "parseMany" ~: parseManyTests
+      -- "parseMany" ~: parseManyTests
       -- "parseSome" ~: parseSomeTests,
       -- "parseDigit" ~: parseDigitTests,
       -- "parseUInt" ~: parseUIntTests,
@@ -125,7 +125,7 @@ parseSymbolTests =
 --       "Test 2" ~: (Left ("Not Found: charactere is not '('", (getPosition 2 0))) @=? (runParser (parseAnd (parseChar '(') (parseChar '(')) "(hello world)" defaultPosition),
 --       "Test 3" ~: (Right (('(', 'h'), "ello world)", Position {line = 0, char = 2})) @=? (runParser (parseAnd (parseChar '(') (parseChar 'h')) "(hello world)" defaultPosition),
 --       "Test 4" ~: (Left ("Not Found: charactere is not 'h'", Position {line = 0, char = 1})) @=? (runParser (parseAnd (parseChar 'h') (parseChar '(')) "(hello world)" defaultPosition)
-    -- ]
+-- ]
 
 -- parseManyTests :: Test
 -- parseManyTests =
