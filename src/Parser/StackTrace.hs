@@ -11,7 +11,6 @@ module Parser.StackTrace
     addNewMessage,
     addSourceLocation,
     defaultLocation,
-    addSourceLocation,
     modifySourceLocation
   )
 where
@@ -58,9 +57,9 @@ addNewMessage (str, (Range start end), src) pre =
     ++ "\t in "
     ++ show (functionName src) ++ "(" ++ show (l src) ++ ":" ++ show (c src) ++ "): "
     ++ str
-    ++ " at "
+    ++ " started at "
     ++ show start
-    ++ ":"
+    ++ " and finiched at "
     ++ show end
     ++ "\n"
 -- ++ functionName src

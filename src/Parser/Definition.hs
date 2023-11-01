@@ -7,12 +7,12 @@
 
 module Parser.Definition (module Parser.Definition) where
 
-import Ast.Type (Ast (..), Definition (..), Function (..), Operable (..), Structure (..), Type (..))
+import Ast.Type (Ast (..), Definition (..), Function (..), Operable (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Data.Tuple (swap)
 import Parser.Char (parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseOpeningCurlyBraquet, parseOpeningParenthesis)
-import Parser.Operable (parseDefinitionName, parseOperable)
-import Parser.Symbol (parseMaybeType, parseSymbol, parseType)
+import Parser.Operable (parseDefinitionName)
+import Parser.Symbol (parseMaybeType, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
 import Parser.StackTrace (StackTrace(..), addSourceLocation, modifySourceLocation)

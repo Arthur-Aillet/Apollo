@@ -54,7 +54,7 @@ parsePredicat = parseSymbol "+"
             <|> parseSymbol ">="
             <|> parseSymbol "!="
 
-parseUnary :: ParserString
+parseUnary :: Parser String
 parseUnary = parseSymbol "!"
 
 checkPredicat :: Parser String -> Parser Operator
@@ -124,7 +124,7 @@ parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable)
 parseUnaryOp :: Parser Operation
 parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace parseAUnary) s p of
   Right (resultLeft, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
-    Right (resultright, newstr, newpo) -> Right (CallStd resultLeft [resultright], newstr, newpos)
+    Right (resultright, newstr, newpo) -> Right (CallStd resultLeft [resultright], newstr, newpo)
     Left a -> Left a
   Left a -> Left a
 
