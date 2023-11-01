@@ -20,43 +20,42 @@ import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
 
-getPredicat :: String -> (Maybe Operator)
-getPredicat "<" = Just Lt
-getPredicat ">" = Just Gt
+getPredicat :: String -> Maybe Operator
+getPredicat "+" = Just Add
+getPredicat "-" = Just Sub
+getPredicat "*" = Just Mul
+getPredicat "/" = Just Div
+getPredicat "%" = Just Mod
+getPredicat "&&" = Just BAnd
+getPredicat "||" = Just BOr
 getPredicat "==" = Just Eq
-getPredicat "!=" = Just NEq
+getPredicat "<" = Just Lt
 getPredicat "<=" = Just LEt
+getPredicat ">" = Just Gt
 getPredicat ">=" = Just GEt
+getPredicat "!=" = Just NEq
+getPredicat _ = Nothing
 
-getpredicat _ = Nothing
-
-getBoolOperator :: String -> (Maybe Operator)
-getBoolOperator "==" = Just Eq
-getBoolOperator "&&" = Just BAnd
-getBoolOperator "||" = Just BOr
-getBoolOperator _ = Nothing
-
-parseBoolOperator :: Parser String
-parseBoolOperator =
-  parseSymbol "=="
-    <|> parseSymbol "&&"
-    <|> parseSymbol "||"
+getUnary :: String -> Maybe Operator
+getUnary "!" = Just BNot
 
 parsePredicat :: Parser String
-parsePredicat =
-  parseSymbol "<"
-    <|> parseSymbol ">"
-    <|> parseSymbol "=="
-    <|> parseSymbol "!="
-    <|> parseSymbol "<="
-    <|> parseSymbol ">="
+parsePredicat = parseSymbol "+"
+            <|> parseSymbol "-"
+            <|> parseSymbol "*"
+            <|> parseSymbol "/"
+            <|> parseSymbol "%"
+            <|> parseSymbol "&&"
+            <|> parseSymbol "||"
+            <|> parseSymbol "=="
+            <|> parseSymbol "<"
+            <|> parseSymbol "<="
+            <|> parseSymbol ">"
+            <|> parseSymbol ">="
+            <|> parseSymbol "!="
 
-checkBoolOperator :: Parser String -> Parser Operator
-checkBoolOperator parser = Parser $ \s p -> case runParser parser s p of
-  Right (predicatstr, str, pos) -> case getBoolOperator predicatstr of
-    Just a -> Right (a, str, pos)
-    Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
-  Left a -> Left a
+parseUnary :: ParserString
+parseUnary = parseSymbol "!"
 
 checkPredicat :: Parser String -> Parser Operator
 checkPredicat parser = Parser $ \s p -> case runParser parser s p of
@@ -65,9 +64,11 @@ checkPredicat parser = Parser $ \s p -> case runParser parser s p of
     Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
   Left a -> Left a
 
-parseABoolOperator :: Parser Operator
-parseABoolOperator = Parser $ \s p -> case runParser (checkBoolOperator parseBoolOperator) s p of
-  Right (result, str, pos) -> Right (result, str, pos)
+checkUnary :: Parser String -> Parser Operator
+checkUnary parser = Parser $ \s p -> case runParser parser s p of
+  Right (unarystr, str, pos) -> case getUnary unarystr of
+    Just a -> Right (a, str, pos)
+    Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
   Left a -> Left a
 
 parseApredicat :: Parser Operator
@@ -75,43 +76,107 @@ parseApredicat = Parser $ \s p -> case runParser (checkPredicat parsePredicat) s
   Right (result, str, pos) -> Right (result, str, pos)
   Left a -> Left a
 
-parseAtomCondOperation :: Parser Operation
-parseAtomCondOperation = Parser $ \s p -> case runParser parseOperable s p of
-  Right (resultleft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
-    Right (resultmiddle, newstrright, newposright) -> case runParser (parseWithSpace parseOperable) newstrright newposright of
-      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [OpValue resultleft, OpValue resultright], newstr, newpos)
+parseAUnary :: Parser Operator
+parseAUnary = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
+  Right (result, str, pos) -> Right (result, str, pos)
+  Left a -> Left a
+
+
+-- parseAtomOperation :: Parser Operation
+-- parseAtomOperation = Parser $ \s p -> case runParser parseOperable s p of
+--   Right (resultleft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+--     Right (resultmiddle, newstrright, newposright) -> case runParser (parseWithSpace parseOperable) newstrright newposright of
+--       Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [OpValue resultleft, OpValue resultright], newstr, newpos)
+--       Left a -> Left a
+--     Left a -> Left a
+--   Left a -> Left a
+
+-- parseOpOperation :: Parser Operation
+-- parseOpOperation = Parser $ \s p -> case runParser parseOperation s p of
+--   Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+--     Right (resultmiddle, newstrright, newposright) -> case runParser (parseWithSpace parseOperation) newstrright newposright of
+--       Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [OpOperation resultLeft, OpOperation resultright], newstr, newpos)
+--       Left a -> Left a
+--     Left a -> Left a
+--   Left a -> Left a
+
+-- parseOperation :: Parser Operation
+-- parseOperation =  parseAtomOperation
+--                   <|> parseOpeningParenthesis *> parseWithSpace parseAtomOperation <* parseClosingParenthesis
+--                   <|> parseOpOperation
+--                   <|> parseOpeningParenthesis *> parseWithSpace parseOpOperation <* parseClosingParenthesis
+
+-- parseOperation :: Parser Operation
+
+parseMaybeparenthesis :: Parser a -> Parser a
+parseMaybeparenthesis parser =  parseWithSpace parser
+                            <|> parseWithSpace (parseOpeningParenthesis *> parseWithSpace parser <* parseClosingParenthesis)
+
+parseStd :: Parser Operation
+parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
+  Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+    Right (resultmiddle, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
       Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 
-parseBooleanOperation :: Parser Operation
-parseBooleanOperation = Parser $ \s p -> case runParser parseAtomCondOperation s p of
-  Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseABoolOperator) newstrmiddle newposmiddle of
-    Right (resultmiddle, newstrright, newposright) -> case runParser (parseWithSpace parseAtomCondOperation) newstrright newposright of
-      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [OpOperation resultLeft, OpOperation resultright], newstr, newpos)
-      Left a -> Left a
+parseUnaryOp :: Parser Operation
+parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace parseAUnary) s p of
+  Right (resultLeft, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+    Right (resultright, newstr, newpo) -> Right (CallStd resultLeft [resultright], newstr, newpos)
     Left a -> Left a
   Left a -> Left a
 
-parseCondOperation :: Parser Operation
-parseCondOperation =
-  parseAtomCondOperation
-    <|> parseBooleanOperation
-    <|> parseOpeningParenthesis *> parseWithSpace parseBooleanOperation <* parseClosingParenthesis
-    <|> parseOpeningParenthesis *> parseWithSpace parseCondOperation <* parseClosingParenthesis
+parseOperation :: Parser Operation
+parseOperation =  parseStd
+              <|> parseUnaryOp
+              -- <|> parseFct
+              -- <|> parseSh
 
-getBoolAtom :: Parser Bool -> Parser Atom
-getBoolAtom parser = Parser $ \s p -> case runParser parser s p of
-  Right (bool, str, pos) -> Right (AtomB bool, str, pos)
+getBoolOpValue :: Parser Bool -> Parser Operable
+getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
+  Right (bool, str, pos) -> Right (OpValue $ AtomB bool, str, pos)
   Left a -> Left a
 
-getcharAtom :: Parser Char -> Parser Atom
-getcharAtom parser = Parser $ \s p -> case runParser parser s p of
-  Right (char, str, pos) -> Right (AtomC char False, str, pos)
+getcharOpValue :: Parser Char -> Parser Operable
+getcharOpValue parser = Parser $ \s p -> case runParser parser s p of
+  Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
   Left a -> Left a
 
-parseOperable :: Parser Atom
-parseOperable = parseFloat <|> parseInt <|> getBoolAtom parseBool <|> getcharAtom parseAChar
+getIntOpValue :: Parser Atom -> Parser Operable
+getIntOpValue parser = Parser $ \s p -> case runParser parser s p of
+  Right (int, str, pos) -> Right (OpValue int, str, pos)
+  Left a -> Left a
 
-parseBoolOperable :: Parser Atom
-parseBoolOperable = getBoolAtom parseBool
+getFloatOpValue :: Parser Atom -> Parser Operable
+getFloatOpValue parser = Parser $ \s p -> case runParser parser s p of
+  Right (float, str, pos) -> Right (OpValue float, str, pos)
+  Left a -> Left a
+
+parseOpValue :: Parser Operable
+parseOpValue =  getFloatOpValue parseFloat
+            <|> getIntOpValue parseInt
+            <|> getBoolOpValue parseBool
+            <|> getcharOpValue parseAChar
+
+getVarOpVar :: Parser String -> Parser Operable
+getVarOpVar parser = Parser $ \s p -> case runParser parser s p of
+  Right (var, str, pos) -> Right (OpVariable var, str, pos)
+  Left a -> Left a
+
+parseOpVar :: Parser Operable
+parseOpVar = getVarOpVar (parseWithSpace (parseMany (parseAnyChar (['a'..'z'] ++ ['A'..'Z'] ++ "_-"))))
+
+getOpOp :: Parser Operation -> Parser Operable
+getOpOp parser = Parser $ \s p -> case runParser parser s p of
+  Right (op, str, pos) -> Right (OpOperation op, str, pos)
+  Left a -> Left a
+
+parseOpOperation :: Parser Operable
+parseOpOperation =  getOpOp parseOperation
+
+parseOperable :: Parser Operable
+parseOperable =   parseOpValue
+              <|> parseOpVar
+              <|> parseOpOperation
