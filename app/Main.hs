@@ -139,10 +139,10 @@ createMain =
     "main"
     ( Function
         []
-        (Just TypeBool)
+        (Just TypeInt)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Not [OpValue (AtomB True)]
+              [ AstStructure $ Return $ OpOperation $ CallStd Div [OpValue (AtomI 3), OpValue (AtomI 0)]
               ]
         )
     )
