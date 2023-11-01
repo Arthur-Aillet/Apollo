@@ -18,6 +18,13 @@ withErr new_msg parser = Parser $ \string pos -> case runParser parser string po
   Left (StackTrace ((msg, (Range start end), src) : xs)) -> Left (StackTrace ((new_msg, Range start end, src) : (msg, (Range start end), src) : xs))
   Left err -> Left err
 
+replaceErr :: String -> Parser a -> Parser a
+replaceErr new_msg parser = Parser $ \string pos -> case runParser parser string pos of
+  Right a -> Right a
+  Left (StackTrace ((_, (Range start end), src) : xs)) -> Left (StackTrace ((new_msg, Range start end, src) : xs))
+  Left err -> Left err
+
+
 failingWith :: String -> Parser a
 failingWith string = Parser (\_ pos -> Left (StackTrace [(string, newRange pos pos, defaultLocation)]))
 

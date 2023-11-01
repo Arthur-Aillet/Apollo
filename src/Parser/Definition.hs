@@ -15,6 +15,9 @@ import Parser.Operable (parseDefinitionName, parseOperable)
 import Parser.Symbol (parseMaybeType, parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
+import Parser.StackTrace (StackTrace(..), addSourceLocation, modifySourceLocation)
+import Parser.Error(replaceErr)
+import Parser.Structure
 
 parseParameter :: Parser (String, Type)
 parseParameter =
@@ -35,16 +38,13 @@ parseParameters =
     )
 
 parseInstruction :: Parser Ast
-parseInstruction = AstStructure <$> (returnVar <$> parseWithSpace (parseSymbol "return") <*> parseOperable)
-  where
-    returnVar :: String -> Operable -> Structure
-    returnVar _ expr = Return expr
+parseInstruction = (AstStructure <$> parseSequence)
 
 parseInstructions :: Parser Ast
 parseInstructions =
   parseWithSpace
     ( parseOpeningCurlyBraquet
-        *> parseWithSpace parseInstruction
+        *>  parseWithSpace parseInstruction
         <* parseClosingCurlyBraquet
     )
 
@@ -52,4 +52,11 @@ parseFunction :: Parser Function
 parseFunction = Function <$> parseParameters <*> parseMaybeType <*> parseInstructions
 
 parseFuncDefinition :: Parser Definition
-parseFuncDefinition = FuncDefinition <$> ((parseChar '@') *> parseDefinitionName) <*> parseFunction
+parseFuncDefinition = Parser $ \s p -> case runParser (replaceErr "Synatxe error: bad function definition" ((parseChar '@') *> parseDefinitionName)) s p of
+  Right (name, str, pos) -> case runParser parseFunction str pos of
+    Right (func, string, position) -> Right ((FuncDefinition name func), string, position)
+    Left (StackTrace a) -> Left (StackTrace (modifySourceLocation (addSourceLocation name p) a))
+  Left a -> Left a
+
+
+  -- FuncDefinition <$> ((parseChar '@') *> parseDefinitionName) <*> parseFunction
