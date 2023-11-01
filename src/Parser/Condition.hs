@@ -36,6 +36,9 @@ getPredicat ">=" = Just GEt
 getPredicat "!=" = Just NEq
 getPredicat _ = Nothing
 
+getUnary :: String -> Maybe Operator
+getUnary "!" = Just BNot
+
 parsePredicat :: Parser String
 parsePredicat = parseSymbol "+"
             <|> parseSymbol "-"
@@ -51,9 +54,19 @@ parsePredicat = parseSymbol "+"
             <|> parseSymbol ">="
             <|> parseSymbol "!="
 
+parseUnary :: ParserString
+parseUnary = parseSymbol "!"
+
 checkPredicat :: Parser String -> Parser Operator
 checkPredicat parser = Parser $ \s p -> case runParser parser s p of
   Right (predicatstr, str, pos) -> case getPredicat predicatstr of
+    Just a -> Right (a, str, pos)
+    Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
+  Left a -> Left a
+
+checkUnary :: Parser String -> Parser Operator
+checkUnary parser = Parser $ \s p -> case runParser parser s p of
+  Right (unarystr, str, pos) -> case getUnary unarystr of
     Just a -> Right (a, str, pos)
     Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
   Left a -> Left a
@@ -62,6 +75,12 @@ parseApredicat :: Parser Operator
 parseApredicat = Parser $ \s p -> case runParser (checkPredicat parsePredicat) s p of
   Right (result, str, pos) -> Right (result, str, pos)
   Left a -> Left a
+
+parseAUnary :: Parser Operator
+parseAUnary = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
+  Right (result, str, pos) -> Right (result, str, pos)
+  Left a -> Left a
+
 
 -- parseAtomOperation :: Parser Operation
 -- parseAtomOperation = Parser $ \s p -> case runParser parseOperable s p of
@@ -95,15 +114,23 @@ parseMaybeparenthesis parser =  parseWithSpace parser
 
 parseStd :: Parser Operation
 parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
-    Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
-      Right (resultmiddle, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
-        Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
-        Left a -> Left a
+  Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+    Right (resultmiddle, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
       Left a -> Left a
     Left a -> Left a
+  Left a -> Left a
+
+parseUnaryOp :: Parser Operation
+parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace parseAUnary) s p of
+  Right (resultLeft, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+    Right (resultright, newstr, newpo) -> Right (CallStd resultLeft [resultright], newstr, newpos)
+    Left a -> Left a
+  Left a -> Left a
 
 parseOperation :: Parser Operation
 parseOperation =  parseStd
+              <|> parseUnaryOp
               -- <|> parseFct
               -- <|> parseSh
 
@@ -147,8 +174,7 @@ getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpOperation :: Parser Operable
-parseOpOperation = do
-                  getOpOp parseOperation
+parseOpOperation =  getOpOp parseOperation
 
 parseOperable :: Parser Operable
 parseOperable =   parseOpValue
