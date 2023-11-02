@@ -23,13 +23,13 @@ getElem nb list
   | nb < 0 = Left "Error: Element asked invalid"
   | otherwise = Right $ last $ take (nb + 1) list
 
-execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
+execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 -- execL env args insts h stack = trace ("Stack > " ++ show stack) exec env args insts h stack
 execL = exec
 
 -- Add logs here to affect all the execs
 
-exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
+exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 exec env args ((Take nbr : xs)) h stack = execL env args xs (Take nbr : h) new_stack
   where
     new_stack = VList start : end
@@ -50,7 +50,8 @@ exec env args ((CallD func_index) : xs) h stack = case getElem func_index env of
     result <- execL env start insts [] []
     case result of
       Left err -> return $ Left err
-      Right value -> execL env args xs (CallD func_index : h) (value : end)
+      Right (Just val) -> execL env args xs (CallD func_index : h) (val : end)
+      Right Nothing -> execL env args xs (CallD func_index : h) end
     where
       (start, end) = splitAt args_nbr stack
 exec env args ((JumpIfFalse line) : xs) h (VAtom 0 : ys)
@@ -82,7 +83,7 @@ exec env args (Assign i : xs) h (y : ys) = case getElem i args of
   Left err -> return $ Left err
   Right _ ->
     execL env (take i args ++ [y] ++ drop (i + 1) args) xs (Assign i : h) ys
-exec _ _ (Ret : _) _ (y : _) = return $ Right y
+exec _ _ (Ret : _) _ (y : _) = return $ Right $ Just y
 exec _ _ (Ret : _) _ _ = return $ Left "Error: Return with empty stack"
-exec _ _ [] _ _ = return $ Left "Error: Missing return"
+exec _ _ [] _ _ = return $ Right Nothing
 exec _ _ (x : _) _ _ = return $ Left $ "Error: Undefined Yet: " ++ show x

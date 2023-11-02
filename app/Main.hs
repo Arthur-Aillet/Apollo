@@ -134,6 +134,16 @@ createSnd =
         )
     )
 
+createCoolPrint :: Definition
+createCoolPrint =
+  FuncDefinition
+    "cool_print"
+    ( Function
+        []
+        Nothing
+        (AstOperation $ CallStd Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
+    )
+
 createMain :: Definition
 createMain =
   FuncDefinition
@@ -144,7 +154,7 @@ createMain =
         ( AstStructure $
             Sequence
               [
-                AstOperation $ CallStd Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]]
+                AstOperation $ CallFunc "cool_print" []
               ]
         )
     )
@@ -153,7 +163,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain]
+  (Binary env main_f) <- compile [createMain, createCoolPrint]
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a
