@@ -12,7 +12,7 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeChar, TypeList), atomType, valueType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (..), atomType, valueType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
@@ -32,7 +32,7 @@ import Eval.Operator (Operator (Concat), OperatorDef (..), OperatorType (..), Va
 ++ (push)
 [3, 5]
 --}
---[3, 5] >< [2, 3]
+-- [3, 5] >< [2, 3]
 -- compList :: Compile [Insts]
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
@@ -118,15 +118,39 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 compPrinting :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compOperationType (Just $ TypeList $ Just TypeChar) Nothing
 
-compConcat :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compConcat op args count = case opeValidArgs args count Nothing of
+checkGetArgs :: [Compile (Insts, Type)] -> Compile Type
+checkGetArgs (x : y : ys)
+  | length (x : y : ys) /= 2 = Ko [] ["Get take two arguments"]
+  | otherwise = case (x, y) of
+      (Ok w1 (_, TypeList (Just type1)), Ok w2 (_, TypeInt)) -> Ok (w1 ++ w2) type1
+      (Ok w1 (_, TypeList Nothing), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) ["Can't get on empty list"]
+      (Ok w1 (_, _), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) ["Get operate only on lists"]
+      (Ok w1 (_, _), Ok w2 (_, _)) -> Ko (w1 ++ w2) ["Get take a int as index"]
+      (Ko w1 e1, Ok w2 _) -> Ko (w1 ++ w2) e1
+      (Ok w1 _, Ko w2 e2) -> Ko (w1 ++ w2) e2
+      (Ko w1 e1, Ko w2 e2) -> Ko (w1 ++ w2) (e1 ++ e2)
+checkGetArgs _ = Ko [] ["Get take two arguments"]
+
+compGet :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compGet op args _ = case checkGetArgs args of
   Ko warns err -> Ko warns err
-  Ok w type' -> case type' of
-    TypeList _ -> (\a -> (a, Just type'))
+  Ok w type' ->
+    (\a -> (a, Just type'))
       <$> ( (++)
               <$> concatInner (map (fst <$>) (reverse args))
               <*> Ok w [Op op]
           )
+
+compConcat :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compConcat op args count = case opeValidArgs args count Nothing of
+  Ko warns err -> Ko warns err
+  Ok w type' -> case type' of
+    TypeList _ ->
+      (\a -> (a, Just type'))
+        <$> ( (++)
+                <$> concatInner (map (fst <$>) (reverse args))
+                <*> Ok w [Op op]
+            )
     _ -> Ko w ["Concatenation take lists as input"]
 
 compOperationType :: Maybe Type -> Maybe Type -> Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
@@ -213,6 +237,7 @@ compOperation (CallStd builtin ops) c l = case (defsOp builtin, allValue ops) of
   (OperatorDef ac Printing, _) -> compPrinting builtin args ac
   (OperatorDef ac Concatenation, False) -> compConcat builtin args ac
   (OperatorDef ac Concatenation, True) -> compConcat builtin args ac
+  (OperatorDef ac Getting, _) -> compGet builtin args ac
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of

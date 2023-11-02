@@ -150,11 +150,10 @@ createMain =
     "main"
     ( Function
         []
-        Nothing
+        (Just TypeChar)
         ( AstStructure $
             Sequence
-              [
-                AstOperation $ CallFunc "cool_print" []
+              [ AstStructure $ Return $ OpOperation $ CallStd Get [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpValue $ AtomI 1]
               ]
         )
     )
