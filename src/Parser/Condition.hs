@@ -12,7 +12,7 @@ import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Eval.Operator (Operator (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis, parseOpeningQuote, parseClosingQuote, parseChar, parseClosingBraquet)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis, parseOpeningQuote, parseClosingQuote, parseChar, parseClosingBraquet, parseOpeningBraquet)
 import Parser.Int (parseFloat, parseInt)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
@@ -300,22 +300,27 @@ parseOpOperation = getOpOp parseOperation
 parseElement :: Parser Operable
 parseElement = parseOpValue
             <|> parseOpVar
-            -- <|> parseOpList
-            <|> parseOpOperation
+            <|> parseOpList
+            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
 
 parseElementWithComa :: Parser Operable
-parseElementWithComa = parseElement <* parseWithSpace (parseChar ',')
+parseElementWithComa = parseWithSpace (parseChar ',') *> parseElement
 
 parseElements :: Parser [Operable]
-parseElements = parseWithSpace (parseMany (parseElement <|> parseElementWithComa))
+parseElements = parseWithSpace (parseMany (parseWithSpace parseElement <|> parseWithSpace parseElementWithComa))
 
--- parseList :: Parser OpList
--- parseList = Parser $ \s p -> case runparser ((parseWithSpace parseopeningBraquet) *> parseElements <*parseClosingBraquet) s p of
---   Right (elements, str, pos) -> Right (OpList elements, str, pos)
---   Left a -> Left a
+parseList :: Parser [Operable]
+parseList = Parser $ \s p -> case runParser (parseWithSpace parseOpeningBraquet *> parseElements <*parseClosingBraquet) s p of
+  Right (elements, str, pos) -> Right (elements, str, pos)
+  Left a -> Left a
 
--- parseOpList :: Parser Operable
--- parseOplist = getoplist parseList
+getOpList :: Parser [Operable] -> Parser Operable
+getOpList parser = Parser $ \s p -> case runParser parser s p of
+  Right (list, str, pos) -> Right (OpList list, str, pos)
+  Left a -> Left a
+
+parseOpList :: Parser Operable
+parseOpList = getOpList parseList
 
 -- parseOperable :: Parser Operable
 -- parseOperable = parseOpValue
@@ -324,12 +329,10 @@ parseElements = parseWithSpace (parseMany (parseElement <|> parseElementWithComa
 --             <|> parseOpOperation
 
 parseOperable :: Parser Operable
-parseOperable = Parser $ \s p -> case runParser (parseOpValue <|> parseOpVar) s p of
-  Right (result, newstr, newpos) -> Right (result, newstr, newpos)
-  Left a -> case runParser (parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
-    Right (result, newstr, newpos) -> Right (result, newstr, newpos)
-    Left a -> Left a
-
+parseOperable = parseOpValue
+            <|> parseOpVar
+            <|> parseOpList
+            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
 -- runParser parseOperation "1 + 1" defaultPosition
 -- :break parseOpOperation 0
 -- stack ghci
