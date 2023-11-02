@@ -19,6 +19,7 @@ data Structure -- layout, structure and connection of statements, having no valu
   = Resolved -- expression resolving to no value
   | VarDefinition String Type (Maybe Operable)
   | VarAssignation String Operable
+  | ArrAssignation String [Operable] Operable
   | Return Operable
   | If [(Operable, Ast)] (Maybe Ast) -- branching condition (if ((x) {}, ...) {})
   | While Operable Ast
