@@ -12,15 +12,41 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeList), atomType, valueType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeList, TypeChar), atomType, valueType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 
+{--
+[3, 4]
+++ (concat)
+[3, 2]
+
+[3, 4]
+++ (append)
+3
+
+4
+++ (push)
+[3, 5]
+--}
+
+-- compList :: Compile [Insts]
+
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
-compOperable (OpValue val) _ _ = Ok [] ([PushD val], valueType val)
+compOperable (OpList array) ctx l = case final_type of
+  Ko w e -> Ko w e
+  Ok w (True, type', insts, len) -> Ok w (insts ++ [Take len],TypeList $ Just type')
+  Ok w (False, _, _, _) -> Ko w ["Different types given in the list"]
+  where
+    final_type = (\a b c d -> (b, head a, c, d)) <$> c_types <*> all_type <*> c_insts <*> (length <$> c_elem)
+    all_type = (\x -> and $ zipWith (==) x (tail x)) <$> c_types
+    c_types = map snd <$> c_elem
+    c_insts = concat <$> (map fst <$> c_elem)
+    c_elem = listInner $ map (\x -> compOperable x ctx l) (reverse array)
+compOperable (OpValue val) _ _ = Ok [] ([PushD (VAtom val)], valueType (VAtom val))
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
   Nothing -> Ko [] ["Variable \"" ++ name ++ "\" never declared"]
   Just (_, _, False) -> Ko [] ["Variable \"" ++ name ++ "\" never defined"]
@@ -59,14 +85,6 @@ typeErr at wt =
 opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs xs (nbr - 1) type') w err
-opeValidArgs (Ok w _ : xs) nbr (Just (TypeList type')) =
-  failingComp
-    (opeValidArgs xs (nbr - 1) type')
-    w
-    [ "Operators can't be applied to lists but "
-        ++ show (TypeList type')
-        ++ " was given"
-    ]
 opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
 opeValidArgs [] nbr (Just _)
   | nbr < 0 = Ko [] ["Builtin: Too many arguments"]
@@ -92,20 +110,19 @@ compCalculus op args count = case opeValidArgs args count Nothing of
           )
 
 compEquality :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compEquality op args count = case opeValidArgs args count Nothing of
-  Ko warns err -> Ko warns err
-  Ok w _ ->
-    (\a -> (a, Just TypeBool))
-      <$> ( (++)
-              <$> concatInner (map (fst <$>) (reverse args))
-              <*> Ok w [Op op]
-          )
+compEquality = compOperationType Nothing (Just TypeBool)
 
 compLogical :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compLogical op args count = case opeValidArgs args count (Just TypeBool) of
+compLogical = compOperationType (Just TypeBool) (Just TypeBool)
+
+compPrinting :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compPrinting = compOperationType (Just $ TypeList $ Just TypeChar) Nothing
+
+compOperationType :: Maybe Type -> Maybe Type -> Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compOperationType in' out op args count = case opeValidArgs args count in' of
   Ko warns err -> Ko warns err
   Ok w _ ->
-    (\a -> (a, Just TypeBool))
+    (\a -> (a, out))
       <$> ( (++)
               <$> concatInner (map (fst <$>) (reverse args))
               <*> Ok w [Op op]
@@ -158,7 +175,7 @@ allValue :: [Operable] -> Bool
 allValue =
   foldl
     ( \bool op -> case (op, bool) of
-        (OpValue (VAtom _), True) -> True
+        (OpValue _, True) -> True
         _ -> False
     )
     True
@@ -167,7 +184,7 @@ toVa :: [Operable] -> [Atom]
 toVa =
   foldl
     ( \arr op -> case op of
-        (OpValue (VAtom atom)) -> arr ++ [atom]
+        (OpValue atom) -> arr ++ [atom]
         _ -> []
     )
     []
@@ -175,15 +192,14 @@ toVa =
 -- operate :: Operator -> ([Atom] -> Either String Atom)
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
-compOperation (CallStd builtin ops) c l
-  | allValue ops = case defsOp builtin of
-      (OperatorDef argCount Calculus) -> evalCalculus builtin (toVa ops) argCount
-      (OperatorDef argCount Equality) -> evalEquality builtin (toVa ops) argCount
-      (OperatorDef argCount Logical) -> evalLogical builtin (toVa ops) argCount
-  | otherwise = case defsOp builtin of
-      (OperatorDef argCount Calculus) -> compCalculus builtin args argCount
-      (OperatorDef argCount Equality) -> compEquality builtin args argCount
-      (OperatorDef argCount Logical) -> compLogical builtin args argCount
+compOperation (CallStd builtin ops) c l = case (defsOp builtin, allValue ops) of
+    (OperatorDef ac Calculus, True) -> evalCalculus builtin (toVa ops) ac
+    (OperatorDef ac Calculus, False) -> compCalculus builtin args ac
+    (OperatorDef ac Equality, True) -> evalEquality builtin (toVa ops) ac
+    (OperatorDef ac Equality, False) -> compEquality builtin args ac
+    (OperatorDef ac Logical, True) -> evalLogical builtin (toVa ops) ac
+    (OperatorDef ac Logical, False) -> compLogical builtin args ac
+    (OperatorDef ac Printing, _) -> compPrinting builtin args ac
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of

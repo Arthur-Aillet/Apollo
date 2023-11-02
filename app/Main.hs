@@ -6,7 +6,7 @@ import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Sub))
+import Eval.Exec (Operator (Add, Or, Sub, Print))
 import Eval.Operator (Value (..))
 import PreProcess
 import System.Environment
@@ -22,8 +22,8 @@ createAbs =
         (Just TypeInt)
         ( AstStructure
             ( If
-                [ ( OpOperation $ CallStd Lt [OpVariable "n", OpValue $ VAtom (AtomI 0)],
-                    AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue $ VAtom (AtomI (-1))]
+                [ ( OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)],
+                    AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))]
                   )
                 ]
                 (Just $ AstStructure $ Return $ OpVariable "n")
@@ -40,11 +40,11 @@ createFib =
         (Just TypeInt)
         ( AstStructure
             ( If
-                [ ( OpOperation $ CallStd Eq [OpVariable "n", OpValue $ VAtom (AtomI 0)],
-                    AstStructure $ Return $ OpValue $ VAtom (AtomI 0)
+                [ ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 0)],
+                    AstStructure $ Return $ OpValue (AtomI 0)
                   ),
-                  ( OpOperation $ CallStd Eq [OpVariable "n", OpValue $ VAtom (AtomI 1)],
-                    AstStructure $ Return $ OpValue $ VAtom (AtomI 1)
+                  ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 1)],
+                    AstStructure $ Return $ OpValue (AtomI 1)
                   )
                 ]
                 ( Just $
@@ -53,8 +53,8 @@ createFib =
                         OpOperation $
                           CallStd
                             Add
-                            [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue $ VAtom (AtomI 1)]],
-                              OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue $ VAtom (AtomI 2)]]
+                            [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 1)]],
+                              OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 2)]]
                             ]
                 )
             )
@@ -88,7 +88,7 @@ createGcd =
         (Just TypeInt)
         ( AstStructure
             ( If
-                [ ( OpOperation $ CallStd Eq [OpValue $ VAtom (AtomI 0), OpVariable "y"],
+                [ ( OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"],
                     AstStructure $ Return $ OpVariable "x"
                   )
                 ]
@@ -113,8 +113,8 @@ createFst =
         (Just TypeBool)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue $ VAtom (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue $ VAtom (AtomI 3), OpVariable "res"]
+              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
               ]
         )
     )
@@ -128,8 +128,8 @@ createSnd =
         (Just TypeBool)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue $ VAtom (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpVariable "res", OpValue $ VAtom (AtomI 3), OpVariable "res"]
+              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
+                AstStructure $ Return $ OpOperation $ CallStd Or [OpVariable "res", OpValue (AtomI 3), OpVariable "res"]
               ]
         )
     )
@@ -140,11 +140,12 @@ createMain =
     "main"
     ( Function
         []
-        (Just TypeInt)
+        (Just $ TypeList (Just TypeInt))
         ( AstStructure $
             Sequence
-              [ AstStructure $ VarDefinition "res" TypeInt (Just $ OpValue $ VAtom (AtomI 3)),
-                AstStructure $ Return $ OpOperation $ CallStd Add [OpValue $ VList [VAtom (AtomI 3)], OpValue $ VAtom (AtomI 2)]
+              [
+                AstOperation $ CallStd Print [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True),  OpValue (AtomC 't' True),  OpValue (AtomC '\n' True)]],
+                AstStructure $ Return $ OpList [OpValue (AtomI 3)]
               ]
         )
     )

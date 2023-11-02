@@ -24,13 +24,12 @@ type Func = [Instruction]
 data Instruction
   = PushD Value
   | Store
+  | Take Int -- Make a list from Int values
   | Assign Index
   | PushI Index
   | CallD Index
   | CallI Index
   | Op Operator
-  | PrintD Value
-  | PrintI Index
   | JumpIfFalse Int
   | Jump Int
   | Ret
