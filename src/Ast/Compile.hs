@@ -8,9 +8,8 @@
 module Ast.Compile (module Ast.Compile) where
 
 import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), failingComp, withW)
+import Ast.Error (Compile (..), Warning, failingComp, withW)
 import Ast.Operable (compOperable, compOperation, concatInner)
-import Ast.Utils (listInner)
 import Ast.Type
   ( Ast (..),
     Definition (..),
@@ -19,6 +18,7 @@ import Ast.Type
     Structure (..),
     Type (..),
   )
+import Ast.Utils (allEqual, listInner, zip5)
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
 
@@ -57,12 +57,49 @@ compAst (AstOperation op) c l =
 ifOpErr :: Type -> String
 ifOpErr ot = "If contain invalid type \"" ++ show ot ++ "\" instead of Bool"
 
-typeInList :: Type -> Type -> Int -> Maybe String
-typeInList val final 0
+tInList :: Type -> Type -> Int -> Maybe String
+tInList val final 0
   | val == final = Nothing
-  | otherwise = Just $ "Array assignation: Can't assign " ++ show final ++ " to " ++ show val
-typeInList (TypeList (Just a)) final depth = typeInList a final (depth - 1)
-typeInList list final a = Just $ "Array assignation: Can't assign " ++ show final ++ " to " ++ show list
+  | otherwise =
+      Just $
+        "Array assignation: Can't assign "
+          ++ show final
+          ++ " to "
+          ++ show val
+tInList (TypeList (Just a)) final depth = tInList a final (depth - 1)
+tInList list final _ =
+  Just $
+    "Array assignation: Can't assign "
+      ++ show final
+      ++ " to "
+      ++ show list
+
+compArrErr :: Bool -> [Warning] -> Operable -> Context -> LocalContext -> Compile (Insts, LocalContext)
+compArrErr True w op c l =
+  failingComp (compOperable op c l) w ["Indexes has to be ints"]
+compArrErr False w op c l =
+  failingComp (compOperable op c l) w ["Different types given in the list"]
+
+makeFType :: Compile [Type] -> Compile [Instruction] -> Compile [(Insts, Type)] -> Compile (Insts, Type) -> Compile (Bool, Type, [Instruction], Int, (Insts, Type))
+makeFType idx_types idx_insts idx_elem comp_op =
+  zip5
+    <$> (allEqual <$> idx_types)
+    <*> (head <$> idx_types)
+    <*> idx_insts
+    <*> (length <$> idx_elem)
+    <*> comp_op
+
+compArrAssignation :: [Operable] -> Operable -> Index -> Type -> Context -> LocalContext -> Compile (Insts, LocalContext)
+compArrAssignation idx_ops val idx wt ctx l = case final_type of
+  Ko w e -> Ko w e
+  Ok w (True, TypeInt, insts, len, (val_insts, ty)) -> case tInList wt ty len of
+    Nothing -> Ok w (val_insts ++ insts ++ [Take len] ++ [ArrAssign idx], l)
+    Just err -> Ko w [err]
+  Ok w (b, _, _, _, _) -> compArrErr b w val ctx l
+  where
+    final_type = makeFType (map snd <$> ide) i_ins ide (compOperable val ctx l)
+    i_ins = concat <$> (map fst <$> ide)
+    ide = listInner $ map (\x -> compOperable x ctx l) (reverse idx_ops)
 
 compIfOp :: Operable -> Context -> LocalContext -> (Compile Insts, Int)
 compIfOp op c l = case compOperable op c l of
@@ -154,23 +191,11 @@ compStruct (VarAssignation name op) c (LocalContext hmap r) =
 compStruct (ArrAssignation name idx_ops val) ctx (LocalContext hmap r) =
   case hmap !? name of
     Nothing -> Ko [] ["Array \"" ++ name ++ "\" undefined"]
-    Just (_, _, False) -> failingComp val_comp [] ["Array \"" ++ name ++ "\" undeclared"]
-    Just (idx, wtype, True) -> case final_type of
-      Ko w e -> Ko w e
-      Ok w (True, TypeInt, insts, len, (val_insts, val_type)) -> case typeInList wtype val_type len of
-        Nothing -> Ok w (val_insts ++ insts ++ [Take len] ++ [ArrAssign idx], l)
-        Just err -> Ko w [err]
-      Ok w (True, _, _, _, _) -> failingComp val_comp w ["Indexes has to be ints"]
-      Ok w (False, _, _, _, _) -> failingComp val_comp w ["Different types given in the list"]
-    where
-      final_type = (\a b c d e -> (b, head a, c, d, e)) <$> idx_types <*> all_type <*> idx_insts <*> (length <$> idx_elem) <*> val_comp
-      val_comp = compOperable val ctx l
-      all_type = (\x -> and $ zipWith (==) x (tail x)) <$> idx_types
-      idx_types = map snd <$> idx_elem
-      idx_insts = concat <$> (map fst <$> idx_elem)
-      idx_elem = listInner $ map (\x -> compOperable x ctx l) (reverse idx_ops)
-      l = LocalContext hmap r
-
+    Just (_, _, False) -> failingComp (compOperable val ctx l) [] message
+    Just (idx, wtype, True) -> compArrAssignation idx_ops val idx wtype ctx l
+  where
+    message = ["Array \"" ++ name ++ "\" undeclared"]
+    l = LocalContext hmap r
 compStruct (While op ast) c l = case compOperable op c l of
   Ko warns err -> failingComp (compAst ast c l) warns err
   Ok w (op_i, TypeBool) -> case compAst ast c l of

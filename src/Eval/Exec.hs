@@ -26,10 +26,10 @@ getElem nb list
   | otherwise = Right $ last $ take (nb + 1) list
 
 convertValToInt :: [Value] -> Maybe [Index]
-convertValToInt (VAtom (AtomI idx):xs) = case convertValToInt xs of
+convertValToInt (VAtom (AtomI idx) : xs) = case convertValToInt xs of
   Just arr -> Just $ idx : arr
   Nothing -> Nothing
-convertValToInt (_:xs) = Nothing
+convertValToInt (_ : xs) = Nothing
 convertValToInt [] = Just []
 
 setElem :: Index -> [a] -> a -> Either String [a]
@@ -43,7 +43,7 @@ setElem idx list new = case getElem idx list of
 modifyInArr :: Value -> [Index] -> Value -> Either String Value
 modifyInArr _ [] new_val = Right new_val
 modifyInArr (VAtom _) _ _ = Left "Can't access inside non int"
-modifyInArr (VList arr) (x:xs) new_val = case getElem x arr of
+modifyInArr (VList arr) (x : xs) new_val = case getElem x arr of
   Left err -> Left err
   Right old -> case modifyInArr old xs new_val of
     Left err -> Left err
@@ -63,14 +63,15 @@ assignToPtr args (Pointer pos idx) new_val = case getElem pos args of
 createPtr :: Index -> [Value] -> Either String Pointer
 createPtr arr vals = case convertValToInt vals of
   Nothing -> Left "Indexes in pointer need to be ints"
-  Just idxs ->  Right $ Pointer arr idxs
+  Just idxs -> Right $ Pointer arr idxs
 
 execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 -- execL env args insts h stack = trace ("Stack > " ++ show stack) exec env args insts h stack
 execL = exec
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
-exec env args ((Take nbr : xs)) h stack = execL env args xs (Take nbr : h) new_stack
+exec env args ((Take nbr : xs)) h stack =
+  execL env args xs (Take nbr : h) new_stack
   where
     new_stack = VList start : end
     (start, end) = splitAt nbr stack
@@ -119,12 +120,13 @@ exec env args ((Jump line) : xs) h stack
 exec env args (Store : xs) h (y : ys) =
   execL env (args ++ [y]) xs (Store : h) ys
 exec _ _ (Store : _) _ [] = return $ Left "Error: Store with empty stack"
-exec env args (ArrAssign idx: xs) h (VList x:y:ys) = case createPtr idx x of
+exec env args (ArrAssign idx : xs) h (VList x : y : ys) = case createPtr idx x of
   Left err -> return $ Left err
   Right ptr -> case assignToPtr args ptr y of
     Left err -> return $ Left err
     Right new_args -> execL env new_args xs (ArrAssign idx : h) ys
-exec _ _ (ArrAssign _: _) _ (VAtom _:_) = return $ Left "ArrAssign take a list"
+exec _ _ (ArrAssign _ : _) _ (VAtom _ : _) =
+  return $ Left "ArrAssign take a list"
 exec env args (Assign i : xs) h (y : ys) = case getElem i args of
   Left err -> return $ Left err
   Right _ ->

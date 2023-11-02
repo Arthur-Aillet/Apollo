@@ -150,12 +150,13 @@ createMain =
     "main"
     ( Function
         []
-        (Just TypeChar)
+        (Just TypeInt)
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
-                AstStructure $ ArrAssignation "arr" [OpValue(AtomI 2)] $ OpValue (AtomC '3' True),
-                AstOperation $ CallStd Print [OpVariable "arr"]
+                AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
+                AstOperation $ CallStd Print [OpVariable "arr"],
+                AstStructure $ Return $ OpOperation $ CallFunc "fib" [OpValue (AtomI 14)]
               ]
         )
     )
@@ -164,7 +165,7 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain, createCoolPrint]
+  (Binary env main_f) <- compile [createMain, createCoolPrint, createFib]
   result <- exec env [] main_f [] []
   case result of
     Left a -> putStrLn a

@@ -13,40 +13,32 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (..), atomType, valueType)
-import Ast.Utils (concatInner, listInner)
+import Ast.Utils (allEqual, concatInner, listInner, zip4)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
 import Eval.Instructions (Instruction (..), Insts)
-import Eval.Operator (Operator (Concat), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
+import Eval.Operator (Operator (..), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 
-{--
-[3, 4]
-++ (concat)
-[3, 2]
-
-[3, 4]
-++ (append)
-3
-
-4
-++ (push)
-[3, 5]
---}
--- [3, 5] >< [2, 3]
--- compList :: Compile [Insts]
+makeOPType :: Compile [Type] -> Compile [(Insts, Type)] -> Compile (Bool, Type, [Instruction], Int)
+makeOPType c_types c_elem =
+  zip4
+    <$> (allEqual <$> c_types)
+    <*> (head <$> c_types)
+    <*> (concat <$> (map fst <$> c_elem))
+    <*> (length <$> c_elem)
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
 compOperable (OpList array) ctx l = case final_type of
   Ko w e -> Ko w e
-  Ok w (True, type', insts, len) -> Ok w (insts ++ [Take len], TypeList $ Just type')
+  Ok w (True, type', insts, len) ->
+    Ok w (insts ++ [Take len], TypeList $ Just type')
   Ok w (False, _, _, _) -> Ko w ["Different types given in the list"]
   where
-    final_type = (\a b c d -> (b, head a, c, d)) <$> c_types <*> all_type <*> c_insts <*> (length <$> c_elem)
-    all_type = (\x -> and $ zipWith (==) x (tail x)) <$> c_types
+    final_type = makeOPType c_types c_elem
     c_types = map snd <$> c_elem
-    c_insts = concat <$> (map fst <$> c_elem)
     c_elem = listInner $ map (\x -> compOperable x ctx l) (reverse array)
-compOperable (OpValue val) _ _ = Ok [] ([PushD (VAtom val)], valueType (VAtom val))
+compOperable (OpValue val) _ _ =
+  Ok [] ([PushD (VAtom val)], valueType (VAtom val))
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
   Nothing -> Ko [] ["Variable \"" ++ name ++ "\" never declared"]
   Just (_, _, False) -> Ko [] ["Variable \"" ++ name ++ "\" never defined"]
@@ -118,13 +110,19 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 compPrinting :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compOperationType (Just $ TypeList $ Just TypeChar) Nothing
 
+cMsg :: [String]
+cMsg = ["Can't get on empty list"]
+
+cMsg1 :: [String]
+cMsg1 = ["Get operate only on lists"]
+
 checkGetArgs :: [Compile (Insts, Type)] -> Compile Type
 checkGetArgs (x : y : ys)
   | length (x : y : ys) /= 2 = Ko [] ["Get take two arguments"]
   | otherwise = case (x, y) of
-      (Ok w1 (_, TypeList (Just type1)), Ok w2 (_, TypeInt)) -> Ok (w1 ++ w2) type1
-      (Ok w1 (_, TypeList Nothing), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) ["Can't get on empty list"]
-      (Ok w1 (_, _), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) ["Get operate only on lists"]
+      (Ok w1 (_, TypeList (Just typ)), Ok w2 (_, TypeInt)) -> Ok (w1 ++ w2) typ
+      (Ok w1 (_, TypeList Nothing), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) cMsg
+      (Ok w1 (_, _), Ok w2 (_, TypeInt)) -> Ko (w1 ++ w2) cMsg1
       (Ok w1 (_, _), Ok w2 (_, _)) -> Ko (w1 ++ w2) ["Get take a int as index"]
       (Ko w1 e1, Ok w2 _) -> Ko (w1 ++ w2) e1
       (Ok w1 _, Ko w2 e2) -> Ko (w1 ++ w2) e2
@@ -226,18 +224,29 @@ toVa =
 
 -- operate :: Operator -> ([Atom] -> Either String Atom)
 
+compBuiltin :: [Compile (Insts, Type)] -> Operator -> OperatorDef -> Bool -> [Operable] -> Compile (Insts, Maybe Type)
+compBuiltin _ builtin (OperatorDef ac Calculus) True ops =
+  evalCalculus builtin (toVa ops) ac
+compBuiltin args builtin (OperatorDef ac Calculus) False _ =
+  compCalculus builtin args ac
+compBuiltin _ builtin (OperatorDef ac Equality) True ops =
+  evalEquality builtin (toVa ops) ac
+compBuiltin args builtin (OperatorDef ac Equality) False _ =
+  compEquality builtin args ac
+compBuiltin _ builtin (OperatorDef ac Logical) True ops =
+  evalLogical builtin (toVa ops) ac
+compBuiltin args builtin (OperatorDef ac Logical) False _ =
+  compLogical builtin args ac
+compBuiltin args builtin (OperatorDef ac Printing) _ _ =
+  compPrinting builtin args ac
+compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
+  compConcat builtin args ac
+compBuiltin args builtin (OperatorDef ac Getting) _ _ =
+  compGet builtin args ac
+
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
-compOperation (CallStd builtin ops) c l = case (defsOp builtin, allValue ops) of
-  (OperatorDef ac Calculus, True) -> evalCalculus builtin (toVa ops) ac
-  (OperatorDef ac Calculus, False) -> compCalculus builtin args ac
-  (OperatorDef ac Equality, True) -> evalEquality builtin (toVa ops) ac
-  (OperatorDef ac Equality, False) -> compEquality builtin args ac
-  (OperatorDef ac Logical, True) -> evalLogical builtin (toVa ops) ac
-  (OperatorDef ac Logical, False) -> compLogical builtin args ac
-  (OperatorDef ac Printing, _) -> compPrinting builtin args ac
-  (OperatorDef ac Concatenation, False) -> compConcat builtin args ac
-  (OperatorDef ac Concatenation, True) -> compConcat builtin args ac
-  (OperatorDef ac Getting, _) -> compGet builtin args ac
+compOperation (CallStd builtin ops) c l =
+  compBuiltin args builtin (defsOp builtin) (allValue ops) ops
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of

@@ -105,16 +105,18 @@ isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
 isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 
+getElemErrorMessage :: Int -> Int -> String
+getElemErrorMessage a b =
+  "Error: Element ["
+    ++ show a
+    ++ "] asked outside list (lenght "
+    ++ show b
+    ++ ")"
+
 getElem :: Int -> [a] -> Either String a
 getElem i [] = Left $ "Error: [" ++ show i ++ "] on an empty list"
 getElem nb list
-  | nb >= length list =
-      Left $
-        "Error: Element ["
-          ++ show nb
-          ++ "] asked outside list (lenght "
-          ++ show (length list)
-          ++ ")"
+  | nb >= length list = Left $ getElemErrorMessage nb (length list)
   | nb < 0 =
       Left $
         "Error: Get element at a negativ index : ["
@@ -133,7 +135,8 @@ execOperator (x : y : xs) Concat = case (x, y) of
   _ -> return (Left "Concat take two lists")
 execOperator (x : xs) Print = case x of
   (VList []) -> return (Right xs)
-  (VList (VAtom (AtomC c _) : chars)) -> putStr [c] >> execOperator (VList chars : xs) Print
+  (VList (VAtom (AtomC c _) : chars)) ->
+    putStr [c] >> execOperator (VList chars : xs) Print
   _ -> return (Left "Print with non string")
 execOperator [] Print = return $ Left "Print with empty stack"
 execOperator stack op
