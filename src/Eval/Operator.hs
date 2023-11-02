@@ -34,6 +34,7 @@ data OperatorType
   = Equality -- [a] -> Bool
   | Logical -- [Bool] -> Bool
   | Calculus -- [a] -> a
+  | Concatenation -- [[a]] -> [a]
   | Printing -- [[Char]] -> Nothing
   deriving (Show, Eq)
 
@@ -53,6 +54,7 @@ data Operator
   | Or
   | Not
   | Print
+  | Concat
   deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
@@ -93,6 +95,7 @@ defsOp And = OperatorDef 2 Logical
 defsOp Or = OperatorDef 2 Logical
 defsOp Not = OperatorDef 1 Logical
 defsOp Print = OperatorDef 1 Printing
+defsOp Concat = OperatorDef 2 Concatenation
 
 isAllAtoms :: [Value] -> Either String [Atom]
 isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
@@ -100,6 +103,9 @@ isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 
 execOperator :: Stack -> Operator -> IO (Either String Stack)
+execOperator (x : y: xs) Concat = case (x, y) of
+  (VList list1, VList list2) -> return $ Right $ VList (list1 ++ list2) : xs
+  _ -> return (Left "Concat take two lists")
 execOperator (x : xs) Print = case x of
   (VList []) -> return (Right xs)
   (VList (VAtom (AtomC c _) : chars)) -> putStr [c] >> execOperator (VList chars : xs) Print

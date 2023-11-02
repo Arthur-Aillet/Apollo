@@ -140,11 +140,11 @@ createMain =
     "main"
     ( Function
         []
-        (Just $ TypeList (Just TypeInt))
+        Nothing
         ( AstStructure $
             Sequence
-              [ AstOperation $ CallStd Print [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]],
-                AstStructure $ Return $ OpList [OpValue (AtomI 3)]
+              [
+                AstOperation $ CallStd Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]]
               ]
         )
     )

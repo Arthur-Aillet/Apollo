@@ -17,7 +17,7 @@ import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
 import Eval.Instructions (Instruction (..), Insts)
-import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
+import Eval.Operator (Operator (Concat), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 
 {--
 [3, 4]
@@ -32,7 +32,7 @@ import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), Value (..),
 ++ (push)
 [3, 5]
 --}
-
+--[3, 5] >< [2, 3]
 -- compList :: Compile [Insts]
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
@@ -118,6 +118,17 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 compPrinting :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compOperationType (Just $ TypeList $ Just TypeChar) Nothing
 
+compConcat :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compConcat op args count = case opeValidArgs args count Nothing of
+  Ko warns err -> Ko warns err
+  Ok w type' -> case type' of
+    TypeList _ -> (\a -> (a, Just type'))
+      <$> ( (++)
+              <$> concatInner (map (fst <$>) (reverse args))
+              <*> Ok w [Op op]
+          )
+    _ -> Ko w ["Concatenation take lists as input"]
+
 compOperationType :: Maybe Type -> Maybe Type -> Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compOperationType in' out op args count = case opeValidArgs args count in' of
   Ko warns err -> Ko warns err
@@ -200,6 +211,8 @@ compOperation (CallStd builtin ops) c l = case (defsOp builtin, allValue ops) of
   (OperatorDef ac Logical, True) -> evalLogical builtin (toVa ops) ac
   (OperatorDef ac Logical, False) -> compLogical builtin args ac
   (OperatorDef ac Printing, _) -> compPrinting builtin args ac
+  (OperatorDef ac Concatenation, False) -> compConcat builtin args ac
+  (OperatorDef ac Concatenation, True) -> compConcat builtin args ac
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
