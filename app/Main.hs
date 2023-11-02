@@ -6,7 +6,7 @@ import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Sub, Print))
+import Eval.Exec (Operator (Add, Or, Print, Sub))
 import Eval.Operator (Value (..))
 import PreProcess
 import System.Environment
@@ -143,8 +143,7 @@ createMain =
         (Just $ TypeList (Just TypeInt))
         ( AstStructure $
             Sequence
-              [
-                AstOperation $ CallStd Print [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True),  OpValue (AtomC 't' True),  OpValue (AtomC '\n' True)]],
+              [ AstOperation $ CallStd Print [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]],
                 AstStructure $ Return $ OpList [OpValue (AtomI 3)]
               ]
         )

@@ -7,10 +7,10 @@
 
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
+import Debug.Trace
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
-import Debug.Trace
 
 type Env = [(Int, Func)]
 
@@ -26,10 +26,11 @@ getElem nb list
 execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
 -- execL env args insts h stack = trace ("Stack > " ++ show stack) exec env args insts h stack
 execL = exec
+
 -- Add logs here to affect all the execs
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String Value)
-exec env args ((Take nbr: xs)) h stack = execL env args xs (Take nbr:h) new_stack
+exec env args ((Take nbr : xs)) h stack = execL env args xs (Take nbr : h) new_stack
   where
     new_stack = VList start : end
     (start, end) = splitAt nbr stack

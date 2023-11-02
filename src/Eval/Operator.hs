@@ -100,9 +100,9 @@ isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 
 execOperator :: Stack -> Operator -> IO (Either String Stack)
-execOperator (x:xs) Print = case x of
+execOperator (x : xs) Print = case x of
   (VList []) -> return (Right xs)
-  (VList (VAtom (AtomC c _):chars)) -> putStr [c] >> execOperator (VList chars:xs) Print
+  (VList (VAtom (AtomC c _) : chars)) -> putStr [c] >> execOperator (VList chars : xs) Print
   _ -> return (Left "Print with non string")
 execOperator [] Print = return $ Left "Print with empty stack"
 execOperator stack op

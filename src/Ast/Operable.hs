@@ -12,7 +12,7 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeList, TypeChar), atomType, valueType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (TypeBool, TypeChar, TypeList), atomType, valueType)
 import Ast.Utils (concatInner, listInner)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
@@ -38,7 +38,7 @@ import Eval.Operator (Operator, OperatorDef (..), OperatorType (..), Value (..),
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
 compOperable (OpList array) ctx l = case final_type of
   Ko w e -> Ko w e
-  Ok w (True, type', insts, len) -> Ok w (insts ++ [Take len],TypeList $ Just type')
+  Ok w (True, type', insts, len) -> Ok w (insts ++ [Take len], TypeList $ Just type')
   Ok w (False, _, _, _) -> Ko w ["Different types given in the list"]
   where
     final_type = (\a b c d -> (b, head a, c, d)) <$> c_types <*> all_type <*> c_insts <*> (length <$> c_elem)
@@ -193,13 +193,13 @@ toVa =
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l = case (defsOp builtin, allValue ops) of
-    (OperatorDef ac Calculus, True) -> evalCalculus builtin (toVa ops) ac
-    (OperatorDef ac Calculus, False) -> compCalculus builtin args ac
-    (OperatorDef ac Equality, True) -> evalEquality builtin (toVa ops) ac
-    (OperatorDef ac Equality, False) -> compEquality builtin args ac
-    (OperatorDef ac Logical, True) -> evalLogical builtin (toVa ops) ac
-    (OperatorDef ac Logical, False) -> compLogical builtin args ac
-    (OperatorDef ac Printing, _) -> compPrinting builtin args ac
+  (OperatorDef ac Calculus, True) -> evalCalculus builtin (toVa ops) ac
+  (OperatorDef ac Calculus, False) -> compCalculus builtin args ac
+  (OperatorDef ac Equality, True) -> evalEquality builtin (toVa ops) ac
+  (OperatorDef ac Equality, False) -> compEquality builtin args ac
+  (OperatorDef ac Logical, True) -> evalLogical builtin (toVa ops) ac
+  (OperatorDef ac Logical, False) -> compLogical builtin args ac
+  (OperatorDef ac Printing, _) -> compPrinting builtin args ac
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
