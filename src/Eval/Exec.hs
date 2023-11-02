@@ -16,6 +16,8 @@ type Env = [(Int, Func)]
 
 type Args = [Value]
 
+data Pointer = Pointer Index [Index] deriving (Show)
+
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
 getElem nb list
@@ -23,11 +25,49 @@ getElem nb list
   | nb < 0 = Left "Error: Element asked invalid"
   | otherwise = Right $ last $ take (nb + 1) list
 
+convertValToInt :: [Value] -> Maybe [Index]
+convertValToInt (VAtom (AtomI idx):xs) = case convertValToInt xs of
+  Just arr -> Just $ idx : arr
+  Nothing -> Nothing
+convertValToInt (_:xs) = Nothing
+convertValToInt [] = Just []
+
+setElem :: Index -> [a] -> a -> Either String [a]
+setElem idx list new = case getElem idx list of
+  Left err -> Left err
+  Right _ -> Right new_args
+  where
+    new_args = start ++ (new : tail end)
+    (start, end) = splitAt idx list
+
+modifyInArr :: Value -> [Index] -> Value -> Either String Value
+modifyInArr _ [] new_val = Right new_val
+modifyInArr (VAtom _) _ _ = Left "Can't access inside non int"
+modifyInArr (VList arr) (x:xs) new_val = case getElem x arr of
+  Left err -> Left err
+  Right old -> case modifyInArr old xs new_val of
+    Left err -> Left err
+    Right new -> Right (VList $ start ++ (new : tail end))
+  where
+    (start, end) = splitAt x arr
+
+assignToPtr :: Args -> Pointer -> Value -> Either String Args
+assignToPtr args (Pointer pos idx) new_val = case getElem pos args of
+  Left err -> Left err
+  Right old_arr -> case modifyInArr old_arr idx new_val of
+    Left err -> Left err
+    Right new_arr -> Right $ start ++ (new_arr : tail end)
+  where
+    (start, end) = splitAt pos args
+
+createPtr :: Index -> [Value] -> Either String Pointer
+createPtr arr vals = case convertValToInt vals of
+  Nothing -> Left "Indexes in pointer need to be ints"
+  Just idxs ->  Right $ Pointer arr idxs
+
 execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 -- execL env args insts h stack = trace ("Stack > " ++ show stack) exec env args insts h stack
 execL = exec
-
--- Add logs here to affect all the execs
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 exec env args ((Take nbr : xs)) h stack = execL env args xs (Take nbr : h) new_stack
@@ -79,6 +119,12 @@ exec env args ((Jump line) : xs) h stack
 exec env args (Store : xs) h (y : ys) =
   execL env (args ++ [y]) xs (Store : h) ys
 exec _ _ (Store : _) _ [] = return $ Left "Error: Store with empty stack"
+exec env args (ArrAssign idx: xs) h (VList x:y:ys) = case createPtr idx x of
+  Left err -> return $ Left err
+  Right ptr -> case assignToPtr args ptr y of
+    Left err -> return $ Left err
+    Right new_args -> execL env new_args xs (ArrAssign idx : h) ys
+exec _ _ (ArrAssign _: _) _ (VAtom _:_) = return $ Left "ArrAssign take a list"
 exec env args (Assign i : xs) h (y : ys) = case getElem i args of
   Left err -> return $ Left err
   Right _ ->

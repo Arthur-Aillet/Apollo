@@ -26,6 +26,7 @@ data Instruction
   | Store
   | Take Int -- Make a list from Int values
   | Assign Index
+  | ArrAssign Index -- arr[i] = val    (take VList of [1][2][..] and val)
   | PushI Index
   | CallD Index
   | CallI Index
