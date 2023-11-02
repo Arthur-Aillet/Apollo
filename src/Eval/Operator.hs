@@ -17,7 +17,6 @@ module Eval.Operator
   )
 where
 
-import Data.Bits (And)
 import Eval.Atom (Atom (..))
 
 data Value
@@ -42,7 +41,9 @@ data OperatorType
 
 data Operator
   = Add
+  | Incr
   | Sub
+  | Decr
   | Mul
   | Div
   | Mod
@@ -62,7 +63,9 @@ data Operator
 
 operate :: Operator -> ([Atom] -> Either String Atom)
 operate Add = Right . sum
+operate Incr = \[a] -> Right $ a + 1
 operate Sub = \[a, b] -> Right (a - b)
+operate Decr = \[a] -> Right $ a - 1
 operate Mul = Right . product
 operate Div = \[a, b] ->
   if b /= 0
@@ -87,7 +90,9 @@ operate Not = \[AtomB a] -> Right $ AtomB $ not a
 
 defsOp :: Operator -> OperatorDef
 defsOp Add = OperatorDef 2 Calculus
+defsOp Incr = OperatorDef 1 Calculus
 defsOp Sub = OperatorDef 2 Calculus
+defsOp Decr = OperatorDef 1 Calculus
 defsOp Mul = OperatorDef 2 Calculus
 defsOp Div = OperatorDef 2 Calculus
 defsOp Mod = OperatorDef 2 Calculus

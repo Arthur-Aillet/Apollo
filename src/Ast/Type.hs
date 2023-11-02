@@ -40,6 +40,7 @@ data Operable -- statement having a value
   = OpVariable String -- Variable reffering to single known value
   | OpCast Operable Type
   | OpValue Atom -- Single known value
+  | OpList [Operable]
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)

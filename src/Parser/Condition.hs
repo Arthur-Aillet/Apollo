@@ -12,13 +12,14 @@ import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Eval.Operator (Operator (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis, parseOpeningQuote, parseClosingQuote, parseChar, parseClosingBraquet)
 import Parser.Int (parseFloat, parseInt)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
+import Debug.Trace (trace)
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -36,8 +37,30 @@ getPredicat ">=" = Just GEt
 getPredicat "!=" = Just NEq
 getPredicat _ = Nothing
 
+getPredicatPrecedence :: Operator -> Int
+getPredicatPrecedence Add = 2
+getPredicatPrecedence Sub = 2
+getPredicatPrecedence Mul = 3
+getPredicatPrecedence Div = 3
+getPredicatPrecedence Mod = 3
+getPredicatPrecedence BAnd = 0
+getPredicatPrecedence BOr = 0
+getPredicatPrecedence Eq = 1
+getPredicatPrecedence Lt = 1
+getPredicatPrecedence LEt = 1
+getPredicatPrecedence Gt = 1
+getPredicatPrecedence GEt = 1
+getPredicatPrecedence NEq = 1
+getPredicatPrecedence _ = -1
+
 getUnary :: String -> Maybe Operator
+getUnary "++" = Just Incr
+getUnary "--" = Just Decr
 getUnary "!" = Just BNot
+getUnary _ = Nothing
+
+getIndex :: String -> Maybe Operator
+getIndex "[" = Just Add
 
 parsePredicat :: Parser String
 parsePredicat = parseSymbol "+"
@@ -54,8 +77,13 @@ parsePredicat = parseSymbol "+"
             <|> parseSymbol ">="
             <|> parseSymbol "!="
 
-parseUnary :: ParserString
-parseUnary = parseSymbol "!"
+parseUnary :: Parser String
+parseUnary =  parseSymbol "++"
+          <|> parseSymbol "--"
+          <|> parseSymbol "!"
+
+parseIndex :: Parser String
+parseIndex = parseSymbol "["
 
 checkPredicat :: Parser String -> Parser Operator
 checkPredicat parser = Parser $ \s p -> case runParser parser s p of
@@ -71,6 +99,13 @@ checkUnary parser = Parser $ \s p -> case runParser parser s p of
     Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
   Left a -> Left a
 
+checkIndex :: Parser String -> Parser Operator
+checkIndex parser = Parser $ \s p -> case runParser parser s p of
+  Right (indexstr, str, pos) -> case getUnary indexstr of
+    Just a -> Right (a, str, pos)
+    Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
+  Left a -> Left a
+
 parseApredicat :: Parser Operator
 parseApredicat = Parser $ \s p -> case runParser (checkPredicat parsePredicat) s p of
   Right (result, str, pos) -> Right (result, str, pos)
@@ -81,6 +116,10 @@ parseAUnary = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
   Right (result, str, pos) -> Right (result, str, pos)
   Left a -> Left a
 
+parseAIndex :: Parser Operator
+parseAIndex = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
+  Right (result, str, pos) -> Right (result, str, pos)
+  Left a -> Left a
 
 -- parseAtomOperation :: Parser Operation
 -- parseAtomOperation = Parser $ \s p -> case runParser parseOperable s p of
@@ -108,9 +147,74 @@ parseAUnary = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
 
 -- parseOperation :: Parser Operation
 
+-- parse_expression_1(lhs, min_precedence)
+--     lookahead := peek next token -
+--     while lookahead is a binary operator whose precedence is >= min_precedence -
+--         op := lookahead -
+--         advance to next token
+--         rhs := parse_primary ()
+--         lookahead := peek next token
+--         while lookahead is a binary operator whose precedence is greater
+--                  than op's, or a right-associative operator
+--                  whose precedence is equal to op's
+--             rhs := parse_expression_1 (rhs, precedence of op + (1 if lookahead precedence is greater, else 0))
+--             lookahead := peek next token
+--         lhs := the result of applying op with operands lhs and rhs
+--     return lhs
+
 parseMaybeparenthesis :: Parser a -> Parser a
 parseMaybeparenthesis parser =  parseWithSpace parser
                             <|> parseWithSpace (parseOpeningParenthesis *> parseWithSpace parser <* parseClosingParenthesis)
+
+-- secondWhile :: Operable -> Int -> Operator -> Parser Operable
+-- secondWhile rhs opprec nextop = Parser $ \s p -> if getPredicatPrecedence nextop > opprec
+--   then
+--     case runparser (precedenceClimbing rhs (opporec + 1)) s p of
+--       Right (res, nextstr, nextpos) -> Right(case runparser (secondWhile ) nextstr nextpos of)
+--       Left a -> a
+--   else
+--     Right (rhs, s, p)
+
+-- firstWhile :: Operable -> Int -> Operator -> Parser Operable
+-- firstWhile lhs prec operand = Parser $ \s p -> if getPredicatPrecedence operand >= prec
+--   then
+--     case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+--       Right (rhs, rstr, rpos) -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+--         Right (nextop, opstr, oppos) -> case runparser (firstWhile (OpOperation op [lhs, case runParser (secondWhile rhs (getPredicatPrecedence operand) nextop) opstr oppos of
+--           Right (res, secondwhilestr, secondewhilepos) -> res
+--           Left a -> Left a
+--           ]) prec (case runParser (parseWithSpace parseApredicat) secondwhilestr secondewhilepos of
+--             Right (res, newopstr, newoppos) -> res
+--             Left a -> Left a
+--             ) newopstr newoppos of
+--           Right (result, nextstr, nextpos) -> Right (result, nextstr, nextpos)
+--           Left a -> Left a)
+--         Left a -> Left a
+--       Left a -> Left a
+--   else
+--     Right (lhs, s, p)
+
+-- precedenceClimbing :: Operable -> Int -> Parser Operable
+-- precedenceClimbing lhs prec = Parser $ \s p -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+--   Right (operand, newstrright, newposright) -> case runparser (firstWhile lhs prec operand) s p of
+--     Right (result, newstr, newpos) -> Right (result, newstr, newpos)
+--     Left a -> Left a
+--   Left a -> Left a
+
+-- precedenceClimbing lhs prec = Parser $ \s p -> case runParser (parseWithSpace parseApredicat) newstrmiddle newposmiddle of
+--   Right (operand, newstrright, newposright) -> if getPredicatPrecedence operand >= prec
+--     then
+--       case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
+--         Right (rhs, newstr, newpos) -> case runParser (parseWithSpace parseApredicat) newstr newpos of
+--           Right (nextoperand, newstrnext, newposnext) -> if getPredicatPrecedence nextoperand > getPredicatPrecedence operand
+--             then
+              
+--             else
+--           Left a -> Left a
+--         Left a -> Left a
+--     else
+--       lhs
+--   Left a -> Left a
 
 parseStd :: Parser Operation
 parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
@@ -124,13 +228,23 @@ parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable)
 parseUnaryOp :: Parser Operation
 parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace parseAUnary) s p of
   Right (resultLeft, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
-    Right (resultright, newstr, newpo) -> Right (CallStd resultLeft [resultright], newstr, newpos)
+    Right (resultright, newstr, newpos) -> Right (CallStd resultLeft [resultright], newstr, newpos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseIndexOp :: Parser Operation
+parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
+  Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseAIndex) newstrmiddle newposmiddle of
+    Right (resultmiddle, newstrright, newposright) -> case runParser ( parseOperable <* parseClosingBraquet) newstrright newposright of
+      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
+      Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 
 parseOperation :: Parser Operation
-parseOperation =  parseStd
-              <|> parseUnaryOp
+parseOperation = parseStd
+              -- <|> parseUnaryOp
+              -- <|> parseIndexOp
               -- <|> parseFct
               -- <|> parseSh
 
@@ -140,7 +254,7 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 getcharOpValue :: Parser Char -> Parser Operable
-getcharOpValue parser = Parser $ \s p -> case runParser parser s p of
+getcharOpValue parser = Parser $ \s p -> case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
   Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
   Left a -> Left a
 
@@ -155,18 +269,19 @@ getFloatOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpValue :: Parser Operable
-parseOpValue =  getFloatOpValue parseFloat
+parseOpValue = trace "b\n"$ getFloatOpValue parseFloat
             <|> getIntOpValue parseInt
             <|> getBoolOpValue parseBool
             <|> getcharOpValue parseAChar
 
 getVarOpVar :: Parser String -> Parser Operable
 getVarOpVar parser = Parser $ \s p -> case runParser parser s p of
+  Right ([], str, pos) -> Left (StackTrace [("empty var name", Range p pos, defaultLocation)])
   Right (var, str, pos) -> Right (OpVariable var, str, pos)
   Left a -> Left a
 
 parseOpVar :: Parser Operable
-parseOpVar = getVarOpVar (parseWithSpace (parseMany (parseAnyChar (['a'..'z'] ++ ['A'..'Z'] ++ "_-"))))
+parseOpVar = trace "c\n" $ getVarOpVar (parseWithSpace (parseMany (parseAnyChar (['a'..'z'] ++ ['A'..'Z'] ++ "_-"))))
 
 getOpOp :: Parser Operation -> Parser Operable
 getOpOp parser = Parser $ \s p -> case runParser parser s p of
@@ -174,9 +289,46 @@ getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpOperation :: Parser Operable
-parseOpOperation =  getOpOp parseOperation
+parseOpOperation = trace "d" $ getOpOp parseOperation
+
+-- getOpList :: Parser OpList
+-- getOpList parser = Parser $ \s p -> case runParser parser s p of
+--   Right (list, str, pos) -> Right (OpList list, str, pos)
+--   Left a -> Left a
+
+parseElement :: Parser Operable
+parseElement = parseOpValue
+            <|> parseOpVar
+            -- <|> parseOpList
+            <|> parseOpOperation
+
+parseElementWithComa :: Parser Operable
+parseElementWithComa = parseElement <* parseWithSpace (parseChar ',')
+
+parseElements :: Parser [Operable]
+parseElements = parseWithSpace (parseMany (parseElement <|> parseElementWithComa))
+
+-- parseList :: Parser OpList
+-- parseList = Parser $ \s p -> case runparser ((parseWithSpace parseopeningBraquet) *> parseElements <*parseClosingBraquet) s p of
+--   Right (elements, str, pos) -> Right (OpList elements, str, pos)
+--   Left a -> Left a
+
+-- parseOpList :: Parser Operable
+-- parseOplist = getoplist parseList
+
+-- parseOperable :: Parser Operable
+-- parseOperable = parseOpValue
+--             <|> parseOpVar
+--             -- <|> parseOpList
+--             <|> parseOpOperation
 
 parseOperable :: Parser Operable
-parseOperable =   parseOpValue
-              <|> parseOpVar
-              <|> parseOpOperation
+parseOperable = trace "a\n" $ Parser $ \s p -> case runParser (parseOpValue <|> parseOpVar) s p of
+  Right (result, newstr, newpos) -> Right (result, newstr, newpos)
+  Left a -> case runParser (parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
+    Right (result, newstr, newpos) -> Right (result, newstr, newpos)
+    Left a -> Left a
+
+-- runParser parseOperation "1 + 1" defaultPosition
+-- :break parseOpOperation 0
+-- stack ghci

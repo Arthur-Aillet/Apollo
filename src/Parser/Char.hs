@@ -45,6 +45,15 @@ parseClosingCurlyBraquet :: Parser Char
 parseClosingCurlyBraquet =
   withErr "parseClosingCurlyBraquet: Not Found: Missing closing curlybraquet" (parseChar '}')
 
+parseOpeningBraquet :: Parser Char
+parseOpeningBraquet =
+  withErr "parseOpeningBraquet: Not Found: Missing opening braquet" (parseChar '{')
+
+parseClosingBraquet :: Parser Char
+parseClosingBraquet =
+  withErr "parseClosingBraquet: Not Found: Missing closing braquet" (parseChar '}')
+
+
 parseChar :: Char -> Parser Char
 parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
   Right (char, new_str, new_pos)
