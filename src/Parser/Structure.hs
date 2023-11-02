@@ -13,12 +13,13 @@ import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
 import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable)
 import Parser.Syntax(parseWithSpace, parseMany)
-import Parser.Char(parseChar, parseAnyChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis)
+import Parser.Char(parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis)
+import Parser.Error(replaceErr)
 
 ----------------------------------------------------------------
 
 parseAstStructure :: Parser Ast
-parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn <|> parseSequence)
+parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn)
 
 ----------------------------------------------------------------
 
@@ -30,7 +31,9 @@ acceptableCharacters = ['a'..'z']
                     ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
 
 parseStringWithHandleBackslash :: Parser String
-parseStringWithHandleBackslash = parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar)
+parseStringWithHandleBackslash =
+  replaceErr "Syntaxe error: bad return"
+  (parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar))
 
 ----------------------------------------------------------------
 
@@ -44,12 +47,16 @@ createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = (createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';'
+parseVarDefinition = 
+  replaceErr "Syntaxe error: bad variable definition"
+  ((createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
 
 ----------------------------------------------------------------
 
 parseVarAssignation :: Parser Structure
-parseVarAssignation = VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';')
+parseVarAssignation =
+  replaceErr "Syntaxe error: bad assignment"
+  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';'))
 
 ----------------------------------------------------------------
 
@@ -60,7 +67,9 @@ parseReturnWithoutParenthesis :: Parser Operable
 parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseOperable
 
 parseReturn :: Parser Structure
-parseReturn = Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';')
+parseReturn =
+  replaceErr "Syntaxe error: bad return"
+  (Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';'))
 
 ----------------------------------------------------------------
 

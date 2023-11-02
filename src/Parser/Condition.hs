@@ -61,6 +61,7 @@ getUnary _ = Nothing
 
 getIndex :: String -> Maybe Operator
 getIndex "[" = Just Add
+getIndex _ = Nothing
 
 parsePredicat :: Parser String
 parsePredicat = parseSymbol "+"
@@ -101,7 +102,7 @@ checkUnary parser = Parser $ \s p -> case runParser parser s p of
 
 checkIndex :: Parser String -> Parser Operator
 checkIndex parser = Parser $ \s p -> case runParser parser s p of
-  Right (indexstr, str, pos) -> case getUnary indexstr of
+  Right (indexstr, str, pos) -> case getIndex indexstr of
     Just a -> Right (a, str, pos)
     Nothing -> Left (StackTrace [("Invalid operator : ", Range p pos, defaultLocation)])
   Left a -> Left a
@@ -117,7 +118,7 @@ parseAUnary = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
   Left a -> Left a
 
 parseAIndex :: Parser Operator
-parseAIndex = Parser $ \s p -> case runParser (checkUnary parseUnary) s p of
+parseAIndex = Parser $ \s p -> case runParser (checkIndex parseIndex) s p of
   Right (result, str, pos) -> Right (result, str, pos)
   Left a -> Left a
 
@@ -235,7 +236,7 @@ parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace parseAUnary) s p 
 parseIndexOp :: Parser Operation
 parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
   Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace parseAIndex) newstrmiddle newposmiddle of
-    Right (resultmiddle, newstrright, newposright) -> case runParser ( parseOperable <* parseClosingBraquet) newstrright newposright of
+    Right (resultmiddle, newstrright, newposright) -> trace newstrright $ case runParser (parseMaybeparenthesis parseOperable <* parseClosingBraquet) newstrright newposright of
       Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
       Left a -> Left a
     Left a -> Left a
@@ -243,8 +244,8 @@ parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOper
 
 parseOperation :: Parser Operation
 parseOperation = parseStd
-              -- <|> parseUnaryOp
-              -- <|> parseIndexOp
+              <|> parseUnaryOp
+              <|> parseIndexOp
               -- <|> parseFct
               -- <|> parseSh
 
@@ -269,7 +270,7 @@ getFloatOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpValue :: Parser Operable
-parseOpValue = trace "b\n"$ getFloatOpValue parseFloat
+parseOpValue =  getFloatOpValue parseFloat
             <|> getIntOpValue parseInt
             <|> getBoolOpValue parseBool
             <|> getcharOpValue parseAChar
@@ -281,7 +282,7 @@ getVarOpVar parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpVar :: Parser Operable
-parseOpVar = trace "c\n" $ getVarOpVar (parseWithSpace (parseMany (parseAnyChar (['a'..'z'] ++ ['A'..'Z'] ++ "_-"))))
+parseOpVar = getVarOpVar (parseWithSpace (parseMany (parseAnyChar (['a'..'z'] ++ ['A'..'Z'] ++ "_-"))))
 
 getOpOp :: Parser Operation -> Parser Operable
 getOpOp parser = Parser $ \s p -> case runParser parser s p of
@@ -289,7 +290,7 @@ getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpOperation :: Parser Operable
-parseOpOperation = trace "d" $ getOpOp parseOperation
+parseOpOperation = getOpOp parseOperation
 
 -- getOpList :: Parser OpList
 -- getOpList parser = Parser $ \s p -> case runParser parser s p of
@@ -323,7 +324,7 @@ parseElements = parseWithSpace (parseMany (parseElement <|> parseElementWithComa
 --             <|> parseOpOperation
 
 parseOperable :: Parser Operable
-parseOperable = trace "a\n" $ Parser $ \s p -> case runParser (parseOpValue <|> parseOpVar) s p of
+parseOperable = Parser $ \s p -> case runParser (parseOpValue <|> parseOpVar) s p of
   Right (result, newstr, newpos) -> Right (result, newstr, newpos)
   Left a -> case runParser (parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
     Right (result, newstr, newpos) -> Right (result, newstr, newpos)
