@@ -23,6 +23,8 @@ parseAChar = Parser $ \string pos -> case string of
 parseDigit :: Parser Char
 parseDigit = parseAnyChar ['0' .. '9']
 
+---------------------------------------------
+
 parseOpeningQuote :: Parser Char
 parseOpeningQuote = replaceErr "Not Found: Missing opening Quote" (parseChar '"')
 
@@ -53,6 +55,7 @@ parseClosingBraquet :: Parser Char
 parseClosingBraquet =
   replaceErr "parseClosingBraquet: Not Found: Missing closing braquet" (parseChar ']')
 
+---------------------------------------------
 
 parseChar :: Char -> Parser Char
 parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of

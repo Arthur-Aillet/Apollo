@@ -15,17 +15,29 @@ import Parser.Char (parseAnyChar, parseOpeningQuote, parseClosingQuote, parseOpe
 import Parser.Int (parseFloat, parseInt)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
-import Parser.Operation(parseOperation)
+import Parser.Operation(parseOperation, parseCall)
 import Parser.List(parseList)
+import Debug.Trace
 import Parser.Type (Parser (..))
 
-getOpOp :: Parser Operation -> Parser Operable
-getOpOp parser = Parser $ \s p -> case runParser parser s p of
-  Right (op, str, pos) -> Right (OpOperation op, str, pos)
+parseDefinitionName :: Parser String
+parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
+
+parseCast :: Parser Type
+parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
+
+parseOpCast :: Parser Operable
+parseOpCast = Parser $ \s p -> case runParser (
+                parseOpValue
+            <|> parseOpVar
+            <|> parseOpList
+            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
+  Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of
+    Right (rhs, rstr, rpos) -> Right (OpCast lhs rhs, rstr, rpos)
+    Left a -> Left a
   Left a -> Left a
 
-parseOpOperation :: Parser Operable
-parseOpOperation = getOpOp parseOperation
+---------------------------------------------
 
 getBoolOpValue :: Parser Bool -> Parser Operable
 getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
@@ -53,25 +65,12 @@ parseOpValue =  getFloatOpValue parseFloat
             <|> getBoolOpValue parseBool
             <|> getcharOpValue parseAChar
 
-parseDefinitionName :: Parser String
-parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
-
-parseCast :: Parser Type
-parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
-
-parseOpCast :: Parser Operable
-parseOpCast = Parser $ \s p -> case runParser (
-                parseOpValue
-            <|> parseOpVar
-            <|> parseOpList
-            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
-  Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of
-    Right (rhs, rstr, rpos) -> Right (OpCast lhs rhs, rstr, rpos)
-    Left a -> Left a
-  Left a -> Left a
+---------------------------------------------
 
 parseOpVar :: Parser Operable
 parseOpVar = parseWithSpace parseOpValue <|> (OpVariable <$> parseWithSpace parseDefinitionName)
+
+---------------------------------------------
 
 getOpList :: Parser [Operable] -> Parser Operable
 getOpList parser = Parser $ \s p -> case runParser parser s p of
@@ -81,9 +80,29 @@ getOpList parser = Parser $ \s p -> case runParser parser s p of
 parseOpList :: Parser Operable
 parseOpList = getOpList parseList
 
+---------------------------------------------
+
+getOpCall :: Parser Operation -> Parser Operable
+getOpCall parser = Parser $ \s p -> case runParser parser s p of
+  Right (call, str, pos) -> Right (OpOperation call, str, pos)
+  Left a -> Left a
+
+---------------------------------------------
+
+getOpOp :: Parser Operation -> Parser Operable
+getOpOp parser = Parser $ \s p -> case runParser parser s p of
+  Right (op, str, pos) -> Right (OpOperation op, str, pos)
+  Left a -> Left a
+
+parseOpOperation :: Parser Operable
+parseOpOperation = getOpOp parseOperation
+
+---------------------------------------------
+
 parseOperable :: Parser Operable
 parseOperable = parseOpCast
             <|> parseOpValue
+            <|> getOpCall parseCall
             <|> parseOpVar
             <|> parseOpList
             <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis

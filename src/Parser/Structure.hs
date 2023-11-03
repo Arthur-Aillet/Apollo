@@ -13,13 +13,22 @@ import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
 import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable)
 import Parser.Syntax(parseWithSpace, parseMany)
-import Parser.Char(parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis)
+import Parser.Char(parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Error(replaceErr)
 
 ----------------------------------------------------------------
 
 parseAstStructure :: Parser Ast
-parseAstStructure = AstStructure <$> (parseVarAssignation <|> parseVarDefinition <|> parseReturn)
+parseAstStructure = AstStructure <$> (
+        parseVarDefinition
+    <|> parseVarAssignation
+    <|> parseReturn
+    <|> parseIf
+    <|> parseWhile
+    <|> parseSingle
+    -- <|> parseBlock
+    <|> parseSequence
+    )
 
 ----------------------------------------------------------------
 
@@ -70,6 +79,52 @@ parseReturn :: Parser Structure
 parseReturn =
   replaceErr "Syntaxe error: bad return"
   (Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';'))
+
+----------------------------------------------------------------
+
+parsecond :: Parser Operable
+parsecond = parseWithSpace parseOpeningParenthesis *>
+            parseWithSpace parseOperable <*
+            parseWithSpace parseClosingParenthesis
+
+parseIf :: Parser Structure
+parseIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "if" *> parsecond) s p of
+  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
+    Right (thn, thnstr, thnpos) -> case runParser (parseMany parseElIf) thnstr thnpos of
+      Right (elifs, elifstr, elifpos) -> case runParser parseElse elifstr elifpos of
+        Right (els, elstr, elspos) -> Right (If ((cond, thn) : elifs) els, elstr, elspos)
+        Left a -> Left a
+      Left a -> Left a
+    Left a -> Left a
+  Left a -> Left a
+
+parseThen :: Parser Ast
+parseThen = parseWithSpace parseOpeningCurlyBraquet *>
+            parseWithSpace parseAstStructure <*
+            parseWithSpace parseClosingCurlyBraquet
+
+parseElIf :: Parser (Operable, Ast)
+parseElIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "elif" *> parsecond) s p of
+  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
+    Right (thn, thnstr, thnpos) -> Right ((cond, thn), thnstr, thnpos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseElse :: Parser (Maybe Ast)
+parseElse = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "else") s p of
+  Right (_, newstr, newpos) -> case runParser parseThen newstr newpos of
+    Right (thn, thnstr, thnpos) -> Right (Just thn, thnstr, thnpos)
+    Left a -> Left a
+  Left _ -> Right (Nothing, s, p)
+
+----------------------------------------------------------------
+
+parseWhile :: Parser Structure
+parseWhile = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "while" *> parsecond) s p of
+  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
+    Right (thn, thnstr, thnpos) -> Right (While cond thn, thnstr, thnpos)
+    Left a -> Left a
+  Left a -> Left a
 
 ----------------------------------------------------------------
 

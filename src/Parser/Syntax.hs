@@ -9,8 +9,9 @@ module Parser.Syntax (module Parser.Syntax) where
 
 import Parser.Char (parseAnyChar)
 import Parser.Type (Parser (..))
+import Control.Applicative (Alternative ((<|>)))
 -- import Parser.StackTrace (StackTrace(..))
-import Parser.Char(parseNotChar, parseChar)
+import Parser.Char(parseNotChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis)
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
@@ -66,3 +67,7 @@ parseSome parse = (:) <$> parse <*> parseMany parse
 parseWithSpace :: Parser a -> Parser a
 parseWithSpace parser =
   parseMany parseSpaces *> parser <* parseMany parseSpaces
+
+parseMaybeparenthesis :: Parser a -> Parser a
+parseMaybeparenthesis parser =  parseWithSpace parser
+                            <|> parseWithSpace (parseOpeningParenthesis *> parseWithSpace parser <* parseClosingParenthesis)

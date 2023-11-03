@@ -7,7 +7,7 @@
 
 module Parser.Definition (module Parser.Definition) where
 
-import Ast.Type (Ast (..), Definition (..), Function (..), Operable (..), Type (..))
+import Ast.Type (Ast (..), Definition (..), Function (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Data.Tuple (swap)
 import Parser.Char (parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseOpeningCurlyBraquet, parseOpeningParenthesis)
