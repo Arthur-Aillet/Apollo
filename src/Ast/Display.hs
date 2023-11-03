@@ -7,7 +7,7 @@
 
 module Ast.Display (compile) where
 
-import Ast.Compile (Binary (..), generateBinary)
+import Ast.CompileAST (Binary (..), generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
 import Ast.Type (Definition)
 import System.Exit (ExitCode (ExitFailure), exitWith)

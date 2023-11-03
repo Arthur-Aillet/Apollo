@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Ast.Compile (Binary (..))
+import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
