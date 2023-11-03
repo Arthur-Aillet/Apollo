@@ -15,23 +15,22 @@ module Eval.Instructions
   )
 where
 
-import Eval.Atom (Atom (..))
-import Eval.Operator (Operator (..))
+import Eval.Operator (Operator (..), Value)
 
 type Index = Int
 
 type Func = [Instruction]
 
 data Instruction
-  = PushD Atom
+  = PushD Value
   | Store
+  | Take Int -- Make a list from Int values
   | Assign Index
+  | ArrAssign Index -- arr[i] = val    (take VList of [1][2][..] and val)
   | PushI Index
   | CallD Index
   | CallI Index
   | Op Operator
-  | PrintD Atom
-  | PrintI Index
   | JumpIfFalse Int
   | Jump Int
   | Ret

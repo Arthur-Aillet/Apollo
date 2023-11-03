@@ -15,17 +15,12 @@ import Ast.Display (compile)
 -- import Data.HashMap.Internal.Strict (keys)
 -- import Data.List (isPrefixOf)
 import Eval
--- import Eval.Exec
--- import Eval.Exec (Operator (Add, Or, Sub))
--- import Parser.String (parseStringWithHandleBackslash)
--- import Parser.Condition (parseApredicat, parseOperable)
-import Parser.Parser (parser)
--- import Parser.Position (defaultPosition)
--- import Parser.Type (Parser (..), StackTrace)
+
 import PreProcess
 import System.Environment
 -- import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
+-- import Ast.Type (Definition (FuncDefinition), Function (Function), Ast (AstOperation), Operation (CallStd), Operable (OpOperation))
 
 -- keywords :: [String]
 -- keywords = []
@@ -64,125 +59,14 @@ import Prelude
 --     Left a -> do
 --       print a
 
--- createAbs :: Definition
--- createAbs =
+-- createCoolPrint :: Definition
+-- createCoolPrint =
 --   FuncDefinition
---     "abs"
---     ( Function
---         [("n", TypeInt)]
---         (Just TypeInt)
---         ( AstStructure
---             ( If
---                 [ ( OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)],
---                     AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))]
---                   )
---                 ]
---                 (Just $ AstStructure $ Return $ OpVariable "n")
---             )
---         )
---     )
-
--- createFib :: Definition
--- createFib =
---   FuncDefinition
---     "fib"
---     ( Function
---         [("n", TypeInt)]
---         (Just TypeInt)
---         ( AstStructure
---             ( If
---                 [ ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 0)],
---                     AstStructure $ Return $ OpValue (AtomI 0)
---                   ),
---                   ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 1)],
---                     AstStructure $ Return $ OpValue (AtomI 1)
---                   )
---                 ]
---                 ( Just $
---                     AstStructure $
---                       Return $
---                         OpOperation $
---                           CallStd
---                             Add
---                             [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 1)]],
---                               OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 2)]]
---                             ]
---                 )
---             )
---         )
---     )
-
--- createSub :: Definition
--- createSub =
---   FuncDefinition
---     "sub"
---     ( Function
---         [("a", TypeInt), ("b", TypeInt)]
---         (Just TypeInt)
---         ( AstStructure $
---             Return $
---               OpOperation $
---                 CallStd
---                   Sub
---                   [ OpVariable "a",
---                     OpVariable "b"
---                   ]
---         )
---     )
-
--- createGcd :: Definition
--- createGcd =
---   FuncDefinition
---     "gcd"
---     ( Function
---         [("x", TypeInt), ("y", TypeInt)]
---         (Just TypeInt)
---         ( AstStructure
---             ( If
---                 [ ( OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"],
---                     AstStructure $ Return $ OpVariable "x"
---                   )
---                 ]
---                 ( Just $
---                     AstStructure $
---                       Return $
---                         OpOperation $
---                           CallFunc
---                             "gcd"
---                             [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
---                 )
---             )
---         )
---     )
-
--- createFst :: Definition
--- createFst =
---   FuncDefinition
---     "main"
+--     "cool_print"
 --     ( Function
 --         []
---         (Just TypeBool)
---         ( AstStructure $
---             Sequence
---               [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
---                 AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
---               ]
---         )
---     )
-
--- createSnd :: Definition
--- createSnd =
---   FuncDefinition
---     "main"
---     ( Function
---         []
---         (Just TypeBool)
---         ( AstStructure $
---             Sequence
---               [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
---                 AstStructure $ Return $ OpOperation $ CallStd Or [OpVariable "res", OpValue (AtomI 3), OpVariable "res"]
---               ]
---         )
+--         Nothing
+--         (AstOperation $ CallStd Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
 --     )
 
 -- createMain :: Definition
@@ -191,21 +75,26 @@ import Prelude
 --     "main"
 --     ( Function
 --         []
---         (Just TypeBool)
+--         (Just TypeInt)
 --         ( AstStructure $
 --             Sequence
---               [ AstStructure $ Return $ OpOperation $ CallStd Not [OpValue (AtomB True)]
+--               [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
+--                 AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
+--                 AstOperation $ CallStd Print [OpVariable "arr"],
+--                 AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
 --               ]
 --         )
 --     )
 
+-- main :: IO ()
+-- main = do
+--   args <- getArgs
+--   files <- readFiles args
+--   (Binary env main_f) <- compile [createMain, createCoolPrint, createFib]
+--   result <- exec env [] main_f [] []
+--   case result of
+--     Left a -> putStrLn a
+--     Right a -> print a
+
 main :: IO ()
-main = do
-  args <- getArgs
-  files <- readFiles args
-  defs <- parser files
-  (Binary env main_f) <- compile defs
-  result <- exec env [] main_f [] []
-  case result of
-    Left a -> putStrLn a
-    Right a -> print a
+main = pure()

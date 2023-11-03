@@ -126,6 +126,15 @@ parseWhile = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "whil
     Left a -> Left a
   Left a -> Left a
 
+parseFor :: Parser Structure
+parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *> parseDefinitionName) s p of
+  Right (it, itstr, itpos) -> case runParser (parseWithSpace $ parseSymbol "in" *> parseOperable) itstr itpos of
+    Right (op, opstr, oppos) -> case runParser parseThen opstr oppos of
+      Right (thn, thnstr, thnpos) -> Right (For it op thn, thnstr, thnpos)
+      Left a -> Left a
+    Left a -> Left a
+  Left a -> Left a
+
 ----------------------------------------------------------------
 
 -- FIXME - Change parseAstStructure by parseAst
@@ -133,7 +142,7 @@ parseSingle :: Parser Structure
 parseSingle = Single <$> parseAstStructure
 
 parseSequence :: Parser Structure
-parseSequence = Sequence <$> (parseMany parseAstStructure)
+parseSequence = Sequence <$> parseMany parseAstStructure
 
 ----------------------------------------------------------------
 

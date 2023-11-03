@@ -5,10 +5,10 @@
 -- AST
 -}
 
-module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType) where
+module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
 
 import Eval.Atom (Atom (..))
-import Eval.Operator (Operator)
+import Eval.Operator (Operator, Value (..))
 
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
@@ -20,9 +20,11 @@ data Structure -- layout, structure and connection of statements, having no valu
   = Resolved -- expression resolving to no value
   | VarDefinition String Type (Maybe Operable)
   | VarAssignation String Operable
+  | ArrAssignation String [Operable] Operable
   | Return Operable
   | If [(Operable, Ast)] (Maybe Ast) -- branching condition (if ((x) {}, ...) {})
   | While Operable Ast
+  | For String Operable Ast -- Name of iterator and iterable
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
   | Sequence [Ast] -- several actions ordered by precedence ({x >> y})
@@ -50,21 +52,28 @@ data Type
   | TypeChar
   | TypeInt
   | TypeFloat
+  | TypeList (Maybe Type)
   deriving (Eq)
 
 instance Show Type where
-  show TypeBool = "Bool"
-  show TypeChar = "Char"
-  show TypeInt = "Int"
-  show TypeFloat = "Float"
+  show TypeBool = "bool"
+  show TypeChar = "char"
+  show TypeInt = "int"
+  show TypeFloat = "float"
+  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
+  show (TypeList Nothing) = "[]"
 
 numType :: Type -> Bool
 numType TypeBool = True
 numType TypeChar = True
 numType TypeInt = True
 numType TypeFloat = True
+numType _ = False
 
--- numType _ = False
+valueType :: Value -> Type
+valueType (VAtom a) = atomType a
+valueType (VList []) = TypeList Nothing
+valueType (VList (x : _)) = TypeList $ Just $ valueType x
 
 atomType :: Atom -> Type
 atomType (AtomB _) = TypeBool

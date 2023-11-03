@@ -21,11 +21,8 @@ import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
-  deriving
-    ( -- | List [Atom]
-      Show,
-      Eq
-    )
+  | VList [Value]
+  deriving (Eq, Show)
 
 type Stack = [Value]
 
@@ -37,6 +34,10 @@ data OperatorType
   = Equality -- [a] -> Bool
   | Logical -- [Bool] -> Bool
   | Calculus -- [a] -> a
+  | Concatenation -- [[a]] -> [a]
+  | Printing -- [[Char]] -> Nothing
+  | Getting -- [[a], Int] -> a
+  | Length -- [a] -> Int
   deriving (Show, Eq)
 
 data Operator
@@ -47,9 +48,6 @@ data Operator
   | Mul
   | Div
   | Mod
-  | BAnd
-  | BOr
-  | BNot
   | Eq
   | Lt
   | LEt
@@ -59,6 +57,10 @@ data Operator
   | And
   | Or
   | Not
+  | Print
+  | Concat
+  | Get
+  | Len
   deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
@@ -75,9 +77,6 @@ operate Mod = \[a, b] ->
   if b /= 0
     then Right (a `mod` b)
     else Left "Modulo by zero"
-operate BAnd = \[AtomB a, AtomB b] -> Right $ AtomB (a && b)
-operate BOr = \[AtomB a, AtomB b] -> Right $ AtomB (a || b)
-operate BNot = \[AtomB a] -> Right $ AtomB $ not a
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Lt = \[a, b] -> Right $ AtomB $ a < b
 operate Gt = \[a, b] -> Right $ AtomB $ a > b
@@ -96,9 +95,6 @@ defsOp Decr = OperatorDef 1 Calculus
 defsOp Mul = OperatorDef 2 Calculus
 defsOp Div = OperatorDef 2 Calculus
 defsOp Mod = OperatorDef 2 Calculus
-defsOp BAnd = OperatorDef 2 Calculus
-defsOp BOr = OperatorDef 2 Calculus
-defsOp BNot = OperatorDef 1 Calculus
 defsOp Eq = OperatorDef 2 Equality
 defsOp Lt = OperatorDef 2 Equality
 defsOp LEt = OperatorDef 2 Equality
@@ -108,20 +104,60 @@ defsOp NEq = OperatorDef 2 Equality
 defsOp And = OperatorDef 2 Logical
 defsOp Or = OperatorDef 2 Logical
 defsOp Not = OperatorDef 1 Logical
+defsOp Print = OperatorDef 1 Printing
+defsOp Concat = OperatorDef 2 Concatenation
+defsOp Get = OperatorDef 2 Getting
+defsOp Len = OperatorDef 1 Length
 
 isAllAtoms :: [Value] -> Either String [Atom]
 isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
 isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 
-execOperator :: Stack -> Operator -> Either String Stack
+getElemErrorMessage :: Int -> Int -> String
+getElemErrorMessage a b =
+  "Error: Element ["
+    ++ show a
+    ++ "] asked outside list (lenght "
+    ++ show b
+    ++ ")"
+
+getElem :: Int -> [a] -> Either String a
+getElem i [] = Left $ "Error: [" ++ show i ++ "] on an empty list"
+getElem nb list
+  | nb >= length list = Left $ getElemErrorMessage nb (length list)
+  | nb < 0 =
+      Left $
+        "Error: Get element at a negativ index : ["
+          ++ show nb
+          ++ "]"
+  | otherwise = Right $ last $ take (nb + 1) list
+
+execOperator :: Stack -> Operator -> IO (Either String Stack)
+execOperator (VList x : xs) Len = return $ Right $ VAtom (AtomI (length x)) : xs
+execOperator (_ : _) Len = return $ Left "Length used not on a list"
+execOperator [] Len = return $ Left "Length on empty stack"
+execOperator (x : y : xs) Get = case (x, y) of
+  (VList list, VAtom (AtomI idx)) -> case getElem idx list of
+    Left err -> return $ Left err
+    Right val -> return $ Right $ val : xs
+  _ -> return (Left "Concat take two lists")
+execOperator (x : y : xs) Concat = case (x, y) of
+  (VList list1, VList list2) -> return $ Right $ VList (list1 ++ list2) : xs
+  _ -> return (Left "Concat take two lists")
+execOperator (x : xs) Print = case x of
+  (VList []) -> return (Right xs)
+  (VList (VAtom (AtomC c _) : chars)) ->
+    putStr [c] >> execOperator (VList chars : xs) Print
+  _ -> return (Left "Print with non string")
+execOperator [] Print = return $ Left "Print with empty stack"
 execOperator stack op
   | length (take count stack) >= count = case isAllAtoms top of
-      Left x -> Left x
+      Left x -> return $ Left x
       Right top' -> case operate op top' of
-        Left x -> Left x
-        Right res -> Right (VAtom res : bottom)
-  | otherwise = Left "not enough arguments in the stack"
+        Left x -> return $ Left x
+        Right res -> return $ Right (VAtom res : bottom)
+  | otherwise = return $ Left "not enough arguments in the stack"
   where
     (top, bottom) = splitAt count stack
     (OperatorDef count _) = defsOp op

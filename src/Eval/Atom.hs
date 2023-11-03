@@ -4,6 +4,7 @@
 -- File description:
 -- Atom
 -}
+{-# LANGUAGE InstanceSigs #-}
 
 module Eval.Atom
   ( Atom (..),
