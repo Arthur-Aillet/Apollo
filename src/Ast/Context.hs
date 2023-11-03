@@ -9,14 +9,12 @@ module Ast.Context (Compiler, Index, Context (..), LocalContext (..), createCtx,
 
 import Ast.Error (Compile (..))
 import Ast.Type
-  (
-    Ast (..),
+  ( Ast (..),
     Definition (..),
     Function (..),
     Type,
   )
 import Data.HashMap.Lazy (HashMap, fromList, insert)
-
 import Eval.Instructions (Insts)
 
 type Index = Int
@@ -48,4 +46,4 @@ createLocalContext :: [(String, Type)] -> Maybe Type -> LocalContext
 createLocalContext args = LocalContext (fromList (attachIndex args 0))
 
 firstValidIndex :: Variables -> Index
-firstValidIndex = foldl (\var (idx, _, _) -> max var idx) 0
+firstValidIndex vars = (foldl (\var (idx, _, _) -> max var idx) (-1) vars) + 1

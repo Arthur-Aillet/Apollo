@@ -128,7 +128,8 @@ getElem nb list
   | otherwise = Right $ last $ take (nb + 1) list
 
 execOperator :: Stack -> Operator -> IO (Either String Stack)
-execOperator (VList x : xs) Len = return $ Right $ VAtom (AtomI (length x)) : xs
+execOperator (VList x : xs) Len =
+  return $ Right $ VAtom (AtomI (length x)) : xs
 execOperator (_ : _) Len = return $ Left "Length used not on a list"
 execOperator [] Len = return $ Left "Length on empty stack"
 execOperator (x : y : xs) Get = case (x, y) of

@@ -7,6 +7,10 @@
 
 module Ast.CompileStruct (module Ast.CompileStruct) where
 
+import Ast.CompileArray
+import Ast.CompileFor
+import Ast.CompileIf
+import Ast.CompileVar
 import Ast.Context (Compiler (..), Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
 import Ast.Error (Compile (..), Warning, failingComp, withW)
 import Ast.Operable (compOperable, compOperation, concatInner)
@@ -22,10 +26,6 @@ import Ast.Utils (allEqual, listInner, zip5)
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
 
-import Ast.CompileIf
-import Ast.CompileVar
-import Ast.CompileArray
-
 compStruct :: Compiler -> Structure -> Context -> LocalContext -> Compile (Insts, LocalContext)
 compStruct compiler Resolved _ l = Ok [] ([], l)
 compStruct compiler (Return _) _ (LocalContext _ Nothing) =
@@ -37,11 +37,13 @@ compStruct compiler (Return ope) c (LocalContext a (Just fct_type)) =
       | op_type == fct_type ->
           Ok w (op_compiled ++ [Ret], LocalContext a (Just fct_type))
       | otherwise -> Ko w ["Return invalid type"]
-compStruct compiler (If ops else') c l = (\a -> (a, l)) <$> fst (compIf compiler ops else' c l)
+compStruct compiler (If ops else') c l =
+  (\a -> (a, l)) <$> fst (compIf compiler ops else' c l)
 compStruct compiler (Single _) _ _ = Ko [] ["Single unsupported"]
 compStruct compiler (Block _ _) _ _ = Ko [] ["Block unsupported"]
 compStruct compiler (Sequence (x : xs)) c l = case compiler x c l of
-  Ko warns1 err1 -> failingComp (compStruct compiler (Sequence xs) c l) warns1 err1
+  Ko warns1 err1 ->
+    failingComp (compStruct compiler (Sequence xs) c l) warns1 err1
   Ok w (insts, new_local) ->
     (\(a_i, _) (b_i, f_l) -> (a_i ++ b_i, f_l))
       <$> Ok w (insts, new_local)
@@ -84,10 +86,5 @@ compStruct compiler (While op ast) c l = case compOperable op c l of
         jump = [Jump ((length op_i + length t_i + 1) * (-1))]
   Ok w (_, op_type) ->
     Ko w ["While condition await boolean and not " ++ show op_type]
-{--
-compStruct compiler (For name op ast) c l = case compOperable op c l of
-  Ko warns err -> failingComp (compiler ast c l) warns err
-  Ok w (op_i, TypeList _) -> Ko
-  Ok w (_, op_type) ->
-    Ko w ["For await an array and not " ++ show op_type]
---}
+compStruct compiler (For iter_name arr ast) ctx l =
+  compFor compiler iter_name arr ast ctx l

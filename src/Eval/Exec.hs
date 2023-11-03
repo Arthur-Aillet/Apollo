@@ -66,8 +66,8 @@ createPtr arr vals = case convertValToInt vals of
   Just idxs -> Right $ Pointer arr idxs
 
 execL :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
--- execL env args insts h stack = trace ("Stack > " ++ show stack) exec env args insts h stack
-execL = exec
+execL env args insts h stack = trace ("Args > " ++ show args) exec env args insts h stack
+-- execL = exec
 
 exec :: Env -> Args -> Insts -> History -> Stack -> IO (Either String (Maybe Value))
 exec env args ((Take nbr : xs)) h stack =

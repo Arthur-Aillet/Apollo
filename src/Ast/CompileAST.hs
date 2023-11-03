@@ -7,6 +7,7 @@
 
 module Ast.CompileAST (module Ast.CompileAST) where
 
+import Ast.CompileStruct
 import Ast.Context (Compiler, Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
 import Ast.Error (Compile (..), Warning, failingComp, withW)
 import Ast.Operable (compOperable, compOperation, concatInner)
@@ -21,8 +22,6 @@ import Ast.Type
 import Ast.Utils (allEqual, listInner, zip5)
 import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
-
-import Ast.CompileStruct
 
 data Binary = Binary Env Func deriving (Show)
 
