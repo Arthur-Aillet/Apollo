@@ -20,23 +20,6 @@ import Parser.Operation (parseOperation)
 
 ----------------------------------------------------------------
 
-parseNonRecursive :: Parser Ast
-parseNonRecursive = AstStructure <$> (
-        parseVarDefinition
-    <|> parseVarAssignation
-    <|> parseReturn
-    <|> parseIf
-    <|> parseWhile
-    <|> parseFor
-    )
-
-parseRecusive :: Parser Ast
-parseRecusive = AstStructure <$> (
-        parseSingle
-    -- <|> parseBlock
-    <|> parseSequence
-    )
-
 parseAstStructure :: Parser Ast
 parseAstStructure = AstStructure <$> (
         parseVarDefinition

@@ -11,6 +11,7 @@ import Parser (Parser (Parser, runParser))
 import {-# SOURCE #-} Parser.Structure (parseAstStructure)
 import Parser.Operation (parseOperation)
 import Control.Applicative (Alternative ((<|>)))
+import Parser.Syntax (parseMaybeparenthesis)
 
 getAstOperation :: Parser Operation -> Parser Ast
 getAstOperation parser = Parser $ \s p -> case runParser parser s p of
@@ -18,5 +19,5 @@ getAstOperation parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseAst :: Parser Ast
-parseAst =  getAstOperation parseOperation
+parseAst =  getAstOperation (parseMaybeparenthesis parseOperation)
         <|> parseAstStructure
