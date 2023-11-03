@@ -7,6 +7,7 @@ import Ast.Type
 import Eval
 import Eval.Exec
 import Eval.Operator (Value (..))
+import Eval.Syscall (Syscall (..))
 import PreProcess
 import System.Environment
 import System.Exit (ExitCode (ExitFailure), exitWith)
@@ -140,7 +141,7 @@ createCoolPrint =
     ( Function
         []
         Nothing
-        (AstOperation $ CallStd Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
+        (AstOperation $ CallSys Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
     )
 
 createMain :: Definition
@@ -154,7 +155,7 @@ createMain =
             Sequence
               [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
                 AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
-                AstOperation $ CallStd Print [OpVariable "arr"],
+                AstOperation $ CallSys Print [OpVariable "arr"],
                 AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
               ]
         )

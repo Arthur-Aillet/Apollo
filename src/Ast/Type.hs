@@ -9,6 +9,7 @@ module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (
 
 import Eval.Atom (Atom (..))
 import Eval.Operator (Operator, Value (..))
+import Eval.Syscall (Syscall)
 
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
@@ -32,6 +33,7 @@ data Structure -- layout, structure and connection of statements, having no valu
 data Operation -- statement involving an action, resulting in a value
   = Interrupt String -- Interrupt program flow
   | CallStd Operator [Operable] -- call a standard or operator operation (x(y))
+  | CallSys Syscall [Operable] -- perform a syscall
   | CallFunc String [Operable] -- call a function, exposes both inherent IOPipes (x(y))
   | CallSH String [Operable] -- syscall of Operator program ($x(y)), exposes both IOPipes
   | Pipe Operable Operable -- stdout mapped to stdin ({x.y}, {x <- y})

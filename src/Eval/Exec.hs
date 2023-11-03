@@ -11,6 +11,7 @@ import Debug.Trace
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
+import Eval.Syscall (Syscall (..), execSys)
 
 type Env = [(Int, Func)]
 
@@ -75,16 +76,19 @@ exec env args ((Take nbr : xs)) h stack =
   where
     new_stack = VList start : end
     (start, end) = splitAt nbr stack
-exec env args ((PushD (VAtom val)) : xs) h stack =
-  execL env args xs (PushD (VAtom val) : h) (VAtom val : stack)
+exec env args ((PushD val) : xs) h stack =
+  execL env args xs (PushD val : h) (VAtom val : stack)
 exec env args ((PushI arg_index) : xs) h stack = case getElem arg_index args of
   Left err -> return $ Left err
   Right arg -> execL env args xs (PushI arg_index : h) (arg : stack)
-exec env args ((Op op) : xs) h stack = do
-  result <- execOperator stack op
-  case result of
+exec env args ((Op op) : xs) h stack = case execOperator stack op of
     Left err -> return $ Left err
     Right new_stack -> execL env args xs (Op op : h) new_stack
+exec env args ((Sys call) : xs) h stack = do
+  result <- execSys stack call
+  case result of
+    Left err -> return $ Left err
+    Right new_stack -> execL env args xs (Sys call : h) new_stack
 exec env args ((CallD func_index) : xs) h stack = case getElem func_index env of
   Left err -> return $ Left err
   Right (args_nbr, insts) -> do

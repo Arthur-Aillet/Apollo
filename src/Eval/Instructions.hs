@@ -16,13 +16,15 @@ module Eval.Instructions
 where
 
 import Eval.Operator (Operator (..), Value)
+import Eval.Syscall (Syscall (..))
+import Eval.Atom (Atom (..))
 
 type Index = Int
 
 type Func = [Instruction]
 
 data Instruction
-  = PushD Value
+  = PushD Atom
   | Store
   | Take Int -- Make a list from Int values
   | Assign Index
@@ -31,6 +33,7 @@ data Instruction
   | CallD Index
   | CallI Index
   | Op Operator
+  | Sys Syscall
   | JumpIfFalse Int
   | Jump Int
   | Ret

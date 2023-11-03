@@ -12,12 +12,13 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd), Type (..), atomType, valueType)
+import Ast.Type (Operable (..), Operation (CallFunc, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Utils (allEqual, concatInner, listInner, zip4)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator (..), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
+import Eval.Syscall (Syscall (..))
 
 makeOPType :: Compile [Type] -> Compile [(Insts, Type)] -> Compile (Bool, Type, [Instruction], Int)
 makeOPType c_types c_elem =
@@ -38,7 +39,7 @@ compOperable (OpList array) ctx l = case final_type of
     c_types = map snd <$> c_elem
     c_elem = listInner $ map (\x -> compOperable x ctx l) (reverse array)
 compOperable (OpValue val) _ _ =
-  Ok [] ([PushD (VAtom val)], valueType (VAtom val))
+  Ok [] ([PushD val], valueType (VAtom val))
 compOperable (OpVariable name) _ (LocalContext hash _) = case hash !? name of
   Nothing -> Ko [] ["Variable \"" ++ name ++ "\" never declared"]
   Just (_, _, False) -> Ko [] ["Variable \"" ++ name ++ "\" never defined"]
@@ -107,8 +108,8 @@ compEquality = compOperationType Nothing (Just TypeBool)
 compLogical :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 
-compPrinting :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compPrinting = compOperationType (Just $ TypeList $ Just TypeChar) Nothing
+compPrinting :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compPrinting = compSyscallType (Just $ TypeList $ Just TypeChar) Nothing
 
 cMsg :: [String]
 cMsg = ["Can't get on empty list"]
@@ -173,6 +174,16 @@ compOperationType in' out op args count = case opeValidArgs args count in' of
               <*> Ok w [Op op]
           )
 
+compSyscallType :: Maybe Type -> Maybe Type -> Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compSyscallType in' out op args count = case opeValidArgs args count in' of
+  Ko warns err -> Ko warns err
+  Ok w _ ->
+    (\a -> (a, out))
+      <$> ( (++)
+              <$> concatInner (map (fst <$>) (reverse args))
+              <*> Ok w [Sys op]
+          )
+
 allOfType :: [Atom] -> Int -> Maybe Type -> Compile Type
 allOfType [] 0 (Just waited_type) = Ok [] waited_type
 allOfType [] nbr (Just _)
@@ -198,7 +209,7 @@ evalCalculus op args count = case allOfType args count Nothing of
   Ok w return_type ->
     withW w $
       (\a -> (a, Just return_type))
-        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+        <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
 
 evalEquality :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalEquality op args count = case allOfType args count Nothing of
@@ -206,7 +217,7 @@ evalEquality op args count = case allOfType args count Nothing of
   Ok w _ ->
     withW w $
       (\a -> (a, Just TypeBool))
-        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+        <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
 
 evalLogical :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
 evalLogical op args count = case allOfType args count (Just TypeBool) of
@@ -214,7 +225,7 @@ evalLogical op args count = case allOfType args count (Just TypeBool) of
   Ok w _ ->
     withW w $
       (\a -> (a, Just TypeBool))
-        <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
+        <$> ((\a -> [PushD a]) <$> operateToCompile (operate op args))
 
 allValue :: [Operable] -> Bool
 allValue =
@@ -249,8 +260,8 @@ compBuiltin _ builtin (OperatorDef ac Logical) True ops =
   evalLogical builtin (toVa ops) ac
 compBuiltin args builtin (OperatorDef ac Logical) False _ =
   compLogical builtin args ac
-compBuiltin args builtin (OperatorDef ac Printing) _ _ =
-  compPrinting builtin args ac
+-- compBuiltin args builtin (OperatorDef ac Printing) _ _ =
+  -- compPrinting builtin args ac
 compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
@@ -261,6 +272,10 @@ compBuiltin args builtin (OperatorDef ac Length) _ _ =
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =
   compBuiltin args builtin (defsOp builtin) (allValue ops) ops
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys builtin ops) c l =
+  compPrinting builtin args 1
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
