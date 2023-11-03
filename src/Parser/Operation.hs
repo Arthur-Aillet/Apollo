@@ -12,34 +12,11 @@ import Control.Applicative (Alternative ((<|>)))
 import Eval.Operator (Operator (..))
 import Parser.Char (parseClosingParenthesis, parseOpeningParenthesis, parseChar, parseClosingBraquet)
 import Parser.Range (Range (..))
-import Debug.Trace
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
-import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis)
+import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis, parseManyValidOrEmpty)
 import Parser.Type (Parser (..))
 import {-# SOURCE #-} Parser.Operable (parseOperable, parseDefinitionName)
-
--- Operator
---   = Add
---   | Incr
---   | Sub
---   | Decr
---   | Mul
---   | Div
---   | Mod
---   | Eq
---   | Lt
---   | LEt
---   | Gt
---   | GEt
---   | NEq
---   | And
---   | Or
---   | Not
---   | Print
---   | Concat
---   | Get
---   | Len
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -144,7 +121,7 @@ parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOper
   Left a -> Left a
 
 parseBuiltinFct :: Parser Operation
-parseBuiltinFct = trace "aa" $  Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
+parseBuiltinFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
   Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
     Right (op, opstr, oppos) -> Right (CallStd fct [op], opstr, oppos)
     Left a -> Left a

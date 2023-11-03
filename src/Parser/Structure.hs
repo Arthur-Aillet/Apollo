@@ -11,12 +11,31 @@ import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
 import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
 import Parser.Symbol(parseType, parseSymbol)
-import Parser.Operable(parseDefinitionName, parseOperable)
-import Parser.Syntax(parseWithSpace, parseMany)
+import Parser.Operable(parseDefinitionName, parseOperable, parseOpOperation, parseElement)
+import Parser.Syntax(parseWithSpace, parseMany, parseManyValidOrEmpty)
 import Parser.Char(parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Error(replaceErr)
+import Parser.Ast (parseAst)
+import Parser.Operation (parseOperation)
 
 ----------------------------------------------------------------
+
+parseNonRecursive :: Parser Ast
+parseNonRecursive = AstStructure <$> (
+        parseVarDefinition
+    <|> parseVarAssignation
+    <|> parseReturn
+    <|> parseIf
+    <|> parseWhile
+    <|> parseFor
+    )
+
+parseRecusive :: Parser Ast
+parseRecusive = AstStructure <$> (
+        parseSingle
+    -- <|> parseBlock
+    <|> parseSequence
+    )
 
 parseAstStructure :: Parser Ast
 parseAstStructure = AstStructure <$> (
@@ -25,9 +44,10 @@ parseAstStructure = AstStructure <$> (
     <|> parseReturn
     <|> parseIf
     <|> parseWhile
-    <|> parseSingle
+    <|> parseFor
+    -- <|> parseSingle
     -- <|> parseBlock
-    <|> parseSequence
+    -- <|> parseSequence
     )
 
 ----------------------------------------------------------------
@@ -56,7 +76,7 @@ createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = 
+parseVarDefinition =
   replaceErr "Syntaxe error: bad variable definition"
   ((createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
 
@@ -84,7 +104,7 @@ parseReturn =
 
 parsecond :: Parser Operable
 parsecond = parseWithSpace parseOpeningParenthesis *>
-            parseWithSpace parseOperable <*
+            parseWithSpace parseElement <*
             parseWithSpace parseClosingParenthesis
 
 parseIf :: Parser Structure
@@ -100,7 +120,7 @@ parseIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "if" *> 
 
 parseThen :: Parser Ast
 parseThen = parseWithSpace parseOpeningCurlyBraquet *>
-            parseWithSpace parseAstStructure <*
+            (AstStructure <$> parseWithSpace parseSequence) <*
             parseWithSpace parseClosingCurlyBraquet
 
 parseElIf :: Parser (Operable, Ast)
@@ -139,10 +159,10 @@ parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *
 
 -- FIXME - Change parseAstStructure by parseAst
 parseSingle :: Parser Structure
-parseSingle = Single <$> parseAstStructure
+parseSingle =  Single <$> parseAst
 
 parseSequence :: Parser Structure
-parseSequence = Sequence <$> parseMany parseAstStructure
+parseSequence = Sequence <$> parseMany parseAst
 
 ----------------------------------------------------------------
 

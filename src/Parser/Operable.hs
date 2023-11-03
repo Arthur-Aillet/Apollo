@@ -18,10 +18,18 @@ import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Operation(parseOperation, parseCall)
 import Parser.List(parseList)
 import Debug.Trace
-import Parser.Type (Parser (..))
+import Parser.Type (Parser (..), StackTrace (StackTrace))
+import Parser.Range (Range(Range))
+import Parser.StackTrace (defaultLocation)
+
+defChars :: [Char]
+defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"
 
 parseDefinitionName :: Parser String
-parseDefinitionName = parseWithSpace (parseMany (parseAnyChar (['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-")))
+parseDefinitionName = Parser $ \s p -> case runParser (parseMany (parseAnyChar defChars)) s p of
+  Right ([], _, pos) -> Left (StackTrace [("empty definition", Range p pos, defaultLocation)])
+  Right a -> Right a
+  Left a -> Left a
 
 parseCast :: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
@@ -68,7 +76,7 @@ parseOpValue =  getFloatOpValue parseFloat
 ---------------------------------------------
 
 parseOpVar :: Parser Operable
-parseOpVar = parseWithSpace parseOpValue <|> (OpVariable <$> parseWithSpace parseDefinitionName)
+parseOpVar = OpVariable <$> parseWithSpace parseDefinitionName
 
 ---------------------------------------------
 
@@ -106,3 +114,6 @@ parseOperable = parseOpCast
             <|> parseOpVar
             <|> parseOpList
             <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
+
+parseElement :: Parser Operable
+parseElement = parseOpOperation <|> parseOperable

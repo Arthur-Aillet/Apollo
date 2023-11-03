@@ -8,3 +8,5 @@ parseDefinitionName :: Parser String
 parseOpList :: Parser Operable
 
 parseOperable :: Parser Operable
+
+parseElement :: Parser Operable
