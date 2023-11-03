@@ -12,11 +12,15 @@ module Eval.Instructions
     Index,
     Func,
     History,
+    Machine (..),
+    Pointer (..),
+    Env (..),
+    Args (..),
   )
 where
 
-import Eval.Operator (Operator (..), Value)
-import Eval.Syscall (Syscall (..))
+import Eval.Operator (Operator (..), Value (..), Stack, execOperator)
+import Eval.Syscall (Syscall (..), execSys)
 import Eval.Atom (Atom (..))
 
 type Index = Int
@@ -48,3 +52,11 @@ moveForward nb insts
   | nb < 0 = Left $ "Error: Jump before zero (" ++ show nb ++ ")"
   | nb > length insts = Left $ "Error: Jump too far (" ++ show nb ++ ")"
   | otherwise = Right $ splitAt nb insts
+
+type Env = [(Int, Func)]
+
+type Args = [Value]
+
+data Pointer = Pointer Index [Index] deriving (Show)
+
+type Machine = (Env, Args, Insts, History, Stack)

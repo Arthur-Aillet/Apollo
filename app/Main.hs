@@ -166,7 +166,7 @@ main = do
   args <- getArgs
   files <- readFiles args
   (Binary env main_f) <- compile [createMain, createCoolPrint, createFib]
-  result <- exec env [] main_f [] []
+  result <- exec (env, [], main_f, [], [])
   case result of
     Left a -> putStrLn a
     Right a -> print a
