@@ -2,7 +2,7 @@
 -- EPITECH PROJECT, 2023
 -- glados
 -- File description:
--- AST Compilation
+-- if-then-else Compilation
 -}
 
 module Ast.CompileIf (module Ast.CompileIf) where

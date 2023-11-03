@@ -2,7 +2,7 @@
 -- EPITECH PROJECT, 2023
 -- glados
 -- File description:
--- AST Compilation
+-- AST-struct Compilation
 -}
 
 module Ast.CompileStruct (module Ast.CompileStruct) where

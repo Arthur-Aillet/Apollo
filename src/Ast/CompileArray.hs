@@ -2,7 +2,7 @@
 -- EPITECH PROJECT, 2023
 -- glados
 -- File description:
--- AST Compilation
+-- Array Compilation
 -}
 
 module Ast.CompileArray (module Ast.CompileArray) where

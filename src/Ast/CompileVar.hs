@@ -2,7 +2,7 @@
 -- EPITECH PROJECT, 2023
 -- glados
 -- File description:
--- AST Compilation
+-- variable Compilation
 -}
 
 module Ast.CompileVar (module Ast.CompileVar) where
