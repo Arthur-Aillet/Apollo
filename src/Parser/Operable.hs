@@ -90,13 +90,6 @@ parseOpList = getOpList parseList
 
 ---------------------------------------------
 
-getOpCall :: Parser Operation -> Parser Operable
-getOpCall parser = Parser $ \s p -> case runParser parser s p of
-  Right (call, str, pos) -> Right (OpOperation call, str, pos)
-  Left a -> Left a
-
----------------------------------------------
-
 getOpOp :: Parser Operation -> Parser Operable
 getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Right (op, str, pos) -> Right (OpOperation op, str, pos)
@@ -110,7 +103,6 @@ parseOpOperation = getOpOp parseOperation
 parseOperable :: Parser Operable
 parseOperable = parseOpCast
             <|> parseOpValue
-            <|> getOpCall parseCall
             <|> parseOpVar
             <|> parseOpList
             <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis

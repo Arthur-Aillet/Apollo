@@ -5,15 +5,19 @@
 -- AST To Insts Contxt
 -}
 
-module Ast.Context (Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
+module Ast.Context (Compiler, Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
 
 import Ast.Error (Compile (..))
 import Ast.Type
-  ( Definition (..),
+  (
+    Ast (..),
+    Definition (..),
     Function (..),
     Type,
   )
 import Data.HashMap.Lazy (HashMap, fromList, insert)
+
+import Eval.Instructions (Insts)
 
 type Index = Int
 
@@ -26,6 +30,8 @@ type Defined = Bool
 type Variables = (HashMap String (Index, Type, Defined))
 
 data LocalContext = LocalContext Variables CurrentReturnType
+
+type Compiler = (Ast -> Context -> LocalContext -> Compile (Insts, LocalContext))
 
 attachIndex :: [(String, Type)] -> Index -> [(String, (Index, Type, Defined))]
 attachIndex [] _ = []

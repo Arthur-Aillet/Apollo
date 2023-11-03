@@ -17,6 +17,7 @@ import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis, parseManyValidOrEmpty)
 import Parser.Type (Parser (..))
 import {-# SOURCE #-} Parser.Operable (parseOperable, parseDefinitionName)
+import Eval.Syscall (Syscall (Print))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -76,17 +77,24 @@ parseIndex = parseSymbol "["
 ---------------------------------------------
 
 getBuiltin :: String -> Maybe Operator
-getBuiltin "print" = Just Print
 getBuiltin "len" = Just Len
 getBuiltin _ = Nothing
 
 parseBuiltin :: Parser String
-parseBuiltin =  parseSymbol "print"
-            <|> parseSymbol "len"
+parseBuiltin = parseSymbol "len"
 
 ---------------------------------------------
 
-checkOperator :: Parser String -> (String -> Maybe Operator) -> Parser Operator
+getSysCall :: String -> Maybe Syscall
+getSysCall "print" = Just Print
+getSysCall _ = Nothing
+
+parseSysCall :: Parser String
+parseSysCall = parseSymbol "print"
+
+---------------------------------------------
+
+checkOperator :: Parser String -> (String -> Maybe a) -> Parser a
 checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
   Right (operatorstr, str, pos) -> case getter operatorstr of
     Just a -> Right (a, str, pos)
@@ -127,6 +135,13 @@ parseBuiltinFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperato
     Left a -> Left a
   Left a -> Left a
 
+parseSysCallFct :: Parser Operation
+parseSysCallFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseSysCall getSysCall) s p of
+  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
+    Right (op, opstr, oppos) -> Right (CallSys fct [op], opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
 ---------------------------------------------
 
 parseargWithComa :: Parser Operable
@@ -164,3 +179,5 @@ parseOperation = parseStd
               <|> parseUnaryOp
               <|> parseIndexOp
               <|> parseBuiltinFct
+              <|> parseSysCallFct
+              <|> parseCall
