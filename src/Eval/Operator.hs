@@ -37,6 +37,7 @@ data OperatorType
   | Concatenation -- [[a]] -> [a]
   | Printing -- [[Char]] -> Nothing
   | Getting -- [[a], Int] -> a
+  | Length -- [a] -> Int
   deriving (Show, Eq)
 
 data Operator
@@ -57,6 +58,7 @@ data Operator
   | Print
   | Concat
   | Get
+  | Len
   deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
@@ -99,6 +101,7 @@ defsOp Not = OperatorDef 1 Logical
 defsOp Print = OperatorDef 1 Printing
 defsOp Concat = OperatorDef 2 Concatenation
 defsOp Get = OperatorDef 2 Getting
+defsOp Len = OperatorDef 1 Length
 
 isAllAtoms :: [Value] -> Either String [Atom]
 isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
@@ -125,6 +128,9 @@ getElem nb list
   | otherwise = Right $ last $ take (nb + 1) list
 
 execOperator :: Stack -> Operator -> IO (Either String Stack)
+execOperator (VList x : xs) Len = return $ Right $ VAtom (AtomI (length x)) : xs
+execOperator (_ : _) Len = return $ Left "Length used not on a list"
+execOperator [] Len = return $ Left "Length on empty stack"
 execOperator (x : y : xs) Get = case (x, y) of
   (VList list, VAtom (AtomI idx)) -> case getElem idx list of
     Left err -> return $ Left err

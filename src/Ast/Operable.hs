@@ -139,6 +139,18 @@ compGet op args _ = case checkGetArgs args of
               <*> Ok w [Op op]
           )
 
+compLen :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compLen op args count = case opeValidArgs args count Nothing of
+  Ko warns err -> Ko warns err
+  Ok w type' -> case type' of
+    TypeList _ ->
+      (\a -> (a, Just TypeInt))
+        <$> ( (++)
+                <$> concatInner (map (fst <$>) (reverse args))
+                <*> Ok w [Op op]
+            )
+    _ -> Ko w ["Concatenation take lists as input"]
+
 compConcat :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compConcat op args count = case opeValidArgs args count Nothing of
   Ko warns err -> Ko warns err
@@ -243,6 +255,8 @@ compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
   compGet builtin args ac
+compBuiltin args builtin (OperatorDef ac Length) _ _ =
+  compLen builtin args ac
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =

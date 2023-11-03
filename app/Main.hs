@@ -6,7 +6,6 @@ import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Print, Sub))
 import Eval.Operator (Value (..))
 import PreProcess
 import System.Environment
@@ -156,7 +155,7 @@ createMain =
               [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
                 AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
                 AstOperation $ CallStd Print [OpVariable "arr"],
-                AstStructure $ Return $ OpOperation $ CallFunc "fib" [OpValue (AtomI 14)]
+                AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
               ]
         )
     )

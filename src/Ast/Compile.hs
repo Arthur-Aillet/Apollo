@@ -205,4 +205,11 @@ compStruct (While op ast) c l = case compOperable op c l of
         jumpIfFalse = [JumpIfFalse (length t_i + 1)]
         jump = [Jump ((length op_i + length t_i + 1) * (-1))]
   Ok w (_, op_type) ->
-    Ko w ["If wait boolean and not " ++ show op_type]
+    Ko w ["While condition await boolean and not " ++ show op_type]
+{--
+compStruct (For name op ast) c l = case compOperable op c l of
+  Ko warns err -> failingComp (compAst ast c l) warns err
+  Ok w (op_i, TypeList _) -> Ko
+  Ok w (_, op_type) ->
+    Ko w ["For await an array and not " ++ show op_type]
+--}
