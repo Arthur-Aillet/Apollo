@@ -153,7 +153,9 @@ createMain =
         ( AstStructure $
             Sequence
               [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
-                AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
+                AstStructure $ For "i" (OpVariable "arr") $ AstStructure $ Sequence [
+                  AstOperation $ CallStd Print [OpList [OpVariable "i", OpValue (AtomC '\n' True)]]
+                ],
                 AstOperation $ CallStd Print [OpVariable "arr"],
                 AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
               ]

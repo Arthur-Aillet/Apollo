@@ -33,16 +33,20 @@ for i in arr {
 compForConstruct :: Insts -> Insts -> Int -> Int -> Int -> LocalContext -> Compile (Insts, LocalContext)
 compForConstruct arr_insts content_insts count_pos arr_pos iter_pos l = Ok [] (final, l)
   where
-    final = fst_part ++ jump ++ last_part
-    last_part = content_insts ++ [PushI count_pos, PushD (VAtom $ AtomI 1), Op Add, Assign count_pos, Jump (length fst_part + length jump)]
-    jump = [JumpIfFalse (length last_part)]
+    final = setup ++ fst_part ++ last_part ++ [Jump ((length fst_part + length last_part) * (-1))]
+    last_part =
+      [PushI count_pos, PushI arr_pos, Op Get, Assign iter_pos] -- Assign Iter
+        ++ [PushI count_pos, PushD (VAtom $ AtomI 1), Op Add, Assign count_pos] -- Incr count
+        ++ content_insts
     fst_part =
+      [PushI arr_pos, Op Len] -- Gen Len list
+        ++ [PushI count_pos, Op NEq] -- Reach End
+        ++ [JumpIfFalse (length last_part + 1)]
+    setup =
       arr_insts
-        ++ [Store]
-        ++ [PushD (VAtom $ AtomI 0), Store]
-        ++ [PushI arr_pos, Op Len]
-        ++ [PushI count_pos, Op NEq]
-        ++ [PushI count_pos, Op Get, Assign iter_pos] -- move iter
+        ++ [Store] -- Store arr
+        ++ [PushD (VAtom $ AtomI 0), Store] -- Store count
+        ++ [PushI count_pos, PushI arr_pos, Op Get, Store] -- Store Iter
 
 forWTypeErr :: Type -> [Error]
 forWTypeErr wrong_type = ["In for, " ++ show wrong_type ++ "ins'nt operable"]
@@ -51,7 +55,7 @@ compForAst :: Type -> Insts -> Compiler -> String -> Ast -> Context -> LocalCont
 compForAst inner arr_insts cAst iter_name ast ctx (LocalContext hmap r) =
   case cAst ast ctx (LocalContext hmap_iter r) of
     Ko w e -> Ko w e
-    Ok w (in_insts, l) -> trace (show hmap_iter) $ withW w $ compForConstruct arr_insts in_insts c_pos arr_pos iter_pos l
+    Ok w (in_insts, l) -> withW w $ compForConstruct arr_insts in_insts c_pos arr_pos iter_pos l
   where
     hmap_iter = insert iter_name (iter_pos, inner, True) hmap_with_counter
     iter_pos = firstValidIndex hmap_with_counter
