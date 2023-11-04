@@ -136,7 +136,8 @@ execOperator (x : y : xs) Get = case (x, y) of
   (VList list, VAtom (AtomI idx)) -> case getElem idx list of
     Left err -> return $ Left err
     Right val -> return $ Right $ val : xs
-  recived -> return (Left $ "Get take a index and a lists not " ++ show recived)
+  recived ->
+    return (Left $ "Get take a index and a lists not " ++ show recived)
 execOperator (x : y : xs) Concat = case (x, y) of
   (VList list1, VList list2) -> return $ Right $ VList (list1 ++ list2) : xs
   _ -> return (Left "Concat take two lists")

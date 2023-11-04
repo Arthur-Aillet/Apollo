@@ -8,7 +8,7 @@
 module Ast.CompileVar (module Ast.CompileVar) where
 
 import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
-import Ast.Error (Compile (..))
+import Ast.Error (Compile (..), Error)
 import Ast.Operable (compOperable)
 import Ast.Type
   ( Operable (..),
@@ -17,6 +17,16 @@ import Ast.Type
 import Data.HashMap.Lazy (adjust, insert)
 import Eval.Exec
 
+compVarErr :: Type -> Type -> String -> [Error]
+compVarErr op_type vtype name =
+  [ "Type of variable \""
+      ++ name
+      ++ "\" redefined from "
+      ++ show op_type
+      ++ " to "
+      ++ show vtype
+  ]
+
 compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Compile (Insts, LocalContext)
 compVarDefinition op hmap r vtype name c =
   case compOperable op c (LocalContext hmap r) of
@@ -24,7 +34,7 @@ compVarDefinition op hmap r vtype name c =
     Ok w (insts, TypeList Nothing) -> Ok w (insts ++ [Store], new_local)
     Ok w (insts, op_type)
       | op_type == vtype -> Ok w (insts ++ [Store], new_local)
-      | otherwise -> Ko w ["Type of variable \"" ++ name ++ "\" redefined from " ++ show op_type ++ " to " ++ show vtype]
+      | otherwise -> Ko w $ compVarErr op_type vtype name
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
