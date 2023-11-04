@@ -7,19 +7,14 @@
 
 module Ast.CompileIf (module Ast.CompileIf) where
 
-import Ast.Context (Compiler, Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), Warning, failingComp, withW)
-import Ast.Operable (compOperable, compOperation, concatInner)
+import Ast.Context (Compiler, Context (..), LocalContext (..))
+import Ast.Error (Compile (..))
+import Ast.Operable (compOperable, concatInner)
 import Ast.Type
   ( Ast (..),
-    Definition (..),
-    Function (..),
     Operable (..),
-    Structure (..),
     Type (..),
   )
-import Ast.Utils (allEqual, listInner, zip5)
-import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
 
 ifOpErr :: Type -> String
@@ -47,4 +42,4 @@ compIf compiler ((op, then') : xs) e c l =
     (op_i, op_len) = compIfOp op c l
     (ast_i, ast_len) = compIfAst compiler then' c l
 compIf compiler [] (Just else') c l = compIfAst compiler else' c l
-compIf compiler [] Nothing _ _ = (Ok [] [], 0)
+compIf _ [] Nothing _ _ = (Ok [] [], 0)

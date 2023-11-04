@@ -2,7 +2,6 @@ module Main (main) where
 
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
 import Eval.Exec
@@ -10,7 +9,6 @@ import Eval.Operator (Value (..))
 import Eval.Syscall (Syscall (..))
 import PreProcess
 import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 
 createAbs :: Definition
@@ -153,9 +151,14 @@ createMain =
         (Just TypeInt)
         ( AstStructure $
             Sequence
-              [ AstStructure $ VarDefinition "arr" (TypeList (Just TypeChar)) (Just $ OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]),
-                AstStructure $ ArrAssignation "arr" [OpValue (AtomI 2)] $ OpValue (AtomC '3' True),
-                AstOperation $ CallSys Print [OpVariable "arr"],
+
+              [ AstStructure $ VarDefinition "arr" (TypeList (Just $ TypeList $ Just TypeChar)) (Just $ OpList [OpList [OpValue (AtomC 'a' True), OpValue (AtomC 'b' True), OpValue (AtomC 'c' True)], OpList [OpValue (AtomC 'd' True), OpValue (AtomC 'e' True), OpValue (AtomC 'f' True)]]),
+                AstStructure $
+                  For "i" (OpVariable "arr") $
+                    AstStructure $
+                      Sequence
+                        [ AstOperation $ CallSys Print [OpVariable "i"]
+                        ],
                 AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
               ]
         )

@@ -24,7 +24,7 @@ data Structure -- layout, structure and connection of statements, having no valu
   | Return Operable
   | If [(Operable, Ast)] (Maybe Ast) -- branching condition (if ((x) {}, ...) {})
   | While Operable Ast
-  -- | For String Operable Ast -- Name of iterator and iterable
+  | For String Operable Ast -- Name of iterator and iterable
   | Single Ast -- single operation or operable ({x})
   | Block [Ast] [String] -- several actions ordered by variable precedence ({x;y})
   | Sequence [Ast] -- several actions ordered by precedence ({x >> y})
@@ -53,7 +53,8 @@ data Type
   | TypeChar
   | TypeInt
   | TypeFloat
-  | TypeList (Maybe Type)
+  | -- |  TypeBroken
+    TypeList (Maybe Type)
   deriving (Eq)
 
 instance Show Type where

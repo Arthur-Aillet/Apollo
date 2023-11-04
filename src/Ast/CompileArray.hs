@@ -7,19 +7,14 @@
 
 module Ast.CompileArray (module Ast.CompileArray) where
 
-import Ast.Context (Compiler (..), Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), Warning, failingComp, withW)
-import Ast.Operable (compOperable, compOperation, concatInner)
+import Ast.Context (Context (..), LocalContext (..))
+import Ast.Error (Compile (..), Warning, failingComp)
+import Ast.Operable (compOperable)
 import Ast.Type
-  ( Ast (..),
-    Definition (..),
-    Function (..),
-    Operable (..),
-    Structure (..),
+  ( Operable (..),
     Type (..),
   )
 import Ast.Utils (allEqual, listInner, zip5)
-import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
 import Eval.Exec
 
 tInList :: Type -> Type -> Int -> Maybe String

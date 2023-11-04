@@ -7,28 +7,34 @@
 
 module Ast.CompileVar (module Ast.CompileVar) where
 
-import Ast.Context (Compiler (..), Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), Warning, failingComp, withW)
-import Ast.Operable (compOperable, compOperation, concatInner)
+import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
+import Ast.Error (Compile (..), Error)
+import Ast.Operable (compOperable)
 import Ast.Type
-  ( Ast (..),
-    Definition (..),
-    Function (..),
-    Operable (..),
-    Structure (..),
+  ( Operable (..),
     Type (..),
   )
-import Ast.Utils (allEqual, listInner, zip5)
-import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
+import Data.HashMap.Lazy (adjust, insert)
 import Eval.Exec
+
+compVarErr :: Type -> Type -> String -> [Error]
+compVarErr op_type vtype name =
+  [ "Type of variable \""
+      ++ name
+      ++ "\" redefined from "
+      ++ show op_type
+      ++ " to "
+      ++ show vtype
+  ]
 
 compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Compile (Insts, LocalContext)
 compVarDefinition op hmap r vtype name c =
   case compOperable op c (LocalContext hmap r) of
     Ko warns err -> Ko warns err
+    Ok w (insts, TypeList Nothing) -> Ok w (insts ++ [Store], new_local)
     Ok w (insts, op_type)
       | op_type == vtype -> Ok w (insts ++ [Store], new_local)
-      | otherwise -> Ko w ["Type of variable \"" ++ name ++ "\" redefined"]
+      | otherwise -> Ko w $ compVarErr op_type vtype name
   where
     new_local = LocalContext new_hmap r
     new_hmap = insert name (firstValidIndex hmap, vtype, True) hmap
@@ -43,4 +49,4 @@ compFirstAssign op c hmap r wtype name =
     Ok w (insts, rtype)
       | wtype == rtype ->
           Ok w (insts ++ [Store], LocalContext (adjust setTrue name hmap) r)
-      | otherwise -> Ko w ["Type of variable \"" ++ name ++ "\" redefined"]
+      | otherwise -> Ko w ["Type of variable \"" ++ name ++ "\" redefined2"]
