@@ -1,6 +1,6 @@
 
-import Ast.CompileAST (Binary (..))
-import Ast.Display (compile)
+-- import Ast.CompileAST (Binary (..))
+-- import Ast.Display (compile)
 -- import Ast.Error (Compile (..))
 -- import Ast.Type
 -- import System.Console.Haskeline
@@ -14,12 +14,12 @@ import Ast.Display (compile)
 -- import Control.Monad.IO.Class
 -- import Data.HashMap.Internal.Strict (keys)
 -- import Data.List (isPrefixOf)
-import Eval
-import Eval.Exec
-import Eval.Operator (Value (..))
-import Eval.Syscall (Syscall (..))
-import PreProcess
-import System.Environment
+-- import Eval
+-- import Eval.Exec
+-- import Eval.Operator (Value (..))
+-- import Eval.Syscall (Syscall (..))
+-- import PreProcess
+-- import System.Environment
 -- import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 -- import Ast.Type (Definition (FuncDefinition), Function (Function), Ast (AstOperation), Operation (CallStd), Operable (OpOperation))

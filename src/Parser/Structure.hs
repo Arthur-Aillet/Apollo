@@ -18,6 +18,8 @@ import Parser.Error(replaceErr)
 import Parser.StackTrace(StackTrace(..), defaultLocation)
 import Parser.Position(Position(..))
 import Parser.Range(Range(..))
+import Parser.Operable(parseElement)
+import Parser.Ast(parseAst)
 
 ----------------------------------------------------------------
 
@@ -28,7 +30,7 @@ parseError :: Parser Ast
 parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s p of
   Right (_, _, ps) -> Left (StackTrace [("Syntaxe error: bad variable definition", Range p ps, defaultLocation)])
   Left _ -> case runParser parseSpecificInstruction s p of
-    Right (instruction, str, pos) -> Left (StackTrace [("Syntaxe error: instruction " ++ instruction ++ " is not valid", Range p pos, defaultLocation)])
+    Right (instruction, _, pos) -> Left (StackTrace [("Syntaxe error: instruction " ++ instruction ++ " is not valid", Range p pos, defaultLocation)])
     Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
 
 parseAstStructure :: Parser Ast
@@ -171,16 +173,16 @@ findNextInstruction = Parser $ \s p -> case runParser findNewStruc s p of
 moveToError :: Position -> Parser String
 moveToError ps = Parser $ \s p -> if p == ps then Right("", s, p)
                                   else case runParser parseAChar s p of
-                                  Right (a, str, pos) -> runParser (moveToError ps) str pos
+                                  Right (_, str, pos) -> runParser (moveToError ps) str pos
                                   Left a -> Left a
 
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
-  Left (StackTrace [("", ran, src)]) -> Left (StackTrace [("", ran, src)])
+  Left (StackTrace [("", ran, s)]) -> Left (StackTrace [("", ran, s)])
   Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser ((moveToError p2) *> findNextInstruction *> (parseManyInstructions parser)) s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
-    Left (StackTrace [("", ran, src)]) -> Left (StackTrace [(xs, Range p1 p2, src)])
+    Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
 
 parseSequence :: Parser Structure

@@ -12,7 +12,7 @@ import Parser.Type (Parser (..))
 import Control.Applicative (Alternative ((<|>)))
 import Parser.StackTrace (StackTrace(..))
 import Parser.Range (Range(..))
-import Parser.Char(parseNotChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis)
+import Parser.Char(parseChar, parseOpeningParenthesis, parseClosingParenthesis)
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of

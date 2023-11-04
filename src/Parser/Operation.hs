@@ -14,7 +14,7 @@ import Parser.Char (parseClosingParenthesis, parseOpeningParenthesis, parseChar,
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
-import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis, parseManyValidOrEmpty)
+import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis)
 import Parser.Type (Parser (..))
 import {-# SOURCE #-} Parser.Operable (parseOperable, parseDefinitionName)
 import Eval.Syscall (Syscall (Print))
