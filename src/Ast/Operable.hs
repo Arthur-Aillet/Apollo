@@ -67,33 +67,35 @@ argsHasError (Ok w []) (_ : _) = Ko w ["Too few arguments"]
 argsHasError (Ok w (_ : _)) [] = Ko w ["Too many arguments"]
 argsHasError (Ok w []) [] = Ok w ()
 
-typeErr :: Type -> Type -> String
-typeErr at wt =
-  "Builtin: recieved "
+typeErr :: Operator -> Type -> Type -> String
+typeErr op at wt =
+  "Builtin \""
+    ++ show op
+    ++ "\": recieved "
     ++ show at
     ++ " when "
     ++ show wt
     ++ " was awaited"
 
-opeValidArgs :: [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
-opeValidArgs (Ko w err : xs) nbr type' =
-  failingComp (opeValidArgs xs (nbr - 1) type') w err
-opeValidArgs [] 0 (Just waited_type) = Ok [] waited_type
-opeValidArgs [] nbr (Just _)
+opeValidArgs :: Operator -> [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
+opeValidArgs op (Ko w err : xs) nbr type' =
+  failingComp (opeValidArgs op xs (nbr - 1) type') w err
+opeValidArgs op [] 0 (Just waited_type) = Ok [] waited_type
+opeValidArgs op [] nbr (Just _)
   | nbr < 0 = Ko [] ["Builtin: Too many arguments"]
   | otherwise = Ko [] ["Builtin: Not enough arguments"]
-opeValidArgs (Ok w _ : _) 0 (Just _) = Ko w ["Builtin: Too many arguments"]
-opeValidArgs [] _ Nothing = Ko [] ["Builtin: No arguments given"]
-opeValidArgs (Ok _ (_, arg_type) : xs) nbr Nothing =
-  opeValidArgs xs (nbr - 1) (Just arg_type)
-opeValidArgs (Ok w (_, at) : xs) nbr (Just wt)
-  | at == wt = opeValidArgs xs (nbr - 1) (Just wt)
-  | otherwise = case opeValidArgs xs (nbr - 1) (Just wt) of
-      Ok w2 _ -> Ko (w ++ w2) [typeErr at wt]
-      Ko w2 e2 -> Ko (w ++ w2) $ typeErr at wt : e2
+opeValidArgs op (Ok w _ : _) 0 (Just _) = Ko w ["Builtin: Too many arguments"]
+opeValidArgs op [] _ Nothing = Ko [] ["Builtin: No arguments given"]
+opeValidArgs op (Ok _ (_, arg_type) : xs) nbr Nothing =
+  opeValidArgs op xs (nbr - 1) (Just arg_type)
+opeValidArgs op (Ok w (_, at) : xs) nbr (Just wt)
+  | at == wt = opeValidArgs op xs (nbr - 1) (Just wt)
+  | otherwise = case opeValidArgs op xs (nbr - 1) (Just wt) of
+      Ok w2 _ -> Ko (w ++ w2) [typeErr op at wt]
+      Ko w2 e2 -> Ko (w ++ w2) $ typeErr op at wt : e2
 
 compCalculus :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compCalculus op args count = case opeValidArgs args count Nothing of
+compCalculus op args count = case opeValidArgs op args count Nothing of
   Ko warns err -> Ko warns err
   Ok w return_type ->
     (\a -> (a, Just return_type))
@@ -141,7 +143,7 @@ compGet op args _ = case checkGetArgs args of
           )
 
 compLen :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compLen op args count = case opeValidArgs args count Nothing of
+compLen op args count = case opeValidArgs op args count Nothing of
   Ko warns err -> Ko warns err
   Ok w type' -> case type' of
     TypeList _ ->
@@ -153,7 +155,7 @@ compLen op args count = case opeValidArgs args count Nothing of
     _ -> Ko w ["Concatenation take lists as input"]
 
 compConcat :: Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compConcat op args count = case opeValidArgs args count Nothing of
+compConcat op args count = case opeValidArgs op args count Nothing of
   Ko warns err -> Ko warns err
   Ok w type' -> case type' of
     TypeList _ ->
@@ -165,7 +167,7 @@ compConcat op args count = case opeValidArgs args count Nothing of
     _ -> Ko w ["Concatenation take lists as input"]
 
 compOperationType :: Maybe Type -> Maybe Type -> Operator -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compOperationType in' out op args count = case opeValidArgs args count in' of
+compOperationType in' out op args count = case opeValidArgs op args count in' of
   Ko warns err -> Ko warns err
   Ok w _ ->
     (\a -> (a, out))
@@ -174,27 +176,29 @@ compOperationType in' out op args count = case opeValidArgs args count in' of
               <*> Ok w [Op op]
           )
 
-allOfType :: [Atom] -> Int -> Maybe Type -> Compile Type
-allOfType [] 0 (Just waited_type) = Ok [] waited_type
-allOfType [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin: Too many arguments"]
-  | otherwise = Ko [] ["Builtin: Not enough arguments"]
-allOfType (_ : _) 0 (Just _) = Ko [] ["Builtin: Too many arguments"]
-allOfType [] _ Nothing = Ko [] ["Builtin: No arguments given"]
-allOfType (val : xs) nbr Nothing =
-  allOfType xs (nbr - 1) (Just $ atomType val)
-allOfType (val : xs) nbr (Just wt)
-  | atomType val == wt = allOfType xs (nbr - 1) (Just wt)
-  | otherwise = case allOfType xs (nbr - 1) (Just wt) of
-      Ok w _ -> Ko w [typeErr (atomType val) wt]
-      Ko w e -> Ko w $ typeErr (atomType val) wt : e
+allOfType :: Operator -> [Atom] -> Int -> Maybe Type -> Compile Type
+allOfType _ [] 0 (Just waited_type) = Ok [] waited_type
+allOfType op [] nbr (Just _)
+  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+allOfType op (_ : _) 0 (Just _) =
+  Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+allOfType op [] _ Nothing =
+  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+allOfType op (val : xs) nbr Nothing =
+  allOfType op xs (nbr - 1) (Just $ atomType val)
+allOfType op (val : xs) nbr (Just wt)
+  | atomType val == wt = allOfType op xs (nbr - 1) (Just wt)
+  | otherwise = case allOfType op xs (nbr - 1) (Just wt) of
+      Ok w _ -> Ko w [typeErr op (atomType val) wt]
+      Ko w e -> Ko w $ typeErr op (atomType val) wt : e
 
 operateToCompile :: Either String Atom -> Compile Atom
 operateToCompile (Left err) = Ko [] [err]
 operateToCompile (Right atom) = Ok [] atom
 
 evalCalculus :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
-evalCalculus op args count = case allOfType args count Nothing of
+evalCalculus op args count = case allOfType op args count Nothing of
   Ko warns err -> Ko warns err
   Ok w return_type ->
     withW w $
@@ -202,7 +206,7 @@ evalCalculus op args count = case allOfType args count Nothing of
         <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalEquality :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
-evalEquality op args count = case allOfType args count Nothing of
+evalEquality op args count = case allOfType op args count Nothing of
   Ko warns err -> Ko warns err
   Ok w _ ->
     withW w $
@@ -210,7 +214,7 @@ evalEquality op args count = case allOfType args count Nothing of
         <$> ((\a -> [PushD $ VAtom a]) <$> operateToCompile (operate op args))
 
 evalLogical :: Operator -> [Atom] -> Int -> Compile (Insts, Maybe Type)
-evalLogical op args count = case allOfType args count (Just TypeBool) of
+evalLogical op args count = case allOfType op args count (Just TypeBool) of
   Ko warns err -> Ko warns err
   Ok w _ ->
     withW w $

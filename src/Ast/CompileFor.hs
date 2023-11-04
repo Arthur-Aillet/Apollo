@@ -12,8 +12,8 @@ import Ast.Error
 import Ast.Operable (compOperable)
 import Ast.Type
 import Data.HashMap.Lazy (insert)
-import Eval.Exec
 import Debug.Trace
+import Eval.Exec
 
 {--
 for i in arr {
