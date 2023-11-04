@@ -28,6 +28,7 @@ makeOPType c_types c_elem =
     <*> (length <$> c_elem)
 
 compOperable :: Operable -> Context -> LocalContext -> Compile (Insts, Type)
+compOperable (OpList []) _ _ = Ok [] ([Take 0], TypeList Nothing)
 compOperable (OpList array) ctx l = case final_type of
   Ko w e -> Ko w e
   Ok w (True, type', insts, len) ->

@@ -45,6 +45,9 @@ compForConstruct arr_insts content_insts count_pos arr_pos iter_pos l = Ok [] (f
     setup =
       arr_insts
         ++ [Store] -- Store arr
+        ++ [PushI arr_pos, Op Len] -- Gen Len list
+        ++ [PushD (VAtom $ AtomI 0), Op NEq] -- Reach End
+        ++ [JumpIfFalse (length fst_part + length last_part + 1 + 6)]
         ++ [PushD (VAtom $ AtomI 0), Store] -- Store count
         ++ [PushI count_pos, PushI arr_pos, Op Get, Store] -- Store Iter
 

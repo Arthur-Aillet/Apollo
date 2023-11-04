@@ -66,7 +66,7 @@ compStruct compiler (VarAssignation name op) c (LocalContext hmap r) =
       Ko warns err -> Ko warns err
       Ok w (insts, rtype)
         | wtype == rtype -> Ok w (insts ++ [Assign idx], LocalContext hmap r)
-        | otherwise -> Ko [] ["Type of variable \"" ++ name ++ "\" redefined"]
+        | otherwise -> Ko [] ["Type of variable \"" ++ name ++ "\" redefined1"]
     Just (_, wtype, False) -> compFirstAssign op c hmap r wtype name
 compStruct compiler (ArrAssignation name idx_ops val) ctx (LocalContext hmap r) =
   case hmap !? name of
