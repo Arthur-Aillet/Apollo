@@ -12,34 +12,12 @@ import Control.Applicative (Alternative ((<|>)))
 import Eval.Operator (Operator (..))
 import Parser.Char (parseClosingParenthesis, parseOpeningParenthesis, parseChar, parseClosingBraquet)
 import Parser.Range (Range (..))
-import Debug.Trace
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
-import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis)
+import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis, parseManyValidOrEmpty)
 import Parser.Type (Parser (..))
 import {-# SOURCE #-} Parser.Operable (parseOperable, parseDefinitionName)
-
--- Operator
---   = Add
---   | Incr
---   | Sub
---   | Decr
---   | Mul
---   | Div
---   | Mod
---   | Eq
---   | Lt
---   | LEt
---   | Gt
---   | GEt
---   | NEq
---   | And
---   | Or
---   | Not
---   | Print
---   | Concat
---   | Get
---   | Len
+import Eval.Syscall (Syscall (Print))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -99,17 +77,24 @@ parseIndex = parseSymbol "["
 ---------------------------------------------
 
 getBuiltin :: String -> Maybe Operator
-getBuiltin "print" = Just Print
 getBuiltin "len" = Just Len
 getBuiltin _ = Nothing
 
 parseBuiltin :: Parser String
-parseBuiltin =  parseSymbol "print"
-            <|> parseSymbol "len"
+parseBuiltin = parseSymbol "len"
 
 ---------------------------------------------
 
-checkOperator :: Parser String -> (String -> Maybe Operator) -> Parser Operator
+getSysCall :: String -> Maybe Syscall
+getSysCall "print" = Just Print
+getSysCall _ = Nothing
+
+parseSysCall :: Parser String
+parseSysCall = parseSymbol "print"
+
+---------------------------------------------
+
+checkOperator :: Parser String -> (String -> Maybe a) -> Parser a
 checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
   Right (operatorstr, str, pos) -> case getter operatorstr of
     Just a -> Right (a, str, pos)
@@ -144,9 +129,16 @@ parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOper
   Left a -> Left a
 
 parseBuiltinFct :: Parser Operation
-parseBuiltinFct = trace "aa" $  Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
+parseBuiltinFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
   Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
     Right (op, opstr, oppos) -> Right (CallStd fct [op], opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseSysCallFct :: Parser Operation
+parseSysCallFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseSysCall getSysCall) s p of
+  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
+    Right (op, opstr, oppos) -> Right (CallSys fct [op], opstr, oppos)
     Left a -> Left a
   Left a -> Left a
 
@@ -187,3 +179,5 @@ parseOperation = parseStd
               <|> parseUnaryOp
               <|> parseIndexOp
               <|> parseBuiltinFct
+              <|> parseSysCallFct
+              <|> parseCall

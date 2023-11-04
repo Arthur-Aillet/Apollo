@@ -3,17 +3,36 @@ module Parser.List (module Parser.List) where
 import Ast.Type (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet)
-import Parser.Syntax (parseMany, parseWithSpace)
+import Parser.Syntax (parseMany, parseWithSpace, parseManyValidOrEmpty)
 import Parser.Type (Parser (..))
-import {-# SOURCE #-} Parser.Operable (parseOperable)
+import {-# SOURCE #-} Parser.Operable (parseOperable, parseElement)
+import Debug.Trace (trace)
 
-parseOpWithComa :: Parser Operable
-parseOpWithComa = parseWithSpace (parseChar ',') *> parseOperable
+-- parseParameter :: Parser (String, Type)
+-- parseParameter =
+--   (swap <$> ((,) <$> typ <*> str))
+--   where
+--     typ = parseType
+--     str = parseDefinitionName
 
-parseOps :: Parser [Operable]
-parseOps = parseWithSpace (parseMany (parseWithSpace parseOperable <|> parseWithSpace parseOpWithComa))
+-- parseParameterWithComa :: Parser (String, Type)
+-- parseParameterWithComa = parseParameter <* parseChar ','
+
+-- parseParameters :: Parser [(String, Type)]
+-- parseParameters =
+--   parseWithSpace
+--     ( parseOpeningParenthesis
+--         *> parseMany (parseWithSpace (parseParameterWithComa <|> parseParameter))
+--         <* parseClosingParenthesis
+--     )
+
+parseElemWithComa :: Parser Operable
+parseElemWithComa = parseElement <* parseWithSpace (parseChar ',')
+
+parseElems :: Parser [Operable]
+parseElems = parseMany (parseWithSpace (parseElemWithComa <|> parseElement))
 
 parseList :: Parser [Operable]
-parseList = Parser $ \s p -> case runParser (parseWithSpace parseOpeningBraquet *> parseOps <*parseClosingBraquet) s p of
+parseList = Parser $ \s p -> case runParser (parseWithSpace ( parseOpeningBraquet *> parseElems <* parseClosingBraquet)) s p of
   Right (elements, str, pos) -> Right (elements, str, pos)
   Left a -> Left a
