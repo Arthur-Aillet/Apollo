@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo
+-- Apollo
 -- File description:
 -- ParseChar
 -}

@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo2
+-- Apollo2
 -- File description:
 -- Structure.hs
 -}

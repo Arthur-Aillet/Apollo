@@ -1,9 +1,9 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- Condition
---
+-}
 
 module Parser.Operation (module Parser.Operation) where
 

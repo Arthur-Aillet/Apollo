@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo2
+-- Apollo2
 -- File description:
 -- Definition.hs
 -}
@@ -21,7 +21,7 @@ import Parser.Type (Parser (..))
 
 parseParameter :: Parser (String, Type)
 parseParameter =
-  (swap <$> ((,) <$> typ <*> ((parseChar ' ') *> str)))
+  swap <$> ((,) <$> typ <*> (parseChar ' ' *> str))
   where
     typ = parseType
     str = parseWithSpace parseDefinitionName
@@ -33,12 +33,17 @@ parseParameters :: Parser [(String, Type)]
 parseParameters =
   parseWithSpace
     ( parseOpeningParenthesis
-        *> parseMany (parseWithSpace (parseParameterWithComa <|> parseParameter))
+        *> parseMany
+          ( parseWithSpace
+              ( parseParameterWithComa
+                  <|> parseParameter
+              )
+          )
         <* parseClosingParenthesis
     )
 
 parseInstruction :: Parser Ast
-parseInstruction = (AstStructure <$> parseSequence)
+parseInstruction = AstStructure <$> parseSequence
 
 parseInstructions :: Parser Ast
 parseInstructions =
@@ -52,9 +57,9 @@ parseFunction :: Parser Function
 parseFunction = Function <$> parseParameters <*> parseMaybeType <*> parseInstructions
 
 parseFuncDefinition :: Parser Definition
-parseFuncDefinition = Parser $ \s p -> case runParser ((parseChar '@') *> parseDefinitionName) s p of
+parseFuncDefinition = Parser $ \s p -> case runParser (parseChar '@' *> parseDefinitionName) s p of
   Right (name, str, pos) -> case runParser parseFunction str pos of
-    Right (func, string, position) -> Right ((FuncDefinition name func), string, position)
+    Right (func, string, position) -> Right (FuncDefinition name func, string, position)
     Left (StackTrace a) -> Left (StackTrace (modifySourceLocation (addSourceLocation name p) a))
   Left a -> Left a
 
@@ -73,9 +78,9 @@ findNextFunction nb_brackets = Parser $ \s p -> case runParser parseAChar s p of
 parseManyFuncDefinition :: Parser [Definition] -> Parser [Definition]
 parseManyFuncDefinition parser = Parser $ \s p -> case runParser (parseWithSpace parser) s p of
   Right a -> Right a
-  Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser ((findNextFunction (-1)) *> parseManyFuncDefinition parser) s p of
+  Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser (findNextFunction (-1) *> parseManyFuncDefinition parser) s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace [("Not Found: End of Input", _, _)]) -> Left (StackTrace [(xs, Range p1 p2, src)])
-    Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
+    Left (StackTrace ys) -> Left $ StackTrace $ (xs, Range p1 p2, src) : ys
   Left a -> Left a

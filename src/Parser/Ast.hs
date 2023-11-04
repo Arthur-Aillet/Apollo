@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo
+-- Apollo
 -- File description:
 -- Ast parser
 -}
@@ -9,8 +9,6 @@ module Parser.Ast (module Parser.Ast) where
 
 import Ast.Ast (Ast (..), Operation)
 import Control.Applicative (Alternative ((<|>)))
-import Parser (Parser (Parser, runParser))
-import Parser.Bool (parseBool)
 import Parser.Operation (parseOperation)
 import {-# SOURCE #-} Parser.Structure (parseAstStructure)
 import Parser.Syntax (parseMaybeparenthesis)

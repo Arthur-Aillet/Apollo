@@ -1,9 +1,9 @@
---
+{-
 -- EPITECH PROJECT, 2023
 -- apollo
 -- File description:
 -- String
---
+-}
 
 module Parser.String (module Parser.String) where
 
