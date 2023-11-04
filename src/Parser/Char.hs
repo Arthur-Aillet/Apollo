@@ -31,6 +31,12 @@ parseOpeningQuote = replaceErr "Not Found: Missing opening Quote" (parseChar '"'
 parseClosingQuote :: Parser Char
 parseClosingQuote = replaceErr "Not Found: Missing closing Quote" (parseChar '"')
 
+parseOpeningsQuote :: Parser Char
+parseOpeningsQuote = replaceErr "Not Found: Missing opening Quote" (parseChar '\'')
+
+parseClosingsQuote :: Parser Char
+parseClosingsQuote = replaceErr "Not Found: Missing closing Quote" (parseChar '\'')
+
 parseOpeningParenthesis :: Parser Char
 parseOpeningParenthesis =
   replaceErr "Not Found: Missing opening Parenthesis" (parseChar '(')
