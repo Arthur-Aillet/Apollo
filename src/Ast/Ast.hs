@@ -5,7 +5,7 @@
 -- AST
 -}
 
-module Ast.Ast (Type (..), Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
+module Ast.Ast (module Ast.Type, Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), atomType, valueType) where
 
 import Ast.Type
 import Eval.Atom (Atom (..))
@@ -48,21 +48,6 @@ data Operable -- statement having a value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
-
-instance Show Type where
-  show TypeBool = "bool"
-  show TypeChar = "char"
-  show TypeInt = "int"
-  show TypeFloat = "float"
-  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
-  show (TypeList Nothing) = "[]"
-
-numType :: Type -> Bool
-numType TypeBool = True
-numType TypeChar = True
-numType TypeInt = True
-numType TypeFloat = True
-numType _ = False
 
 valueType :: Value -> Type
 valueType (VAtom a) = atomType a

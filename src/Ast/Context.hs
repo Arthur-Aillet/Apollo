@@ -46,4 +46,4 @@ createLocalContext :: [(String, Type)] -> Maybe Type -> LocalContext
 createLocalContext args = LocalContext (fromList (attachIndex args 0))
 
 firstValidIndex :: Variables -> Index
-firstValidIndex vars = (foldl (\var (idx, _, _) -> max var idx) (-1) vars) + 1
+firstValidIndex vars = foldl (\var (idx, _, _) -> max var idx) (-1) vars + 1

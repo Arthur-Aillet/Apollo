@@ -69,16 +69,20 @@ execInstr (env, args, Take nbr : xs, h, stack) =
   where
     new_stack = VList start : end
     (start, end) = splitAt nbr stack
+
 execInstr (env, args, (PushD val) : xs, h, stack) =
   Right (env, args, xs, PushD val : h, VAtom val : stack)
+
 execInstr (env, args, (PushI arg_index) : xs, h, stack) =
   case getElem arg_index args of
     Left err -> Left err
     Right arg -> Right (env, args, xs, PushI arg_index : h, arg : stack)
+
 execInstr (env, args, (Op op) : xs, h, stack) =
   case execOperator stack op of
     Left err -> Left err
     Right new_stack -> Right (env, args, xs, Op op : h, new_stack)
+
 execInstr (env, args, (JumpIfFalse line) : xs, h, VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
@@ -88,10 +92,13 @@ execInstr (env, args, (JumpIfFalse line) : xs, h, VAtom 0 : ys)
       Left a -> Left a
       Right (start, end) ->
         Right (env, args, reverse start ++ JumpIfFalse line : xs, end, ys)
+
 execInstr (env, args, (JumpIfFalse a) : xs, h, _ : ys) =
   Right (env, args, xs, JumpIfFalse a : h, ys)
+
 execInstr (_, _, (JumpIfFalse _) : _, _, []) =
   Left "Error: JumpIf on empty stack"
+
 execInstr (env, args, (Jump line) : xs, h, stack)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
@@ -101,9 +108,11 @@ execInstr (env, args, (Jump line) : xs, h, stack)
       Left a -> Left a
       Right (start, end) ->
         Right (env, args, reverse start ++ Jump line : xs, end, stack)
+
 execInstr (env, args, Store : xs, h, y : ys) =
   Right (env, args ++ [y], xs, Store : h, ys)
 execInstr (_, _, Store : _, _, []) = Left "Error: Store with empty stack"
+
 execInstr (env, args, ArrAssign idx : xs, h, VList x : y : ys) =
   case createPtr idx x of
     Left err -> Left err
@@ -112,12 +121,14 @@ execInstr (env, args, ArrAssign idx : xs, h, VList x : y : ys) =
       Right new_args -> Right (env, new_args, xs, ArrAssign idx : h, ys)
 execInstr (_, _, ArrAssign _ : _, _, VAtom _ : _) =
   Left "ArrAssign take a list"
+
 execInstr (env, args, Assign i : xs, h, y : ys) = case getElem i args of
   Left err -> Left err
   Right _ ->
     Right (env, newargs, xs, Assign i : h, ys)
   where
     newargs = take i args ++ [y] ++ drop (i + 1) args
+
 execInstr (_, _, Ret : _, _, _) = Left "Error: Return with empty stack"
 execInstr (_, _, x : _, _, _) = Left $ "Error: Undefined Yet: " ++ show x
 execInstr (_, _, [], _, _) = Left "Error: End of Tape"

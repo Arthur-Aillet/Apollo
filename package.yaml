@@ -55,6 +55,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - apollo
+    - haskeline
 
 tests:
   apollo-test:
@@ -66,4 +67,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - apollo
+    - haskeline
     - HUnit

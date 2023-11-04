@@ -74,7 +74,7 @@ operate Mod = \[a, b] ->
 operate Eq = \[a, b] -> Right $ AtomB $ a == b
 operate Lt = \[a, b] -> Right $ AtomB $ a < b
 operate Gt = \[a, b] -> Right $ AtomB $ a > b
-operate GEt = \[a, b] -> Right $ AtomB $ a >= b
+operate LEt = \[a, b] -> Right $ AtomB $ a <= b
 operate GEt = \[a, b] -> Right $ AtomB $ a >= b
 operate NEq = \[a, b] -> Right $ AtomB $ a /= b
 operate And = \[AtomB a, AtomB b] -> Right $ AtomB $ a && b
