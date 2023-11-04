@@ -7,13 +7,9 @@
 
 module Parser.String (module Parser.String) where
 
-import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar, parseDigit, parseAnyChar, parseOpeningQuote, parseClosingQuote, parseOpeningsQuote, parseClosingsQuote)
-import Parser.StackTrace (StackTrace (..))
 import Parser.Type (Parser (..))
-import Parser.Syntax (parseMany, parseSome, parseWithSpace)
-import Parser.Range (Range (..))
-import Control.Applicative (Alternative ((<|>)))
+import Parser.Char (parseAnyChar, parseOpeningQuote, parseClosingQuote)
+import Parser.Syntax (parseMany, parseWithSpace)
 
 exInput :: String
 exInput = "\"test\""

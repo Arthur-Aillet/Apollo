@@ -32,6 +32,7 @@ parseOnlySpaces = Parser $ \string pos -> case string of
     Right (new, new_str, new_pos) ->
       case runParser parseOnlySpaces new_str new_pos of
         Left (StackTrace [(str, Range _ p2, src)]) -> Left (StackTrace [(str, Range pos p2, src)])
+        Left a -> Left a
         Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
     Left a -> Left a
 
@@ -49,12 +50,14 @@ parseManyStructure :: Parser a -> Parser [a]
 parseManyStructure parse = Parser $ \st pos -> case runParser parse st pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseManyStructure parse) new_str new_pos of
+      Left (StackTrace [("", _, _)]) -> Right ([], st, pos)
       Left a -> case runParser parseOnlySpaces new_str new_pos of
-        Left _ -> case runParser (parseChar '}') new_str new_pos of
+        Left _ -> case runParser (parseWithSpace (parseChar '}')) new_str new_pos of
           Right _ -> Right ([element], new_str, new_pos)
           Left _ -> Left a
         Right (_, fd_str, fd_pos) -> Right ([element], fd_str, fd_pos)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
+  Left (StackTrace [("", _, _)]) -> Right ([], st, pos)
   Left a -> Left a
 
 
