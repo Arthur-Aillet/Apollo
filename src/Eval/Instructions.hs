@@ -21,7 +21,7 @@ where
 
 import Eval.Operator (Operator (..), Value (..), Stack)
 import Eval.Syscall (Syscall (..))
-import Eval.Atom (Atom (..))
+import Eval.Atom (Atom (..), Type (..))
 
 type Index = Int
 
@@ -36,6 +36,7 @@ data Instruction
   | PushI Index
   | CallD Index
   | CallI Index
+  | Cast Index Type
   | Op Operator
   | Sys Syscall
   | JumpIfFalse Int

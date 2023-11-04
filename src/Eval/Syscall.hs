@@ -12,7 +12,7 @@ import Eval.Atom (Atom (..))
 
 data Syscall
   = Print
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum)
 
 execSys :: Stack -> Syscall -> IO (Either String Stack)
 execSys (x : xs) Print = case x of

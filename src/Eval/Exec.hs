@@ -79,6 +79,14 @@ execInstr (env, args, (Op op) : xs, h, stack) =
     Left err -> Left err
     Right new_stack -> Right (env, args, xs, Op op : h, new_stack)
 
+execInstr (env, args, (Cast idx t) : xs, h, stack) =
+  case getElem idx args of
+    Left err -> Left err
+    Right (VAtom x) -> case setElem idx args (VAtom x) of
+      Left err -> Left err
+      Right newargs -> Right (env, newargs, xs, Cast idx t : h, stack)
+    Right _ -> Left "error: cannot cast non-primitive"
+
 execInstr (env, args, (JumpIfFalse line) : xs, h, VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
