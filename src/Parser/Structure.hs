@@ -9,17 +9,20 @@ module Parser.Structure (module Parser.Structure) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
-import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
+import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..), Operation (CallStd))
 import Parser.Symbol(parseType, parseSymbolType, parseSymbol)
-import Parser.Operable(parseDefinitionName, parseOperable)
-import Parser.Syntax(parseWithSpace, parseMany, parseManyStructure)
+import Parser.Operable(parseDefinitionName)
+import Parser.Syntax(parseWithSpace, parseMany, parseManyStructure, parseMaybeparenthesis)
 import Parser.Char(parseNotAnyChar, parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Error(replaceErr)
 import Parser.StackTrace(StackTrace(..), defaultLocation)
 import Parser.Position(Position(..))
 import Parser.Range(Range(..))
-import Parser.Operable(parseElement)
+import Parser.Operable(parseElement, parseOperable)
 import Parser.Ast(parseAst)
+import Eval.Operator (Operator (Mod, Div, Mul, Sub, Add))
+import Parser.Operation (checkOperator)
+import Eval.Atom (Atom(AtomI))
 
 ----------------------------------------------------------------
 
@@ -78,18 +81,73 @@ parseVarDefinition =
 
 ----------------------------------------------------------------
 
-parseVarAssignation :: Parser Structure
-parseVarAssignation =
+getIncrement :: String -> Maybe Operator
+getIncrement "++" = Just Add
+getIncrement "--" = Just Sub
+getIncrement _ = Nothing
+
+parseIncrement :: Parser String
+parseIncrement =  parseSymbol "++"
+              <|> parseSymbol "--"
+
+parseIncrementOp :: String -> Parser Operable
+parseIncrementOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseIncrement getIncrement) s p of
+  Right (operand, newstr, newpos) -> Right (OpOperation $ CallStd operand [OpVariable name, OpValue $ AtomI 1], newstr, newpos)
+  Left a -> Left a
+
+getOpequality :: String -> Maybe Operator
+getOpequality "+=" = Just Add
+getOpequality "-=" = Just Sub
+getOpequality "*=" = Just Mul
+getOpequality "/=" = Just Div
+getOpequality "%=" = Just Mod
+getOpequality _ = Nothing
+
+parseOpEquality :: Parser String
+parseOpEquality = parseSymbol "+="
+              <|> parseSymbol "-="
+              <|> parseSymbol "*="
+              <|> parseSymbol "/="
+              <|> parseSymbol "%="
+
+parseEqualityOp :: String -> Parser Operable
+parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseOpEquality getOpequality) s p of
+  Right (operand, newstr, newpos) -> case runParser (parseMaybeparenthesis parseElement) newstr newpos of
+    Right (elemright, rstr, rpos) -> Right (OpOperation $ CallStd operand [OpVariable name, elemright], rstr, rpos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarEquality :: Parser Structure
+parseVarEquality =
   replaceErr "Syntaxe error: bad assignment"
-  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';'))
+  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseElement <* parseWithSpace (parseChar ';')))
+
+parseVarIncrementation :: Parser Structure
+parseVarIncrementation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
+  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarOperation :: Parser Structure
+parseVarOperation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
+  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarAssignation :: Parser Structure
+parseVarAssignation = parseVarEquality
+                  <|> parseVarIncrementation
+                  <|> parseVarOperation
 
 ----------------------------------------------------------------
 
 parseReturnWithParenthesis :: Parser Operable
-parseReturnWithParenthesis = parseWithSpace (parseSymbol "return") *> parseOpeningParenthesis *> parseOperable <* parseWithSpace parseClosingParenthesis
+parseReturnWithParenthesis = parseWithSpace (parseSymbol "return") *> parseOpeningParenthesis *> parseElement <* parseWithSpace parseClosingParenthesis
 
 parseReturnWithoutParenthesis :: Parser Operable
-parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseOperable
+parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseElement
 
 parseReturn :: Parser Structure
 parseReturn =

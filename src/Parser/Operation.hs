@@ -55,15 +55,11 @@ parsePredicat = parseSymbol "+"
 ---------------------------------------------
 
 getUnary :: String -> Maybe Operator
-getUnary "++" = Just Incr
-getUnary "--" = Just Decr
 getUnary "!" = Just Not
 getUnary _ = Nothing
 
 parseUnary :: Parser String
-parseUnary =  parseSymbol "++"
-          <|> parseSymbol "--"
-          <|> parseSymbol "!"
+parseUnary = parseSymbol "!"
 
 ---------------------------------------------
 
