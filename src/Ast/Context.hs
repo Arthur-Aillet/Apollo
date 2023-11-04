@@ -7,13 +7,13 @@
 
 module Ast.Context (Compiler, Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
 
-import Ast.Error (Compile (..))
 import Ast.Ast
   ( Ast (..),
     Definition (..),
     Function (..),
     Type,
   )
+import Ast.Error (Compile (..))
 import Data.HashMap.Lazy (HashMap, fromList, insert)
 import Eval.Instructions (Insts)
 

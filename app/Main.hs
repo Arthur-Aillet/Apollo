@@ -1,8 +1,8 @@
 module Main (main) where
 
+import Ast.Ast
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Ast
 import Eval
 import Eval.Exec
 import Eval.Operator (Value (..))
@@ -151,7 +151,6 @@ createMain =
         (Just TypeInt)
         ( AstStructure $
             Sequence
-
               [ AstStructure $ VarDefinition "arr" (TypeList (Just $ TypeList $ Just TypeChar)) (Just $ OpList [OpList [OpValue (AtomC 'a' True), OpValue (AtomC 'b' True), OpValue (AtomC 'c' True)], OpList [OpValue (AtomC 'd' True), OpValue (AtomC 'e' True), OpValue (AtomC 'f' True)]]),
                 AstStructure $
                   For "i" (OpVariable "arr") $
@@ -159,7 +158,8 @@ createMain =
                       Sequence
                         [ AstOperation $ CallSys Print [OpVariable "i"]
                         ],
-                AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
+                AstOperation $ CallSys Print [OpOperation $ CallSH "ls" []],
+                AstStructure $ Return $ OpOperation $ CallStd Len [OpOperation $ CallSH "ls" []]
               ]
         )
     )

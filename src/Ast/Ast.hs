@@ -5,12 +5,13 @@
 -- AST
 -}
 
-module Ast.Ast (Type(..), Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
+module Ast.Ast (Type (..), Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
 
+import Ast.Type
 import Eval.Atom (Atom (..))
 import Eval.Operator (Operator, Value (..))
 import Eval.Syscall (Syscall)
-import Ast.Type
+
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition

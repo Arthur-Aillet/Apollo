@@ -7,9 +7,9 @@
 
 module Ast.Display (compile) where
 
+import Ast.Ast (Definition)
 import Ast.CompileAST (Binary (..), generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
-import Ast.Ast (Definition)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 yellow :: String

@@ -10,12 +10,12 @@
 
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
+import Ast.Ast (Operable (..), Operation (CallFunc, CallSH, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Ast (Operable (..), Operation (CallFunc, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Utils (allEqual, concatInner, listInner, zip4)
 import Data.HashMap.Lazy ((!?))
-import Eval.Atom (Atom)
+import Eval.Atom (Atom (AtomC))
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator (..), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 import Eval.Syscall (Syscall (..))
@@ -68,7 +68,7 @@ argsHasError (Ok w []) (_ : _) = Ko w ["Too few arguments"]
 argsHasError (Ok w (_ : _)) [] = Ko w ["Too many arguments"]
 argsHasError (Ok w []) [] = Ok w ()
 
-typeErr :: Show a => a -> Type -> Type -> String
+typeErr :: (Show a) => a -> Type -> Type -> String
 typeErr op at wt =
   "Builtin \""
     ++ show op
@@ -78,7 +78,7 @@ typeErr op at wt =
     ++ show wt
     ++ " was awaited"
 
-opeValidArgs :: Show a => a -> [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
+opeValidArgs :: (Show a) => a -> [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs op (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs op xs (nbr - 1) type') w err
 opeValidArgs _ [] 0 (Just waited_type) = Ok [] waited_type
@@ -268,13 +268,24 @@ compBuiltin _ builtin (OperatorDef ac Logical) True ops =
 compBuiltin args builtin (OperatorDef ac Logical) False _ =
   compLogical builtin args ac
 -- compBuiltin args builtin (OperatorDef ac Printing) _ _ =
-  -- compPrinting builtin args ac
+-- compPrinting builtin args ac
 compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
   compGet builtin args ac
 compBuiltin args builtin (OperatorDef ac Length) _ _ =
   compLen builtin args ac
+
+compShType :: String -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compShType name args count = case opeValidArgs name args count (Just $ TypeList $ Just TypeChar) of
+  Ko warns err -> Ko warns err
+  Ok w _ ->
+    (\a -> (a, Just $ TypeList $ Just TypeChar))
+      <$> concatInner
+        [ concatInner (map (fst <$>) (reverse args)),
+          Ok w (map (\x -> PushD $ AtomC x True) $ reverse name),
+          Ok w [Take $ length name, CallS]
+        ]
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =
@@ -294,6 +305,7 @@ compOperation (CallFunc func ops) (Context c) l = case c !? func of
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
---compOperation (CallFunc func ops) (Context c) l = case c !? func of
-
+compOperation (CallSH name args) ctx l = compShType name comp_args (length args)
+  where
+    comp_args = map (\op -> compOperable op ctx l) args
 compOperation a _ _ = Ko [] ["Operation unsupported" ++ show a]

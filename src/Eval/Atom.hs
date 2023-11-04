@@ -15,7 +15,7 @@ module Eval.Atom
   )
 where
 
-import Ast.Type(Type)
+import Ast.Type (Type)
 
 data Atom
   = AtomB Bool

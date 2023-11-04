@@ -134,7 +134,6 @@ execOperator (x : y : xs) Get = case (x, y) of
     Right val -> Right $ val : xs
   recived ->
     Left $ "Get take a index and a lists not " ++ show recived
-
 execOperator (x : y : xs) Concat = case (x, y) of
   (VList list1, VList list2) -> Right $ VList (list1 ++ list2) : xs
   _ -> Left "Concat take two lists"
