@@ -12,23 +12,7 @@ import Ast.Error
 import Ast.Operable (compOperable)
 import Ast.Type
 import Data.HashMap.Lazy (insert)
-import Debug.Trace
 import Eval.Exec
-
-{--
-for i in arr {
-
-}
-
-0) Create Counter
-1) Generate Array
-2) Get length
-3) Counter > Length
-
-4) Content Ast
-
-5) Jump at (1)
---}
 
 compForConstruct :: Insts -> Insts -> Int -> Int -> Int -> LocalContext -> Compile (Insts, LocalContext)
 compForConstruct arr_insts content_insts count_pos arr_pos iter_pos l = Ok [] (final, l)

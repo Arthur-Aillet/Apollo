@@ -2,14 +2,10 @@ module Main (main) where
 
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Error (Compile (..))
 import Ast.Type
 import Eval
-import Eval.Exec
-import Eval.Operator (Value (..))
 import PreProcess
 import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 
 createAbs :: Definition

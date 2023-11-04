@@ -7,7 +7,6 @@
 
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
-import Debug.Trace
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
@@ -29,7 +28,7 @@ convertValToInt :: [Value] -> Maybe [Index]
 convertValToInt (VAtom (AtomI idx) : xs) = case convertValToInt xs of
   Just arr -> Just $ idx : arr
   Nothing -> Nothing
-convertValToInt (_ : xs) = Nothing
+convertValToInt (_ : _) = Nothing
 convertValToInt [] = Just []
 
 setElem :: Index -> [a] -> a -> Either String [a]
