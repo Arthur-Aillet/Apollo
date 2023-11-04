@@ -17,7 +17,7 @@ import Parser.Char(parseNotAnyChar, parseChar, parseAChar, parseOpeningParenthes
 import Parser.Error(replaceErr)
 import Parser.StackTrace(StackTrace(..), defaultLocation)
 import Parser.Position(Position(..))
-import Parser.Range(Range(..))
+import Parser.Range(Range(..), defaultRange)
 import Parser.Operable(parseElement, parseOperable)
 import Parser.Ast(parseAst)
 import Eval.Operator (Operator (Mod, Div, Mul, Sub, Add))
@@ -36,6 +36,7 @@ parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s 
     Right (instruction, _, pos) -> Left (StackTrace [("Syntaxe error: instruction " ++ instruction ++ " is not valid", Range p pos, defaultLocation)])
     Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
       Right _ -> Left (StackTrace [("", Range p p, defaultLocation)])
+      -- Left a -> Left a
       Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
 
 parseAstStructure :: Parser Ast
@@ -220,15 +221,17 @@ findNewStruc :: Parser String
 findNewStruc = parseWithSpace (parseSymbolType <|> parseSymbol "return" <|> parseSymbol "if" <|> parseSymbol "else")
 
 findNextInstruction :: Parser [Char]
-findNextInstruction = Parser $ \s p -> case runParser findNewStruc s p of
+findNextInstruction = Parser $ \s p -> case runParser (parseWithSpace findNewStruc) s p of
   Right _ -> Right ("", s, p)
   Left (StackTrace [("Not Found: End of Input", ran, src)]) -> Left (StackTrace [("", ran, src)])
-  Left _ -> case runParser (parseNotAnyChar ['\n', ';', '{', '}']) s p of
-    Right (_, str, pos) -> runParser findNextInstruction str pos
-    Left (StackTrace [("Not Found: List is empty", ran, src)]) -> Left (StackTrace [("", ran, src)])
-    Left _ -> case runParser parseAChar s p of
-      Right (a, str, pos) -> Right ([a], str, pos)
-      Left a -> Left a
+  Left _ -> case runParser (parseChar '}') s p of
+    Right _ -> Left (StackTrace [("", Range p p, defaultLocation)])
+    Left _ -> case runParser (parseWithSpace (parseNotAnyChar [';', '{'])) s p of
+      Right (_, str, pos) -> runParser findNextInstruction str pos
+      Left (StackTrace [("Not Found: List is empty", ran, src)]) -> Left (StackTrace [("", ran, src)])
+      Left _ -> case runParser parseAChar s p of
+        Right (a, str, pos) -> Right ([a], str, pos)
+        Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
 
 moveToError :: Position -> Parser String
 moveToError ps = Parser $ \s p -> if p == ps then Right("", s, p)

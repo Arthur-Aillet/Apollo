@@ -49,8 +49,9 @@ parseManyStructure :: Parser a -> Parser [a]
 parseManyStructure parse = Parser $ \st pos -> case runParser parse st pos of
   Right (element, new_str, new_pos) ->
     case runParser (parseManyStructure parse) new_str new_pos of
+      Left (StackTrace [("", _, _)]) -> Right ([], st, pos)
       Left a -> case runParser parseOnlySpaces new_str new_pos of
-        Left _ -> case runParser (parseChar '}') new_str new_pos of
+        Left _ -> case runParser (parseWithSpace (parseChar '}')) new_str new_pos of
           Right _ -> Right ([element], new_str, new_pos)
           Left _ -> Left a
         Right (_, fd_str, fd_pos) -> Right ([element], fd_str, fd_pos)
