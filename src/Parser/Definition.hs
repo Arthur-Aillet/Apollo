@@ -21,7 +21,7 @@ import Parser.Structure
 
 parseParameter :: Parser (String, Type)
 parseParameter =
-  (swap <$> ((,) <$> typ <*> str))
+  (swap <$> ((,) <$> typ <*> ((parseChar ' ') *> str)))
   where
     typ = parseType
     str = parseDefinitionName
@@ -57,6 +57,3 @@ parseFuncDefinition = Parser $ \s p -> case runParser (replaceErr "Synatxe error
     Right (func, string, position) -> Right ((FuncDefinition name func), string, position)
     Left (StackTrace a) -> Left (StackTrace (modifySourceLocation (addSourceLocation name p) a))
   Left a -> Left a
-
-
-  -- FuncDefinition <$> ((parseChar '@') *> parseDefinitionName) <*> parseFunction
