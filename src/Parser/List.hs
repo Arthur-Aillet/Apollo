@@ -2,14 +2,14 @@ module Parser.List (module Parser.List) where
 
 import Ast.Ast (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet, parseAChar, parseOpeningQuote, parseClosingQuote)
+import Eval.Exec (Atom (AtomB, AtomC), Value (VAtom, VList))
+import Parser.Bool (parseBool)
+import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingQuote, parseOpeningBraquet, parseOpeningQuote)
+import Parser.Int (parseFloat, parseInt)
+import {-# SOURCE #-} Parser.Operable (parseElement)
+import Parser.Position (defaultPosition)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
-import {-# SOURCE #-} Parser.Operable (parseElement)
-import Eval.Exec (Value (VAtom, VList), Atom (AtomB, AtomC))
-import Parser.Int (parseFloat, parseInt)
-import Parser.Bool (parseBool)
-import Parser.Position (defaultPosition)
 
 parseElemWithComa :: Parser Operable
 parseElemWithComa = parseElement <* parseWithSpace (parseChar ',')
@@ -18,7 +18,7 @@ parseElems :: Parser [Operable]
 parseElems = parseMany (parseWithSpace (parseElemWithComa <|> parseElement))
 
 parseList :: Parser [Operable]
-parseList = Parser $ \s p -> case runParser (parseWithSpace ( parseOpeningBraquet *> parseElems <* parseClosingBraquet)) s p of
+parseList = Parser $ \s p -> case runParser (parseWithSpace (parseOpeningBraquet *> parseElems <* parseClosingBraquet)) s p of
   Right (elements, str, pos) -> Right (elements, str, pos)
   Left a -> Left a
 
@@ -44,12 +44,12 @@ getFloatAtom parser = Parser $ \s p -> case runParser parser s p of
   Right (float, str, pos) -> Right (VAtom float, str, pos)
   Left a -> Left a
 
-
 parseAtomValue :: Parser Value
-parseAtomValue =  getFloatAtom parseFloat
-              <|> getIntAtom parseInt
-              <|> getBoolAtom parseBool
-              <|> getcharAtom parseAChar
+parseAtomValue =
+  getFloatAtom parseFloat
+    <|> getIntAtom parseInt
+    <|> getBoolAtom parseBool
+    <|> getcharAtom parseAChar
 
 parseValsWithComa :: Parser Value
 parseValsWithComa = parseAtomValue <* parseWithSpace (parseChar ',')
@@ -58,7 +58,7 @@ parsevals :: Parser [Value]
 parsevals = parseMany (parseWithSpace (parseValsWithComa <|> parseAtomValue))
 
 parseListValue :: Parser Value
-parseListValue = Parser $ \s p -> case runParser (parseWithSpace ( parseOpeningBraquet *> parsevals <* parseClosingBraquet)) s p of
+parseListValue = Parser $ \s p -> case runParser (parseWithSpace (parseOpeningBraquet *> parsevals <* parseClosingBraquet)) s p of
   Right (elements, str, pos) -> Right (VList elements, str, pos)
   Left a -> Left a
 

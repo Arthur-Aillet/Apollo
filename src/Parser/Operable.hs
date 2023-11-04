@@ -7,20 +7,21 @@
 
 module Parser.Operable (module Parser.Operable) where
 
-import Ast.Ast (Operable (..), Type (..), Operation())
+import Ast.Ast (Operable (..), Operation (), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAnyChar, parseOpeningQuote, parseClosingQuote, parseOpeningParenthesis, parseClosingParenthesis, parseAChar)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingQuote, parseOpeningParenthesis, parseOpeningQuote)
 import Parser.Int (parseFloat, parseInt)
+import Parser.List (parseList)
+import Parser.Operation (parseOperation)
+-- import Debug.Trace
+
+import Parser.Range (Range (Range))
+import Parser.StackTrace (defaultLocation)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
-import Parser.Operation(parseOperation)
-import Parser.List(parseList)
--- import Debug.Trace
 import Parser.Type (Parser (..), StackTrace (StackTrace))
-import Parser.Range (Range(Range))
-import Parser.StackTrace (defaultLocation)
 
 defChars :: [Char]
 defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"
@@ -35,11 +36,14 @@ parseCast :: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
 
 parseOpCast :: Parser Operable
-parseOpCast = Parser $ \s p -> case runParser (
-                parseOpValue
-            <|> parseOpVar
-            <|> parseOpList
-            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis) s p of
+parseOpCast = Parser $ \s p -> case runParser
+  ( parseOpValue
+      <|> parseOpVar
+      <|> parseOpList
+      <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
+  )
+  s
+  p of
   Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of
     Right (rhs, rstr, rpos) -> Right (OpCast lhs rhs, rstr, rpos)
     Left a -> Left a
@@ -68,10 +72,11 @@ getFloatOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpValue :: Parser Operable
-parseOpValue =  getFloatOpValue parseFloat
-            <|> getIntOpValue parseInt
-            <|> getBoolOpValue parseBool
-            <|> getcharOpValue parseAChar
+parseOpValue =
+  getFloatOpValue parseFloat
+    <|> getIntOpValue parseInt
+    <|> getBoolOpValue parseBool
+    <|> getcharOpValue parseAChar
 
 ---------------------------------------------
 
@@ -101,11 +106,12 @@ parseOpOperation = getOpOp parseOperation
 ---------------------------------------------
 
 parseOperable :: Parser Operable
-parseOperable = parseOpCast
-            <|> parseOpValue
-            <|> parseOpVar
-            <|> parseOpList
-            <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
+parseOperable =
+  parseOpCast
+    <|> parseOpValue
+    <|> parseOpVar
+    <|> parseOpList
+    <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
 
 parseElement :: Parser Operable
 parseElement = parseOpOperation <|> parseOperable

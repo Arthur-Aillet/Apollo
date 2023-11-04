@@ -7,19 +7,11 @@
 
 module Ast.CompileAST (module Ast.CompileAST) where
 
-import Ast.Context (Context (..), LocalContext (..), createLocalContext, createCtx)
-import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Operable (compOperation)
 import Ast.Ast
-  (
-    Ast (..),
+  ( Ast (..),
     Definition (..),
     Function (..),
   )
-
-import Data.HashMap.Lazy (empty)
-import Eval.Exec
-
 import Ast.CompileStruct
 import Ast.Context (Context (..), LocalContext (..), createCtx, createLocalContext)
 import Ast.Error (Compile (..), failingComp, withW)

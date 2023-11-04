@@ -7,12 +7,11 @@
 
 module Parser.Syntax (module Parser.Syntax) where
 
-import Parser.Char (parseAnyChar)
-import Parser.Type (Parser (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.StackTrace (StackTrace(..))
-import Parser.Range (Range(..))
-import Parser.Char(parseChar, parseOpeningParenthesis, parseClosingParenthesis)
+import Parser.Char (parseAnyChar, parseChar, parseClosingParenthesis, parseOpeningParenthesis)
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..))
+import Parser.Type (Parser (..))
 
 parseMany :: Parser a -> Parser [a]
 parseMany parse = Parser $ \string pos -> case runParser parse string pos of
@@ -60,7 +59,6 @@ parseManyStructure parse = Parser $ \st pos -> case runParser parse st pos of
   Left (StackTrace [("", _, _)]) -> Right ([], st, pos)
   Left a -> Left a
 
-
 parseSome :: Parser a -> Parser [a]
 parseSome parse = (:) <$> parse <*> parseMany parse
 
@@ -69,5 +67,10 @@ parseWithSpace parser =
   parseMany parseSpaces *> parser <* parseMany parseSpaces
 
 parseMaybeparenthesis :: Parser a -> Parser a
-parseMaybeparenthesis parser =  parseWithSpace parser
-                            <|> parseWithSpace (parseOpeningParenthesis *> parseWithSpace parser <* parseClosingParenthesis)
+parseMaybeparenthesis parser =
+  parseWithSpace parser
+    <|> parseWithSpace
+      ( parseOpeningParenthesis
+          *> parseWithSpace parser
+          <* parseClosingParenthesis
+      )

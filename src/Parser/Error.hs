@@ -24,7 +24,6 @@ replaceErr new_msg parser = Parser $ \string pos -> case runParser parser string
   Left (StackTrace ((_, (Range start end), src) : xs)) -> Left (StackTrace ((new_msg, Range start end, src) : xs))
   Left err -> Left err
 
-
 failingWith :: String -> Parser a
 failingWith string = Parser (\_ pos -> Left (StackTrace [(string, newRange pos pos, defaultLocation)]))
 

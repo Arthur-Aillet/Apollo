@@ -10,14 +10,14 @@ module Parser.Definition (module Parser.Definition) where
 import Ast.Ast (Ast (..), Definition (..), Function (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Data.Tuple (swap)
-import Parser.Char (parseChar, parseAChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseOpeningCurlyBraquet, parseOpeningParenthesis)
+import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseOpeningCurlyBraquet, parseOpeningParenthesis)
 import Parser.Operable (parseDefinitionName)
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..), addSourceLocation, modifySourceLocation)
+import Parser.Structure (parseSequence)
 import Parser.Symbol (parseMaybeType, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
-import Parser.StackTrace (StackTrace(..), addSourceLocation, modifySourceLocation)
-import Parser.Structure(parseSequence)
-import Parser.Range (Range(..))
 
 parseParameter :: Parser (String, Type)
 parseParameter =
@@ -44,7 +44,7 @@ parseInstructions :: Parser Ast
 parseInstructions =
   parseWithSpace
     ( parseOpeningCurlyBraquet
-        *>  parseWithSpace parseInstruction
+        *> parseWithSpace parseInstruction
         <* parseClosingCurlyBraquet
     )
 
@@ -61,9 +61,10 @@ parseFuncDefinition = Parser $ \s p -> case runParser ((parseChar '@') *> parseD
 findNextFunction :: Int -> Parser Char
 findNextFunction 0 = Parser $ \s p -> Right ('}', s, p)
 findNextFunction nb_brackets = Parser $ \s p -> case runParser parseAChar s p of
-  Right ('{', str, pos) -> if nb_brackets == -1
-    then runParser (findNextFunction 1) str pos
-    else runParser (findNextFunction (nb_brackets + 1)) str pos
+  Right ('{', str, pos) ->
+    if nb_brackets == -1
+      then runParser (findNextFunction 1) str pos
+      else runParser (findNextFunction (nb_brackets + 1)) str pos
   Right ('}', str, pos) -> runParser (findNextFunction (nb_brackets - 1)) str pos
   Right (_, str, pos) -> runParser (findNextFunction nb_brackets) str pos
   Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])

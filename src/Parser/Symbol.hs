@@ -51,4 +51,3 @@ parseMaybeType = Parser $ \s p -> case runParser parseSymbolType s p of
     Just typ -> Right (Just typ, str, pos)
     Nothing -> Left (StackTrace [("Invalid type : \"" ++ typestr ++ "\"", Range p pos, defaultLocation)])
   Left _ -> Right (Nothing, s, p)
-

@@ -92,7 +92,8 @@ parseAnyChar =
 
 parseNotAnyChar :: [Char] -> Parser Char
 parseNotAnyChar [] = Parser $ \_ p -> Left (StackTrace [("Not Found: List is empty", Range p p, defaultLocation)])
-parseNotAnyChar (x:xs) = Parser $ \s p -> case runParser (parseNotChar x) s p of
-  Right a | length (x:xs) == 1 -> Right a
-          | otherwise -> runParser (parseNotAnyChar xs) s p
+parseNotAnyChar (x : xs) = Parser $ \s p -> case runParser (parseNotChar x) s p of
+  Right a
+    | length (x : xs) == 1 -> Right a
+    | otherwise -> runParser (parseNotAnyChar xs) s p
   Left a -> Left a

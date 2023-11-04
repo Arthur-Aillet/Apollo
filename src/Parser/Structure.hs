@@ -7,22 +7,21 @@
 
 module Parser.Structure (module Parser.Structure) where
 
+import Ast.Ast (Ast (..), Operable (..), Operation (CallStd), Structure (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Type (Parser(..))
-import Ast.Ast(Structure(..), Type(..), Operable(..), Ast(..), Operation (CallStd))
-import Parser.Symbol(parseType, parseSymbolType, parseSymbol)
-import Parser.Operable(parseDefinitionName)
-import Parser.Syntax(parseWithSpace, parseMany, parseManyStructure, parseMaybeparenthesis)
-import Parser.Char(parseNotAnyChar, parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
-import Parser.Error(replaceErr)
-import Parser.StackTrace(StackTrace(..), defaultLocation)
-import Parser.Position(Position(..))
-import Parser.Range(Range(..))
-import Parser.Operable(parseElement, parseOperable)
-import Parser.Ast(parseAst)
-import Eval.Operator (Operator (Mod, Div, Mul, Sub, Add))
+import Eval.Atom (Atom (AtomI))
+import Eval.Operator (Operator (Add, Div, Mod, Mul, Sub))
+import Parser.Ast (parseAst)
+import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseNotAnyChar, parseOpeningCurlyBraquet, parseOpeningParenthesis)
+import Parser.Error (replaceErr)
+import Parser.Operable (parseDefinitionName, parseElement, parseOperable)
 import Parser.Operation (checkOperator)
-import Eval.Atom (Atom(AtomI))
+import Parser.Position (Position (..))
+import Parser.Range (Range (..))
+import Parser.StackTrace (StackTrace (..), defaultLocation)
+import Parser.Symbol (parseSymbol, parseSymbolType, parseType)
+import Parser.Syntax (parseMany, parseManyStructure, parseMaybeparenthesis, parseWithSpace)
+import Parser.Type (Parser (..))
 
 ----------------------------------------------------------------
 
@@ -40,47 +39,53 @@ parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s 
       Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
 
 parseAstStructure :: Parser Ast
-parseAstStructure = parseWithSpace $ AstStructure <$> (
-        parseVarDefinition
-    <|> parseVarAssignation
-    <|> parseReturn
-    <|> parseIf
-    <|> parseWhile
-    <|> parseFor
-    )
-    -- <|> parseSingle
-    -- <|> parseBlock
-    -- <|> parseSequence
+parseAstStructure =
+  parseWithSpace $
+    AstStructure
+      <$> ( parseVarDefinition
+              <|> parseVarAssignation
+              <|> parseReturn
+              <|> parseIf
+              <|> parseWhile
+              <|> parseFor
+          )
+
+-- <|> parseSingle
+-- <|> parseBlock
+-- <|> parseSequence
 
 ----------------------------------------------------------------
 
 acceptableCharacters :: [Char]
-acceptableCharacters = ['a'..'z']
-                    ++ ['A'..'Z']
-                    ++ ['0'..'9']
-                    ++ ['|', '/', '[', ']', '(', ')', '{', '}', '-', '_', '"', '\'']
-                    ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
+acceptableCharacters =
+  ['a' .. 'z']
+    ++ ['A' .. 'Z']
+    ++ ['0' .. '9']
+    ++ ['|', '/', '[', ']', '(', ')', '{', '}', '-', '_', '"', '\'']
+    ++ [' ', '+', '?', '.', ':', '!', ';', '\\']
 
 parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash =
-  replaceErr "Syntaxe error: bad return"
-  (parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar))
+  replaceErr
+    "Syntaxe error: bad return"
+    (parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar))
 
 ----------------------------------------------------------------
 
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
-createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
-  Right(typ, str, pos) -> case runParser parStr str pos of
-    Right(name, string, position) -> case runParser op string position of
-        Right(ope, new_str, new_pos) -> Right((VarDefinition name typ ope), new_str, new_pos)
-        Left a -> Left a
+createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
+  Right (typ, str, pos) -> case runParser parStr str pos of
+    Right (name, string, position) -> case runParser op string position of
+      Right (ope, new_str, new_pos) -> Right ((VarDefinition name typ ope), new_str, new_pos)
+      Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
-  replaceErr "Syntaxe error: bad variable definition"
-  ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
+  replaceErr
+    "Syntaxe error: bad variable definition"
+    ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
 
 ----------------------------------------------------------------
 
@@ -90,8 +95,9 @@ getIncrement "--" = Just Sub
 getIncrement _ = Nothing
 
 parseIncrement :: Parser String
-parseIncrement =  parseSymbol "++"
-              <|> parseSymbol "--"
+parseIncrement =
+  parseSymbol "++"
+    <|> parseSymbol "--"
 
 parseIncrementOp :: String -> Parser Operable
 parseIncrementOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseIncrement getIncrement) s p of
@@ -107,11 +113,12 @@ getOpequality "%=" = Just Mod
 getOpequality _ = Nothing
 
 parseOpEquality :: Parser String
-parseOpEquality = parseSymbol "+="
-              <|> parseSymbol "-="
-              <|> parseSymbol "*="
-              <|> parseSymbol "/="
-              <|> parseSymbol "%="
+parseOpEquality =
+  parseSymbol "+="
+    <|> parseSymbol "-="
+    <|> parseSymbol "*="
+    <|> parseSymbol "/="
+    <|> parseSymbol "%="
 
 parseEqualityOp :: String -> Parser Operable
 parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseOpEquality getOpequality) s p of
@@ -122,27 +129,29 @@ parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOp
 
 parseVarEquality :: Parser Structure
 parseVarEquality =
-  replaceErr "Syntaxe error: bad assignment"
-  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseElement <* parseWithSpace (parseChar ';')))
+  replaceErr
+    "Syntaxe error: bad assignment"
+    (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseElement <* parseWithSpace (parseChar ';')))
 
 parseVarIncrementation :: Parser Structure
 parseVarIncrementation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
-  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+  Right (name, newstr, newpos) -> case runParser (parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
     Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
     Left a -> Left a
   Left a -> Left a
 
 parseVarOperation :: Parser Structure
 parseVarOperation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
-  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+  Right (name, newstr, newpos) -> case runParser (parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
     Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
     Left a -> Left a
   Left a -> Left a
 
 parseVarAssignation :: Parser Structure
-parseVarAssignation = parseVarEquality
-                  <|> parseVarIncrementation
-                  <|> parseVarOperation
+parseVarAssignation =
+  parseVarEquality
+    <|> parseVarIncrementation
+    <|> parseVarOperation
 
 ----------------------------------------------------------------
 
@@ -154,15 +163,17 @@ parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseEl
 
 parseReturn :: Parser Structure
 parseReturn =
-  replaceErr "Syntaxe error: bad return"
-  (Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';'))
+  replaceErr
+    "Syntaxe error: bad return"
+    (Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';'))
 
 ----------------------------------------------------------------
 
 parsecond :: Parser Operable
-parsecond = parseWithSpace parseOpeningParenthesis *>
-            parseWithSpace parseElement <*
-            parseWithSpace parseClosingParenthesis
+parsecond =
+  parseWithSpace parseOpeningParenthesis
+    *> parseWithSpace parseElement
+    <* parseWithSpace parseClosingParenthesis
 
 parseIf :: Parser Structure
 parseIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "if" *> parsecond) s p of
@@ -176,9 +187,10 @@ parseIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "if" *> 
   Left a -> Left a
 
 parseThen :: Parser Ast
-parseThen = parseWithSpace parseOpeningCurlyBraquet *>
-            (AstStructure <$> parseWithSpace parseSequence) <*
-            parseWithSpace parseClosingCurlyBraquet
+parseThen =
+  parseWithSpace parseOpeningCurlyBraquet
+    *> (AstStructure <$> parseWithSpace parseSequence)
+    <* parseWithSpace parseClosingCurlyBraquet
 
 parseElIf :: Parser (Operable, Ast)
 parseElIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "elif" *> parsecond) s p of
@@ -215,7 +227,7 @@ parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *
 ----------------------------------------------------------------
 
 parseSingle :: Parser Structure
-parseSingle =  Single <$> parseAst
+parseSingle = Single <$> parseAst
 
 findNewStruc :: Parser String
 findNewStruc = parseWithSpace (parseSymbolType <|> parseSymbol "return" <|> parseSymbol "if" <|> parseSymbol "else")
@@ -234,10 +246,12 @@ findNextInstruction = Parser $ \s p -> case runParser (parseWithSpace findNewStr
         Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
 
 moveToError :: Position -> Parser String
-moveToError ps = Parser $ \s p -> if p == ps then Right("", s, p)
-                                  else case runParser parseAChar s p of
-                                  Right (_, str, pos) -> runParser (moveToError ps) str pos
-                                  Left a -> Left a
+moveToError ps = Parser $ \s p ->
+  if p == ps
+    then Right ("", s, p)
+    else case runParser parseAChar s p of
+      Right (_, str, pos) -> runParser (moveToError ps) str pos
+      Left a -> Left a
 
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
@@ -255,5 +269,3 @@ parseSequence :: Parser Structure
 parseSequence = Sequence <$> parseManyAst
 
 ----------------------------------------------------------------
-
-

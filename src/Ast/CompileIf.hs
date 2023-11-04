@@ -7,14 +7,14 @@
 
 module Ast.CompileIf (module Ast.CompileIf) where
 
-import Ast.Type (Type (..))
-import Ast.Context (Compiler, Context (..), LocalContext (..))
-import Ast.Error (Compile (..))
-import Ast.Operable (compOperable, concatInner)
 import Ast.Ast
   ( Ast (..),
     Operable (..),
   )
+import Ast.Context (Compiler, Context (..), LocalContext (..))
+import Ast.Error (Compile (..))
+import Ast.Operable (compOperable, concatInner)
+import Ast.Type (Type (..))
 import Eval.Exec
 
 ifOpErr :: Type -> String

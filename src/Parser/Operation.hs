@@ -10,14 +10,14 @@ module Parser.Operation (module Parser.Operation) where
 import Ast.Ast (Operable (..), Operation (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Operator (Operator (..))
-import Parser.Char (parseClosingParenthesis, parseOpeningParenthesis, parseChar, parseClosingBraquet)
+import Eval.Syscall (Syscall (Print))
+import Parser.Char (parseChar, parseClosingBraquet, parseClosingParenthesis, parseOpeningParenthesis)
+import {-# SOURCE #-} Parser.Operable (parseDefinitionName, parseOperable)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
-import Parser.Syntax (parseMany, parseWithSpace, parseMaybeparenthesis)
+import Parser.Syntax (parseMany, parseMaybeparenthesis, parseWithSpace)
 import Parser.Type (Parser (..))
-import {-# SOURCE #-} Parser.Operable (parseOperable, parseDefinitionName)
-import Eval.Syscall (Syscall (Print))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -37,20 +37,21 @@ getPredicat ":" = Just Concat
 getPredicat _ = Nothing
 
 parsePredicat :: Parser String
-parsePredicat = parseSymbol "+"
-            <|> parseSymbol "-"
-            <|> parseSymbol "*"
-            <|> parseSymbol "/"
-            <|> parseSymbol "%"
-            <|> parseSymbol "=="
-            <|> parseSymbol "<"
-            <|> parseSymbol "<="
-            <|> parseSymbol ">"
-            <|> parseSymbol ">="
-            <|> parseSymbol "!="
-            <|> parseSymbol "&&"
-            <|> parseSymbol "||"
-            <|> parseSymbol ":"
+parsePredicat =
+  parseSymbol "+"
+    <|> parseSymbol "-"
+    <|> parseSymbol "*"
+    <|> parseSymbol "/"
+    <|> parseSymbol "%"
+    <|> parseSymbol "=="
+    <|> parseSymbol "<"
+    <|> parseSymbol "<="
+    <|> parseSymbol ">"
+    <|> parseSymbol ">="
+    <|> parseSymbol "!="
+    <|> parseSymbol "&&"
+    <|> parseSymbol "||"
+    <|> parseSymbol ":"
 
 ---------------------------------------------
 
@@ -116,7 +117,7 @@ parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator p
   Left a -> Left a
 
 parseIndexOp :: Parser Operation
-parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
+parseIndexOp = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
   Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace $ checkOperator parseIndex getIndex) newstrmiddle newposmiddle of
     Right (resultmiddle, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable <* parseClosingBraquet) newstrright newposright of
       Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
@@ -126,14 +127,14 @@ parseIndexOp =  Parser $ \s p -> case runParser (parseMaybeparenthesis parseOper
 
 parseBuiltinFct :: Parser Operation
 parseBuiltinFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
-  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
+  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
     Right (op, opstr, oppos) -> Right (CallStd fct [op], opstr, oppos)
     Left a -> Left a
   Left a -> Left a
 
 parseSysCallFct :: Parser Operation
 parseSysCallFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseSysCall getSysCall) s p of
-  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable)  fctstr fctpos of
+  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
     Right (op, opstr, oppos) -> Right (CallSys fct [op], opstr, oppos)
     Left a -> Left a
   Left a -> Left a
@@ -145,35 +146,37 @@ parseargWithComa = parseWithSpace (parseChar ',') *> parseOperable
 
 parseargs :: Parser [Operable]
 parseargs =
-  parseOpeningParenthesis *> parseMany ( parseWithSpace parseOperable <|> parseWithSpace parseargWithComa) <* parseClosingParenthesis
+  parseOpeningParenthesis *> parseMany (parseWithSpace parseOperable <|> parseWithSpace parseargWithComa) <* parseClosingParenthesis
 
 parseNoargs :: Parser [Operable]
 parseNoargs = Parser $ \s p -> Right ([], s, p)
 
 parseFct :: Parser Operation
-parseFct = Parser $ \s p -> case runParser (parseWithSpace(parseSymbol"@" *> parseDefinitionName)) s p of
+parseFct = Parser $ \s p -> case runParser (parseWithSpace (parseSymbol "@" *> parseDefinitionName)) s p of
   Right (name, nstr, npos) -> case runParser (parseargs <|> parseNoargs) nstr npos of
     Right (args, astr, apos) -> Right (CallFunc name args, astr, apos)
     Left a -> Left a
   Left a -> Left a
 
 parseSh :: Parser Operation
-parseSh = Parser $ \s p -> case runParser (parseWithSpace(parseSymbol"$" *> parseDefinitionName)) s p of
+parseSh = Parser $ \s p -> case runParser (parseWithSpace (parseSymbol "$" *> parseDefinitionName)) s p of
   Right (name, nstr, npos) -> case runParser (parseargs <|> parseNoargs) nstr npos of
     Right (args, astr, apos) -> Right (CallSH name args, astr, apos)
     Left a -> Left a
   Left a -> Left a
 
 parseCall :: Parser Operation
-parseCall = parseFct
-        <|> parseSh
+parseCall =
+  parseFct
+    <|> parseSh
 
 ---------------------------------------------
 
 parseOperation :: Parser Operation
-parseOperation = parseStd
-              <|> parseUnaryOp
-              <|> parseIndexOp
-              <|> parseBuiltinFct
-              <|> parseSysCallFct
-              <|> parseCall
+parseOperation =
+  parseStd
+    <|> parseUnaryOp
+    <|> parseIndexOp
+    <|> parseBuiltinFct
+    <|> parseSysCallFct
+    <|> parseCall

@@ -11,12 +11,12 @@ module Parser.StackTrace
     addNewMessage,
     addSourceLocation,
     defaultLocation,
-    modifySourceLocation
+    modifySourceLocation,
   )
 where
 
+import Parser.Position (Position (..))
 import Parser.Range (Range (..))
-import Parser.Position (Position(..))
 
 newtype StackTrace = StackTrace [(String, Range, SourceLocation)]
 
@@ -47,22 +47,28 @@ addSourceLocation name pos = SourceLocation {functionName = name, fileName = "",
 
 modifySourceLocation :: SourceLocation -> [(String, Range, SourceLocation)] -> [(String, Range, SourceLocation)]
 modifySourceLocation _ stack | length stack == 0 = stack
-modifySourceLocation source ((str, ran , src):stack) | functionName src == "" = (str, ran, source) : (modifySourceLocation source stack)
+modifySourceLocation source ((str, ran, src) : stack) | functionName src == "" = (str, ran, source) : (modifySourceLocation source stack)
 modifySourceLocation _ stack = stack
 
--- FIXME - 
+-- FIXME -
 addNewMessage :: (String, Range, SourceLocation) -> String -> String
 addNewMessage ("", _, _) pre = pre
 addNewMessage (str, (Range start end), src) pre =
   pre
     ++ "\t in "
-    ++ show (functionName src) ++ "(" ++ show (l src) ++ ":" ++ show (c src) ++ "): "
+    ++ show (functionName src)
+    ++ "("
+    ++ show (l src)
+    ++ ":"
+    ++ show (c src)
+    ++ "): "
     ++ str
     ++ " started at "
     ++ show start
     ++ " and finished at "
     ++ show end
     ++ "\n"
+
 -- ++ functionName src
 -- ++ "' "
 -- ++ fileName src

@@ -14,7 +14,6 @@ import Parser.Syntax (parseManyStructure)
 import Parser.Type (Parser (..))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
-
 parser :: String -> IO [Definition]
 parser str = case runParser (parseManyFuncDefinition (parseManyStructure parseFuncDefinition)) str defaultPosition of
   Right (def, _, _) -> return def
