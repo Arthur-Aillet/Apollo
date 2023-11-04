@@ -7,33 +7,28 @@
 
 module Parser.String (module Parser.String) where
 
--- import Control.Applicative (Alternative ((<|>)))
--- import Parser.Char (parseChar, parseDigit, parseAnyChar)
--- import Parser.StackTrace (StackTrace (..))
--- import Parser.Type (Parser (..))
--- import Parser.Syntax (parseMany, parseSome)
--- import Parser.Range (Range (..))
+import Control.Applicative (Alternative ((<|>)))
+import Parser.Char (parseChar, parseDigit, parseAnyChar, parseOpeningQuote, parseClosingQuote, parseOpeningsQuote, parseClosingsQuote)
+import Parser.StackTrace (StackTrace (..))
+import Parser.Type (Parser (..))
+import Parser.Syntax (parseMany, parseSome, parseWithSpace)
+import Parser.Range (Range (..))
+import Control.Applicative (Alternative ((<|>)))
 
--- acceptableCharacters :: [Char]
--- acceptableCharacters = ['a'..'z']
---                     ++ ['A'..'Z']
---                     ++ ['0'..'9']
---                     ++ ['|', '/', '\\', '[', ']', '(', ')', '{', '}', '-', '_', '\"', '\'']
+exInput :: String
+exInput = "\"test\""
 
--- parseString :: Parser String
--- parseString = parseStringQuote <|> parseStringSingleQuote
+acceptableCharacters :: [Char]
+acceptableCharacters = ['a'..'z']
+                    ++ ['A'..'Z']
+                    ++ ['0'..'9']
+                    ++ ['|', '/', '\\', '[', ']', '(', ')', '{', '}', '-', '_', '\"', '\'']
 
--- -- parseStringWithHandleBackslash :: Parser String
--- -- parseStringWithHandleBackslash = Parser $ \s p -> case runParser (parseAnyChar acceptableCharacters) s p of
--- --     Right (element, string, pos) ->
--- --         case runParser (parseStringWithHandleBackslash $ parseAnyChar acceptableCharacters) string pos of
--- --             Left _ -> Right ([], string, pos)
--- --             Right ('\\', x : str, new_pos) -> Right (element : x, str, new_pos + 1)
--- --             Right (found, str, new_pos) -> Right (element : found, str, new_pos)
--- --     Left a -> Left a
+parseStringContent :: Parser String
+parseStringContent = parseMany $ parseAnyChar acceptableCharacters
 
--- -- parseStringSingleQuote :: Parser String
--- -- parseStringSingleQuote = Parser $ \s p -> parseChar '\'' *> parseSome $ parseAnyChar acceptableCharacters  <* parseChar '\''
+parseBetweenQuotes :: Parser a -> Parser a
+parseBetweenQuotes parser = parseOpeningQuote *> parser <* parseClosingQuote
 
--- parseStringQuote :: Parser String
--- parseStringQuote =  parseChar '\"' *> parseSome parseDigit <* parseChar '\"'
+parseString :: Parser String
+parseString = parseWithSpace (parseBetweenQuotes parseStringContent)

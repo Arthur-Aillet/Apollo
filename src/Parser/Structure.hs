@@ -27,7 +27,7 @@ parseAstStructure = AstStructure <$> (
     <|> parseReturn
     <|> parseIf
     <|> parseWhile
-    <|> parseFor
+    -- <|> parseFor
     -- <|> parseSingle
     -- <|> parseBlock
     -- <|> parseSequence
@@ -61,7 +61,7 @@ createVarDef  parType parStr op = Parser $ \s p -> case runParser parType s p of
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr "Syntaxe error: bad variable definition"
-  ((createVarDef parseType parseDefinitionName (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
+  ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
 
 ----------------------------------------------------------------
 
@@ -140,7 +140,6 @@ parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *
 
 ----------------------------------------------------------------
 
--- FIXME - Change parseAstStructure by parseAst
 parseSingle :: Parser Structure
 parseSingle =  Single <$> parseAst
 
