@@ -3,3 +3,5 @@ import Ast.Type (Ast)
 import Parser.Type (Parser(..))
 
 parseAstStructure :: Parser Ast
+
+parseManyAst :: Parser [Ast]

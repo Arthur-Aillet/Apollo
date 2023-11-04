@@ -25,7 +25,7 @@ parseSymbol (x : xs) = Parser $ \s p -> case runParser (parseChar x) s p of
     Left err -> Left err
     Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
 
-goodType :: String -> (Maybe Type)
+goodType :: String -> Maybe Type
 goodType "int" = Just TypeInt
 goodType "float" = Just TypeFloat
 goodType "char" = Just TypeChar
@@ -45,4 +45,9 @@ parseType :: Parser Type
 parseType = isgoodType (goodType <$> parseSymbolType)
 
 parseMaybeType :: Parser (Maybe Type)
-parseMaybeType = goodType <$> parseSymbolType
+parseMaybeType = Parser $ \s p -> case runParser parseSymbolType s p of
+  Right (typestr, str, pos) -> case goodType typestr of
+    Just typ -> Right (Just typ, str, pos)
+    Nothing -> Left (StackTrace [("Invalid type : \"" ++ typestr ++ "\"", Range p pos, defaultLocation)])
+  Left _ -> Right (Nothing, s, p)
+

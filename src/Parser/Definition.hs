@@ -24,7 +24,7 @@ parseParameter =
   (swap <$> ((,) <$> typ <*> str))
   where
     typ = parseType
-    str = parseDefinitionName
+    str = parseWithSpace parseDefinitionName
 
 parseParameterWithComa :: Parser (String, Type)
 parseParameterWithComa = parseParameter <* parseChar ','
@@ -57,6 +57,5 @@ parseFuncDefinition = Parser $ \s p -> case runParser (replaceErr "Synatxe error
     Right (func, string, position) -> Right ((FuncDefinition name func), string, position)
     Left (StackTrace a) -> Left (StackTrace (modifySourceLocation (addSourceLocation name p) a))
   Left a -> Left a
-
 
   -- FuncDefinition <$> ((parseChar '@') *> parseDefinitionName) <*> parseFunction
