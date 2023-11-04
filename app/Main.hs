@@ -94,13 +94,22 @@ run (filenames, args) = do
   pure()
 
 build :: ([String], [String]) -> IO ()
-build (filenames, name) =  do
-  files <- readFiles filenames
-  defs <- parser files
-  pure()
+build (filenames, name) =  if length(name) > 1
+  then do
+    putStr buildHelp
+    pure()
+  else do
+    files <- readFiles filenames
+    defs <- parser files
+    pure()
 
 launch :: ([String], [String]) -> IO ()
-launch (binary, args) = pure()
+launch (binary, args) = if length(binary) > 1
+  then do
+    putStr launchHelp
+    pure()
+  else do
+    pure()
 
 argDispatch :: [String] -> IO ()
 argDispatch ("-h" : args) = help args
