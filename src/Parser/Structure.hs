@@ -74,7 +74,7 @@ parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash =
   replaceErr
     "Syntaxe error: bad return"
-    (parseMany ((parseChar '\\') *> (parseChar '\\') <|> (parseChar '\\') *> parseAChar <|> parseAChar))
+    (parseMany (parseChar '\\' *> parseAChar <|> parseAChar))
 
 ----------------------------------------------------------------
 
@@ -270,7 +270,8 @@ parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
   Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser (moveToError p2 *> findNextInstruction *> parseManyInstructions parser) s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
-    Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
+    Left (StackTrace [("", Range _ p3, _)]) ->
+      Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace ys) -> Left (StackTrace ((xs, Range p1 p2, src) : ys))
   Left a -> Left a
 

@@ -71,6 +71,7 @@ helpMsg ["launch"] = putStr launchHelp
 helpMsg _ = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
+getStrsBefore [] _ = []
 getStrsBefore [x] target
   | x == target = []
   | otherwise = [x]
@@ -85,10 +86,12 @@ getStrsAfter (x : xs) target
   | otherwise = getStrsAfter xs target
 
 separateArgs :: [String] -> String -> ([String], [String])
-separateArgs args separator = (getStrsBefore args separator, getStrsAfter args separator)
+separateArgs args separator =
+  (getStrsBefore args separator, getStrsAfter args separator)
 
 run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
+  print filenames
   files <- readFiles filenames
   defs <- parser files
   (Binary env main_f) <- compile defs
@@ -129,11 +132,3 @@ main :: IO ()
 main = do
   args <- getArgs
   argDispatch args
-  print args
-  files <- readFiles args
-  defs <- parser files
-  (Binary env main_f) <- compile defs
-  result <- exec (env, [], main_f, [], [])
-  case result of
-    Left a -> putStrLn a
-    Right a -> print a
