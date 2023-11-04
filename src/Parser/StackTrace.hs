@@ -52,6 +52,7 @@ modifySourceLocation _ stack = stack
 
 -- FIXME - 
 addNewMessage :: (String, Range, SourceLocation) -> String -> String
+addNewMessage ("", _, _) pre = pre
 addNewMessage (str, (Range start end), src) pre =
   pre
     ++ "\t in "

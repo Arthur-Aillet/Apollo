@@ -10,7 +10,8 @@ module Parser.Syntax (module Parser.Syntax) where
 import Parser.Char (parseAnyChar)
 import Parser.Type (Parser (..))
 import Control.Applicative (Alternative ((<|>)))
--- import Parser.StackTrace (StackTrace(..))
+import Parser.StackTrace (StackTrace(..))
+import Parser.Range (Range(..))
 import Parser.Char(parseNotChar, parseChar, parseOpeningParenthesis, parseClosingParenthesis)
 
 parseMany :: Parser a -> Parser [a]
@@ -30,7 +31,7 @@ parseOnlySpaces = Parser $ \string pos -> case string of
   _ -> case runParser parseSpaces string pos of
     Right (new, new_str, new_pos) ->
       case runParser parseOnlySpaces new_str new_pos of
-        Left a -> Left a
+        Left (StackTrace [(str, Range _ p2, src)]) -> Left (StackTrace [(str, Range pos p2, src)])
         Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
     Left a -> Left a
 
@@ -44,22 +45,18 @@ parseManyValidOrEmpty parse = Parser $ \st pos -> case runParser parse st pos of
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
   Left a -> Left a
 
--- parseManyFunc :: Parser a -> Parser [a]
--- parseManyFunc parse = Parser $ \s p -> case runParser parse s p of
---   Right (element, new_str, new_pos) -> case runParser (parseManyFunc parse) new_str new_pos of
---     Right (found, st, ps) -> Right (element : found, st, ps)
+parseManyStructure :: Parser a -> Parser [a]
+parseManyStructure parse = Parser $ \st pos -> case runParser parse st pos of
+  Right (element, new_str, new_pos) ->
+    case runParser (parseManyStructure parse) new_str new_pos of
+      Left a -> case runParser parseOnlySpaces new_str new_pos of
+        Left _ -> case runParser (parseChar '}') new_str new_pos of
+          Right _ -> Right ([element], new_str, new_pos)
+          Left _ -> Left a
+        Right (_, fd_str, fd_pos) -> Right ([element], fd_str, fd_pos)
+      Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
+  Left a -> Left a
 
-findNewInstruction :: Parser Char
-findNewInstruction = parseMany (parseNotChar ';') *> parseChar ';'
-
--- parseManyInstruction :: Parser a -> Parser [a]
--- parseManyInstruction parser =  Parser $ \s p -> case runParser parser s p of
---   Right (elem, new_str, new_pos) -> case runParser (parseManyInstruction parser) new_str new_pos of
---     Right (found, st, ps) -> Right (elem : found, st, ps)
---     Left (StackTrace xs) -> case runParser (findNewInstruction *> parseManyInstruction parser) s p of
---       Right _ -> Left (StackTrace xs)
---       Left (StackTrace ys) -> if xs == ys then Left (StackTrace xs) else Left (StackTrace (xs ++ ys))
---   Left a -> Left a
 
 parseSome :: Parser a -> Parser [a]
 parseSome parse = (:) <$> parse <*> parseMany parse

@@ -83,3 +83,9 @@ parseAnyChar =
   foldl
     (\a b -> a <|> parseChar b)
     (failingWith "Not Found: List is empty")
+
+parseNotAnyChar :: [Char] -> Parser Char
+parseNotAnyChar (x:xs) = Parser $ \s p -> case runParser (parseNotChar x) s p of
+  Right a | length (x:xs) == 1 -> Right a
+          | otherwise -> runParser (parseNotAnyChar xs) s p
+  Left a -> Left a
