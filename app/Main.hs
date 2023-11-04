@@ -1,15 +1,14 @@
 module Main (main) where
 
-import Ast.Compile (Binary (..))
+import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Error (Compile (..))
-import Ast.Type
+import Ast.Ast
 import Eval
 import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Sub))
+import Eval.Operator (Value (..))
+import Eval.Syscall (Syscall (..))
 import PreProcess
 import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
 
 createAbs :: Definition
@@ -133,16 +132,34 @@ createSnd =
         )
     )
 
+createCoolPrint :: Definition
+createCoolPrint =
+  FuncDefinition
+    "cool_print"
+    ( Function
+        []
+        Nothing
+        (AstOperation $ CallSys Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
+    )
+
 createMain :: Definition
 createMain =
   FuncDefinition
     "main"
     ( Function
         []
-        (Just TypeBool)
+        (Just TypeInt)
         ( AstStructure $
             Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Not [OpValue (AtomB True)]
+
+              [ AstStructure $ VarDefinition "arr" (TypeList (Just $ TypeList $ Just TypeChar)) (Just $ OpList [OpList [OpValue (AtomC 'a' True), OpValue (AtomC 'b' True), OpValue (AtomC 'c' True)], OpList [OpValue (AtomC 'd' True), OpValue (AtomC 'e' True), OpValue (AtomC 'f' True)]]),
+                AstStructure $
+                  For "i" (OpVariable "arr") $
+                    AstStructure $
+                      Sequence
+                        [ AstOperation $ CallSys Print [OpVariable "i"]
+                        ],
+                AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
               ]
         )
     )
@@ -151,8 +168,8 @@ main :: IO ()
 main = do
   args <- getArgs
   files <- readFiles args
-  (Binary env main_f) <- compile [createMain]
-  result <- exec env [] main_f [] []
+  (Binary env main_f) <- compile [createMain, createCoolPrint, createFib]
+  result <- exec (env, [], main_f, [], [])
   case result of
     Left a -> putStrLn a
     Right a -> print a

@@ -15,7 +15,7 @@ module Eval.Atom
   )
 where
 
--- import Text.Read
+import Ast.Type(Type)
 
 data Atom
   = AtomB Bool

@@ -17,16 +17,12 @@ module Eval.Operator
   )
 where
 
-import Data.Bits (And)
 import Eval.Atom (Atom (..))
 
 data Value
   = VAtom Atom
-  deriving
-    ( -- | List [Atom]
-      Show,
-      Eq
-    )
+  | VList [Value]
+  deriving (Eq, Show)
 
 type Stack = [Value]
 
@@ -38,6 +34,9 @@ data OperatorType
   = Equality -- [a] -> Bool
   | Logical -- [Bool] -> Bool
   | Calculus -- [a] -> a
+  | Concatenation -- [[a]] -> [a]
+  | Getting -- [[a], Int] -> a
+  | Length -- [a] -> Int
   deriving (Show, Eq)
 
 data Operator
@@ -55,6 +54,9 @@ data Operator
   | And
   | Or
   | Not
+  | Concat
+  | Get
+  | Len
   deriving (Show, Eq)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
@@ -94,13 +96,48 @@ defsOp NEq = OperatorDef 2 Equality
 defsOp And = OperatorDef 2 Logical
 defsOp Or = OperatorDef 2 Logical
 defsOp Not = OperatorDef 1 Logical
+defsOp Concat = OperatorDef 2 Concatenation
+defsOp Get = OperatorDef 2 Getting
+defsOp Len = OperatorDef 1 Length
 
 isAllAtoms :: [Value] -> Either String [Atom]
 isAllAtoms (VAtom x : xs) = (x :) <$> isAllAtoms xs
 isAllAtoms [] = Right []
 isAllAtoms _ = Left "Not all primitives"
 
+getElemErrorMessage :: Int -> Int -> String
+getElemErrorMessage a b =
+  "Error: Element ["
+    ++ show a
+    ++ "] asked outside list (lenght "
+    ++ show b
+    ++ ")"
+
+getElem :: Int -> [a] -> Either String a
+getElem i [] = Left $ "Error: [" ++ show i ++ "] on an empty list"
+getElem nb list
+  | nb >= length list = Left $ getElemErrorMessage nb (length list)
+  | nb < 0 =
+      Left $
+        "Error: Get element at a negativ index : ["
+          ++ show nb
+          ++ "]"
+  | otherwise = Right $ last $ take (nb + 1) list
+
 execOperator :: Stack -> Operator -> Either String Stack
+execOperator (VList x : xs) Len = Right $ VAtom (AtomI (length x)) : xs
+execOperator (_ : _) Len = Left "Length used not on a list"
+execOperator [] Len = Left "Length on empty stack"
+execOperator (x : y : xs) Get = case (x, y) of
+  (VList list, VAtom (AtomI idx)) -> case getElem idx list of
+    Left err -> Left err
+    Right val -> Right $ val : xs
+  recived ->
+    Left $ "Get take a index and a lists not " ++ show recived
+
+execOperator (x : y : xs) Concat = case (x, y) of
+  (VList list1, VList list2) -> Right $ VList (list1 ++ list2) : xs
+  _ -> Left "Concat take two lists"
 execOperator stack op
   | length (take count stack) >= count = case isAllAtoms top of
       Left x -> Left x

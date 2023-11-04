@@ -12,11 +12,16 @@ module Eval.Instructions
     Index,
     Func,
     History,
+    Machine,
+    Env,
+    Args,
+    Pointer (..),
   )
 where
 
+import Eval.Operator (Operator (..), Value (..), Stack)
+import Eval.Syscall (Syscall (..))
 import Eval.Atom (Atom (..))
-import Eval.Operator (Operator (..))
 
 type Index = Int
 
@@ -25,13 +30,15 @@ type Func = [Instruction]
 data Instruction
   = PushD Atom
   | Store
+  | Take Int -- Make a list from Int values
   | Assign Index
+  | ArrAssign Index -- arr[i] = val    (take VList of [1][2][..] and val)
   | PushI Index
   | CallD Index
   | CallI Index
+  | CallS -- call SH Args Name
   | Op Operator
-  | PrintD Atom
-  | PrintI Index
+  | Sys Syscall
   | JumpIfFalse Int
   | Jump Int
   | Ret
@@ -46,3 +53,11 @@ moveForward nb insts
   | nb < 0 = Left $ "Error: Jump before zero (" ++ show nb ++ ")"
   | nb > length insts = Left $ "Error: Jump too far (" ++ show nb ++ ")"
   | otherwise = Right $ splitAt nb insts
+
+type Env = [(Int, Func)]
+
+type Args = [Value]
+
+data Pointer = Pointer Index [Index] deriving (Show)
+
+type Machine = (Env, Args, Insts, History, Stack)
