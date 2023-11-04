@@ -24,6 +24,7 @@ parseSymbol (x : xs) = Parser $ \s p -> case runParser (parseChar x) s p of
   Right (new, new_str, new_pos) -> case runParser (parseSymbol xs) new_str new_pos of
     Left err -> Left err
     Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
+parseSymbol [] = Parser $ \s p -> Right ([], s, p)
 
 goodType :: String -> Maybe Type
 goodType "int" = Just TypeInt

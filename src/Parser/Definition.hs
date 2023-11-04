@@ -16,8 +16,7 @@ import Parser.Symbol (parseMaybeType, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
 import Parser.StackTrace (StackTrace(..), addSourceLocation, modifySourceLocation)
-import Parser.Error(replaceErr)
-import Parser.Structure(moveToError, parseSequence)
+import Parser.Structure(parseSequence)
 import Parser.Range (Range(..))
 
 parseParameter :: Parser (String, Type)
@@ -68,6 +67,7 @@ findNextFunction nb_brackets = Parser $ \s p -> case runParser parseAChar s p of
   Right ('}', str, pos) -> runParser (findNextFunction (nb_brackets - 1)) str pos
   Right (_, str, pos) -> runParser (findNextFunction nb_brackets) str pos
   Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
+  Left a -> Left a
 
 parseManyFuncDefinition :: Parser [Definition] -> Parser [Definition]
 parseManyFuncDefinition parser = Parser $ \s p -> case runParser (parseWithSpace parser) s p of
@@ -77,3 +77,4 @@ parseManyFuncDefinition parser = Parser $ \s p -> case runParser (parseWithSpace
     Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace [("Not Found: End of Input", _, _)]) -> Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
+  Left a -> Left a

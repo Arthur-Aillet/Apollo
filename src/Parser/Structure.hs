@@ -17,7 +17,7 @@ import Parser.Char(parseNotAnyChar, parseChar, parseAChar, parseOpeningParenthes
 import Parser.Error(replaceErr)
 import Parser.StackTrace(StackTrace(..), defaultLocation)
 import Parser.Position(Position(..))
-import Parser.Range(Range(..), defaultRange)
+import Parser.Range(Range(..))
 import Parser.Operable(parseElement, parseOperable)
 import Parser.Ast(parseAst)
 import Eval.Operator (Operator (Mod, Div, Mul, Sub, Add))
@@ -246,6 +246,7 @@ parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
+  Left a -> Left a
 
 parseManyAst :: Parser [Ast]
 parseManyAst = (parseManyInstructions (parseManyStructure (parseError <|> parseAst)))

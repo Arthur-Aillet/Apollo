@@ -10,7 +10,7 @@ module Parser.Parser (parser) where
 import Ast.Type (Definition (..))
 import Parser.Definition (parseFuncDefinition, parseManyFuncDefinition)
 import Parser.Position (defaultPosition)
-import Parser.Syntax (parseManyValidOrEmpty, parseManyStructure)
+import Parser.Syntax (parseManyStructure)
 import Parser.Type (Parser (..))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
