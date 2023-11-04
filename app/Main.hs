@@ -140,10 +140,3 @@ main :: IO ()
 main = do
   args <- getArgs
   argDispatch args
-  files <- readFiles args
-  defs <- parser files
-  (Binary env main_f) <- compile defs
-  result <- exec (env, [], main_f, [], [])
-  case result of
-    Left a -> putStrLn a
-    Right a -> print a

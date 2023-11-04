@@ -1,4 +1,4 @@
-@main (string i) int {
-    int is = 5;
-    return is;
+@main () [int] {
+    [int] i = [1, 2, 3, 4];
+    return i;
 }

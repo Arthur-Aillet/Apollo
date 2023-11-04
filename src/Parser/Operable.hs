@@ -22,6 +22,7 @@ import Parser.StackTrace (defaultLocation)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..), StackTrace (StackTrace))
+import Parser.String (parseString)
 
 defChars :: [Char]
 defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"
@@ -101,7 +102,7 @@ getOpStr parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 parseOpStr :: Parser Operable
-parseOpStr = getOpList parseList
+parseOpStr = getOpList parseString
 
 ---------------------------------------------
 
