@@ -7,7 +7,7 @@
 
 module Ast.Type (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
 
-import Eval.Atom (Atom (..))
+import Eval.Atom (Atom (..), Type (..))
 import Eval.Operator (Operator, Value (..))
 import Eval.Syscall (Syscall)
 
@@ -47,23 +47,6 @@ data Operable -- statement having a value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
-
-data Type
-  = TypeBool
-  | TypeChar
-  | TypeInt
-  | TypeFloat
-  | -- |  TypeBroken
-    TypeList (Maybe Type)
-  deriving (Eq)
-
-instance Show Type where
-  show TypeBool = "bool"
-  show TypeChar = "char"
-  show TypeInt = "int"
-  show TypeFloat = "float"
-  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
-  show (TypeList Nothing) = "[]"
 
 numType :: Type -> Bool
 numType TypeBool = True
