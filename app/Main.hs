@@ -158,7 +158,7 @@ createMain =
                       Sequence
                         [ AstOperation $ CallSys Print [OpVariable "i"]
                         ],
-                AstOperation $ CallSys Print [OpOperation $ CallSH "ls" []],
+                AstOperation $ CallSys Print [OpOperation $ CallSH "ls" [OpList [OpValue (AtomC '-' True), OpValue (AtomC 'l' True)]]],
                 AstStructure $ Return $ OpOperation $ CallStd Len [OpOperation $ CallSH "ls" []]
               ]
         )

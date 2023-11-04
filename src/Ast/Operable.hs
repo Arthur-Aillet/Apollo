@@ -283,6 +283,7 @@ compShType name args count = case opeValidArgs name args count (Just $ TypeList 
     (\a -> (a, Just $ TypeList $ Just TypeChar))
       <$> concatInner
         [ concatInner (map (fst <$>) (reverse args)),
+          Ok w [Take $ length args],
           Ok w (map (\x -> PushD $ AtomC x True) $ reverse name),
           Ok w [Take $ length name, CallS]
         ]
