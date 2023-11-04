@@ -4,7 +4,7 @@ import Ast.Ast (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Exec (Atom (AtomB, AtomC), Value (VAtom, VList))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingQuote, parseOpeningBraquet, parseOpeningQuote)
+import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingsQuote, parseOpeningBraquet, parseOpeningsQuote)
 import Parser.Int (parseFloat, parseInt)
 import {-# SOURCE #-} Parser.Operable (parseElement)
 import Parser.Position (defaultPosition)
@@ -30,7 +30,7 @@ getBoolAtom parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 getcharAtom :: Parser Char -> Parser Value
-getcharAtom parser = Parser $ \s p -> case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+getcharAtom parser = Parser $ \s p -> case runParser (parseOpeningsQuote *> parser <* parseClosingsQuote) s p of
   Right (char, str, pos) -> Right (VAtom $ AtomC char False, str, pos)
   Left a -> Left a
 

@@ -33,7 +33,7 @@ parserTests =
       -- "parseWithSpace" ~: parseWithSpaceTests,
       -- "parseOpeningParenthesis" ~: parseOpeningParenthesisTests,
       -- "parseClosingParenthesis" ~: parseClosingParenthesisTests,
-      -- "parseOpeningQuote" ~: parseOpeningQuoteTests,
+      -- "" ~: parseOpeningQuoteTests,
       -- "parseClosingQuote" ~: parseClosingQuoteTests
     ]
 

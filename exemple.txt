@@ -1,4 +1,4 @@
-@main (int a) int {
-    a += 1;
-    return (a);
+@main (string i) int {
+    int is = 5;
+    return is;
 }

@@ -11,7 +11,7 @@ import Ast.Ast (Operable (..), Operation (), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingQuote, parseOpeningParenthesis, parseOpeningQuote)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingsQuote, parseOpeningParenthesis, parseOpeningsQuote)
 import Parser.Int (parseFloat, parseInt)
 import Parser.List (parseList)
 import Parser.Operation (parseOperation)
@@ -57,7 +57,7 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 getcharOpValue :: Parser Char -> Parser Operable
-getcharOpValue parser = Parser $ \s p -> case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+getcharOpValue parser = Parser $ \s p -> case runParser (parseOpeningsQuote *> parser <* parseClosingsQuote) s p of
   Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
   Left a -> Left a
 
@@ -95,6 +95,16 @@ parseOpList = getOpList parseList
 
 ---------------------------------------------
 
+getOpStr :: Parser [Operable] -> Parser Operable
+getOpStr parser = Parser $ \s p -> case runParser parser s p of
+  Right (list, str, pos) -> Right (OpList list, str, pos)
+  Left a -> Left a
+
+parseOpStr :: Parser Operable
+parseOpStr = getOpList parseList
+
+---------------------------------------------
+
 getOpOp :: Parser Operation -> Parser Operable
 getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Right (op, str, pos) -> Right (OpOperation op, str, pos)
@@ -111,6 +121,7 @@ parseOperable =
     <|> parseOpValue
     <|> parseOpVar
     <|> parseOpList
+    <|> parseOpStr
     <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
 
 parseElement :: Parser Operable

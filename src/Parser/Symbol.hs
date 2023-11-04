@@ -9,7 +9,7 @@ module Parser.Symbol (module Parser.Symbol) where
 
 import Ast.Ast (Type (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar)
+import Parser.Char (parseChar, parseOpeningBraquet, parseClosingBraquet)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
@@ -31,6 +31,8 @@ goodType "int" = Just TypeInt
 goodType "float" = Just TypeFloat
 goodType "char" = Just TypeChar
 goodType "bool" = Just TypeBool
+goodType "string" = Just (TypeList (Just TypeChar))
+goodType ('[' : listtype) = Just (TypeList (goodType (init listtype)))
 goodType _ = Nothing
 
 isgoodType :: Parser (Maybe Type) -> Parser Type
@@ -39,8 +41,22 @@ isgoodType parser = Parser $ \s p -> case runParser parser s p of
   Right (Nothing, _, pos) -> Left (StackTrace [("This type doesn't exist: ", (Range p pos), defaultLocation)])
   Left a -> Left a
 
+parseListType :: Parser String
+parseListType = Parser $ \s p -> case runParser parseOpeningBraquet s p of
+  Right (opb, opbstr, opbpos) -> case runParser parseSymbolType opbstr opbpos of
+    Right (typestr, typstr, typpos) -> case runParser parseClosingBraquet typstr typpos of
+      Right (clb, clbstr, clbpos) -> Right (opb : typestr ++ [clb], clbstr, clbpos)
+      Left a -> Left a
+    Left a -> Left a
+  Left a -> Left a
+
 parseSymbolType :: Parser String
-parseSymbolType = parseSymbol "int" <|> parseSymbol "float" <|> parseSymbol "bool" <|> parseSymbol "char"
+parseSymbolType = parseSymbol "int"
+              <|> parseSymbol "float"
+              <|> parseSymbol "bool"
+              <|> parseSymbol "char"
+              <|> parseSymbol "string"
+              <|> parseListType
 
 parseType :: Parser Type
 parseType = isgoodType (goodType <$> parseSymbolType)

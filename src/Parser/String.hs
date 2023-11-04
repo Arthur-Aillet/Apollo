@@ -7,9 +7,12 @@
 
 module Parser.String (module Parser.String) where
 
-import Parser.Char (parseAnyChar, parseClosingQuote, parseOpeningQuote)
+import Parser.Char (parseClosingQuote, parseOpeningQuote, parseAnyChar)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
+import Parser.Position (moveCursor)
+import Ast.Ast (Operable (OpValue))
+import Eval.Atom (Atom(AtomC))
 
 exInput :: String
 exInput = "\"test\""
@@ -19,13 +22,26 @@ acceptableCharacters =
   ['a' .. 'z']
     ++ ['A' .. 'Z']
     ++ ['0' .. '9']
-    ++ ['|', '/', '\\', '[', ']', '(', ')', '{', '}', '-', '_', '\"', '\'']
+    ++ "|/\\[](){}-_\"\' <>,./>?!@#$%^&*()+=[]"
 
-parseStringContent :: Parser String
-parseStringContent = parseMany $ parseAnyChar acceptableCharacters
+getSpecialChar :: Char -> Operable
+getSpecialChar 'n' = OpValue $ AtomC '\n' False
+getSpecialChar 't' = OpValue $ AtomC '\t' False
+getSpecialChar char = OpValue $ AtomC char False
+
+parseStr :: Parser [Operable]
+parseStr = Parser $ \s p -> case runParser (parseAnyChar acceptableCharacters) s p of
+  Right ('\"', _, _) -> Right ([], s, p)
+  Right ('\\', nextchar : newstr, newpos) -> case runParser parseStr newstr (moveCursor (moveCursor newpos False) False) of
+    Right (found, endstr, endpos) -> Right (getSpecialChar nextchar : found, endstr, endpos)
+    Left a -> Left a
+  Right (char, newstr, newpos) -> case runParser parseStr newstr newpos of
+    Right (found, endstr, endpos) -> Right (OpValue (AtomC char False) : found, endstr, endpos)
+    Left a -> Left a
+  Left a -> Left a
 
 parseBetweenQuotes :: Parser a -> Parser a
 parseBetweenQuotes parser = parseOpeningQuote *> parser <* parseClosingQuote
 
-parseString :: Parser String
-parseString = parseWithSpace (parseBetweenQuotes parseStringContent)
+parseString :: Parser [Operable]
+parseString =  parseWithSpace ( parseBetweenQuotes parseStr)
