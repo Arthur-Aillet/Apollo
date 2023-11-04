@@ -3,10 +3,10 @@ module Parser.List (module Parser.List) where
 import Ast.Type (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet)
-import Parser.Syntax (parseMany, parseWithSpace, parseManyValidOrEmpty)
+import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
-import {-# SOURCE #-} Parser.Operable (parseOperable, parseElement)
-import Debug.Trace (trace)
+import {-# SOURCE #-} Parser.Operable (parseElement)
+-- import Debug.Trace (trace)
 
 -- parseParameter :: Parser (String, Type)
 -- parseParameter =

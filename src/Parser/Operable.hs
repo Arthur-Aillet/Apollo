@@ -15,9 +15,9 @@ import Parser.Char (parseAnyChar, parseOpeningQuote, parseClosingQuote, parseOpe
 import Parser.Int (parseFloat, parseInt)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
-import Parser.Operation(parseOperation, parseCall)
+import Parser.Operation(parseOperation)
 import Parser.List(parseList)
-import Debug.Trace
+-- import Debug.Trace
 import Parser.Type (Parser (..), StackTrace (StackTrace))
 import Parser.Range (Range(Range))
 import Parser.StackTrace (defaultLocation)
