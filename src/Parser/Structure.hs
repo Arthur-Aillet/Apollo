@@ -9,14 +9,16 @@ module Parser.Structure (module Parser.Structure) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Type (Parser(..))
-import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..))
+import Ast.Type(Structure(..), Type(..), Operable(..), Ast(..), Operation (CallStd))
 import Parser.Symbol(parseType, parseSymbol)
 import Parser.Operable(parseDefinitionName, parseOperable, parseOpOperation, parseElement)
-import Parser.Syntax(parseWithSpace, parseMany, parseManyValidOrEmpty)
+import Parser.Syntax(parseWithSpace, parseMany, parseManyValidOrEmpty, parseMaybeparenthesis)
 import Parser.Char(parseChar, parseAChar, parseOpeningParenthesis, parseClosingParenthesis, parseOpeningCurlyBraquet, parseClosingCurlyBraquet)
 import Parser.Error(replaceErr)
 import Parser.Ast (parseAst)
-import Parser.Operation (parseOperation)
+import Parser.Operation (parseOperation, checkOperator)
+import Eval.Operator (Operator (Add, Sub, Mul, Div, Mod))
+import Eval.Atom (Atom(AtomI))
 
 ----------------------------------------------------------------
 
@@ -65,10 +67,65 @@ parseVarDefinition =
 
 ----------------------------------------------------------------
 
-parseVarAssignation :: Parser Structure
-parseVarAssignation =
+getIncrement :: String -> Maybe Operator
+getIncrement "++" = Just Add
+getIncrement "--" = Just Sub
+getIncrement _ = Nothing
+
+parseIncrement :: Parser String
+parseIncrement =  parseSymbol "++"
+              <|> parseSymbol "--"
+
+parseIncrementOp :: String -> Parser Operable
+parseIncrementOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseIncrement getIncrement) s p of
+  Right (operand, newstr, newpos) -> Right (OpOperation $ CallStd operand [OpVariable name, OpValue $ AtomI 1], newstr, newpos)
+  Left a -> Left a
+
+getOpequality :: String -> Maybe Operator
+getOpequality "+=" = Just Add
+getOpequality "-=" = Just Sub
+getOpequality "*=" = Just Mul
+getOpequality "/=" = Just Div
+getOpequality "%=" = Just Mod
+getOpequality _ = Nothing
+
+parseOpEquality :: Parser String
+parseOpEquality = parseSymbol "+="
+              <|> parseSymbol "-="
+              <|> parseSymbol "*="
+              <|> parseSymbol "/="
+              <|> parseSymbol "%="
+
+parseEqualityOp :: String -> Parser Operable
+parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseOpEquality getOpequality) s p of
+  Right (operand, newstr, newpos) -> case runParser (parseMaybeparenthesis parseElement) newstr newpos of
+    Right (elemright, rstr, rpos) -> Right (OpOperation $ CallStd operand [OpVariable name, elemright], rstr, rpos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarEquality :: Parser Structure
+parseVarEquality =
   replaceErr "Syntaxe error: bad assignment"
-  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseOperable <* parseChar ';'))
+  (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseElement <* parseWithSpace (parseChar ';')))
+
+parseVarIncrementation :: Parser Structure
+parseVarIncrementation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
+  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarOperation :: Parser Structure
+parseVarOperation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
+  Right(name, newstr, newpos) -> case runParser (parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
+    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseVarAssignation :: Parser Structure
+parseVarAssignation = parseVarEquality
+                  <|> parseVarIncrementation
+                  <|> parseVarOperation
 
 ----------------------------------------------------------------
 
