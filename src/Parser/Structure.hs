@@ -248,7 +248,7 @@ parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
     Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
 
 parseManyAst :: Parser [Ast]
-parseManyAst = (parseManyInstructions (parseManyStructure (parseError <|> parseAstStructure)))
+parseManyAst = (parseManyInstructions (parseManyStructure (parseError <|> parseAst)))
 
 parseSequence :: Parser Structure
 parseSequence = Sequence <$> parseManyAst
