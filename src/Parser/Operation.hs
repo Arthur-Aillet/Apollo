@@ -95,7 +95,17 @@ checkOperator :: Parser String -> (String -> Maybe a) -> Parser a
 checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
   Right (operatorstr, str, pos) -> case getter operatorstr of
     Just a -> Right (a, str, pos)
-    Nothing -> Left (StackTrace [("Invalid operator : \"" ++ operatorstr ++ "\"", Range p pos, defaultLocation)])
+    Nothing ->
+      Left
+        ( StackTrace
+            [ ( "Invalid operator : \""
+                  ++ operatorstr
+                  ++ "\"",
+                Range p pos,
+                defaultLocation
+              )
+            ]
+        )
   Left a -> Left a
 
 ---------------------------------------------
@@ -110,34 +120,43 @@ parseStd = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable)
   Left a -> Left a
 
 parseUnaryOp :: Parser Operation
-parseUnaryOp = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseUnary getUnary) s p of
-  Right (resultLeft, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable) newstrright newposright of
-    Right (resultright, newstr, newpos) -> Right (CallStd resultLeft [resultright], newstr, newpos)
+parseUnaryOp = Parser $ \s p ->
+  case runParser (parseWithSpace $ checkOperator parseUnary getUnary) s p of
+    Right (left, str2, pos2) ->
+      case runParser (parseMaybeparenthesis parseOperable) str2 pos2 of
+        Right (right, str3, pos3) ->
+          Right (CallStd left [right], str3, pos3)
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
 
 parseIndexOp :: Parser Operation
-parseIndexOp = Parser $ \s p -> case runParser (parseMaybeparenthesis parseOperable) s p of
-  Right (resultLeft, newstrmiddle, newposmiddle) -> case runParser (parseWithSpace $ checkOperator parseIndex getIndex) newstrmiddle newposmiddle of
-    Right (resultmiddle, newstrright, newposright) -> case runParser (parseMaybeparenthesis parseOperable <* parseClosingBraquet) newstrright newposright of
-      Right (resultright, newstr, newpos) -> Right (CallStd resultmiddle [resultLeft, resultright], newstr, newpos)
-      Left a -> Left a
+parseIndexOp = Parser $ \s p ->
+  case runParser (parseMaybeparenthesis parseOperable) s p of
+    Right (left, str2, pos2) ->
+      case runParser (parseWithSpace $ checkOperator parseIndex getIndex) str2 pos2 of
+        Right (middle, str3, pos3) -> case runParser (parseMaybeparenthesis parseOperable <* parseClosingBraquet) str3 pos3 of
+          Right (right, str4, pos4) -> Right (CallStd middle [left, right], str4, pos4)
+          Left a -> Left a
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
 
 parseBuiltinFct :: Parser Operation
-parseBuiltinFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
-  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
-    Right (op, opstr, oppos) -> Right (CallStd fct [op], opstr, oppos)
+parseBuiltinFct = Parser $ \s p ->
+  case runParser (parseWithSpace $ checkOperator parseBuiltin getBuiltin) s p of
+    Right (fct, fctstr, fctpos) ->
+      case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
+        Right (op, opstr, oppos) -> Right (CallStd fct [op], opstr, oppos)
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
 
 parseSysCallFct :: Parser Operation
-parseSysCallFct = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseSysCall getSysCall) s p of
-  Right (fct, fctstr, fctpos) -> case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
-    Right (op, opstr, oppos) -> Right (CallSys fct [op], opstr, oppos)
+parseSysCallFct = Parser $ \s p ->
+  case runParser (parseWithSpace $ checkOperator parseSysCall getSysCall) s p of
+    Right (fct, fctstr, fctpos) ->
+      case runParser (parseMaybeparenthesis parseOperable) fctstr fctpos of
+        Right (op, opstr, oppos) -> Right (CallSys fct [op], opstr, oppos)
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
 
 ---------------------------------------------
 
@@ -146,7 +165,12 @@ parseargWithComa = parseWithSpace (parseChar ',') *> parseOperable
 
 parseargs :: Parser [Operable]
 parseargs =
-  parseOpeningParenthesis *> parseMany (parseWithSpace parseOperable <|> parseWithSpace parseargWithComa) <* parseClosingParenthesis
+  parseOpeningParenthesis
+    *> parseMany
+      ( parseWithSpace parseOperable
+          <|> parseWithSpace parseargWithComa
+      )
+    <* parseClosingParenthesis
 
 parseNoargs :: Parser [Operable]
 parseNoargs = Parser $ \s p -> Right ([], s, p)
@@ -166,9 +190,7 @@ parseSh = Parser $ \s p -> case runParser (parseWithSpace (parseSymbol "$" *> pa
   Left a -> Left a
 
 parseCall :: Parser Operation
-parseCall =
-  parseFct
-    <|> parseSh
+parseCall = parseFct <|> parseSh
 
 ---------------------------------------------
 

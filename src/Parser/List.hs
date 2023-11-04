@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2023
+-- Apollo
+-- File description:
+-- Parse list
+-}
+
 module Parser.List (module Parser.List) where
 
 import Ast.Ast (Operable (..))

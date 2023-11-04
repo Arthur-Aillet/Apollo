@@ -26,7 +26,13 @@ import Parser.Type (Parser (..))
 ----------------------------------------------------------------
 
 parseSpecificInstruction :: Parser String
-parseSpecificInstruction = parseWithSpace (parseSymbol "return" <|> parseSymbol "if" <|> parseSymbol "while" <|> parseSymbol "for")
+parseSpecificInstruction =
+  parseWithSpace
+    ( parseSymbol "return"
+        <|> parseSymbol "if"
+        <|> parseSymbol "while"
+        <|> parseSymbol "for"
+    )
 
 parseError :: Parser Ast
 parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s p of
@@ -56,7 +62,7 @@ parseAstStructure =
 
 ----------------------------------------------------------------
 
-acceptableCharacters :: [Char]
+acceptableCharacters :: String
 acceptableCharacters =
   ['a' .. 'z']
     ++ ['A' .. 'Z']
@@ -68,7 +74,7 @@ parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash =
   replaceErr
     "Syntaxe error: bad return"
-    (parseMany (((parseChar '\\') *> (parseChar '\\')) <|> ((parseChar '\\') *> parseAChar) <|> parseAChar))
+    (parseMany ((parseChar '\\') *> (parseChar '\\') <|> (parseChar '\\') *> parseAChar <|> parseAChar))
 
 ----------------------------------------------------------------
 
@@ -76,7 +82,7 @@ createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parse
 createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
   Right (typ, str, pos) -> case runParser parStr str pos of
     Right (name, string, position) -> case runParser op string position of
-      Right (ope, new_str, new_pos) -> Right ((VarDefinition name typ ope), new_str, new_pos)
+      Right (ope, new_str, new_pos) -> Right (VarDefinition name typ ope, new_str, new_pos)
       Left a -> Left a
     Left a -> Left a
   Left a -> Left a
@@ -85,7 +91,7 @@ parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
     "Syntaxe error: bad variable definition"
-    ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
+    (createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing) <* parseChar ';')
 
 ----------------------------------------------------------------
 
@@ -131,7 +137,13 @@ parseVarEquality :: Parser Structure
 parseVarEquality =
   replaceErr
     "Syntaxe error: bad assignment"
-    (VarAssignation <$> parseWithSpace parseDefinitionName <*> (parseWithSpace (parseChar '=') *> parseElement <* parseWithSpace (parseChar ';')))
+    ( VarAssignation
+        <$> parseWithSpace parseDefinitionName
+        <*> ( parseWithSpace (parseChar '=')
+                *> parseElement
+                <* parseWithSpace (parseChar ';')
+            )
+    )
 
 parseVarIncrementation :: Parser Structure
 parseVarIncrementation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
@@ -232,7 +244,7 @@ parseSingle = Single <$> parseAst
 findNewStruc :: Parser String
 findNewStruc = parseWithSpace (parseSymbolType <|> parseSymbol "return" <|> parseSymbol "if" <|> parseSymbol "else")
 
-findNextInstruction :: Parser [Char]
+findNextInstruction :: Parser String
 findNextInstruction = Parser $ \s p -> case runParser (parseWithSpace findNewStruc) s p of
   Right _ -> Right ("", s, p)
   Left (StackTrace [("Not Found: End of Input", ran, src)]) -> Left (StackTrace [("", ran, src)])
@@ -256,14 +268,17 @@ moveToError ps = Parser $ \s p ->
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
-  Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser ((moveToError p2) *> findNextInstruction *> (parseManyInstructions parser)) s p of
+  Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser (moveToError p2 *> findNextInstruction *> parseManyInstructions parser) s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
-    Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
+    Left (StackTrace ys) -> Left (StackTrace ((xs, Range p1 p2, src) : ys))
   Left a -> Left a
 
 parseManyAst :: Parser [Ast]
-parseManyAst = (parseManyInstructions (parseManyStructure (parseError <|> parseAst)))
+parseManyAst =
+  parseManyInstructions
+    ( parseManyStructure (parseError <|> parseAst)
+    )
 
 parseSequence :: Parser Structure
 parseSequence = Sequence <$> parseManyAst
