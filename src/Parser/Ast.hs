@@ -21,3 +21,4 @@ getAstOperation parser = Parser $ \s p -> case runParser parser s p of
 parseAst :: Parser Ast
 parseAst =  getAstOperation (parseMaybeparenthesis parseOperation)
         <|> parseAstStructure
+

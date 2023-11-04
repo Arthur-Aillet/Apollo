@@ -24,7 +24,7 @@ parseParameter =
   (swap <$> ((,) <$> typ <*> ((parseChar ' ') *> str)))
   where
     typ = parseType
-    str = parseDefinitionName
+    str = parseWithSpace parseDefinitionName
 
 parseParameterWithComa :: Parser (String, Type)
 parseParameterWithComa = parseParameter <* parseChar ','

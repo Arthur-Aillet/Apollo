@@ -34,7 +34,9 @@ parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s 
   Right (_, _, ps) -> Left (StackTrace [("Syntaxe error: bad variable definition", Range p ps, defaultLocation)])
   Left _ -> case runParser parseSpecificInstruction s p of
     Right (instruction, _, pos) -> Left (StackTrace [("Syntaxe error: instruction " ++ instruction ++ " is not valid", Range p pos, defaultLocation)])
-    Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
+    Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
+      Right _ -> Left (StackTrace [("", Range p p, defaultLocation)])
+      Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
 
 parseAstStructure :: Parser Ast
 parseAstStructure = parseWithSpace $ AstStructure <$> (
@@ -237,14 +239,16 @@ moveToError ps = Parser $ \s p -> if p == ps then Right("", s, p)
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
-  Left (StackTrace [("", ran, s)]) -> Left (StackTrace [("", ran, s)])
   Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser ((moveToError p2) *> findNextInstruction *> (parseManyInstructions parser)) s p of
     Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace [("", Range _ p3, _)]) -> Left (StackTrace [(xs, Range p1 p3, src)])
     Left (StackTrace ys) -> Left (StackTrace ([(xs, Range p1 p2, src)] ++ ys))
 
+parseManyAst :: Parser [Ast]
+parseManyAst = (parseManyInstructions (parseManyStructure (parseError <|> parseAstStructure)))
+
 parseSequence :: Parser Structure
-parseSequence = Sequence <$> (parseManyInstructions (parseManyStructure (parseError <|> parseAst)))
+parseSequence = Sequence <$> parseManyAst
 
 ----------------------------------------------------------------
 

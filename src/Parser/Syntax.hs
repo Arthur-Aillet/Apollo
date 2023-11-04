@@ -55,6 +55,7 @@ parseManyStructure parse = Parser $ \st pos -> case runParser parse st pos of
           Left _ -> Left a
         Right (_, fd_str, fd_pos) -> Right ([element], fd_str, fd_pos)
       Right (found, fd_str, fd_pos) -> Right (element : found, fd_str, fd_pos)
+  Left (StackTrace [("", _, _)]) -> Right ([], st, pos)
   Left a -> Left a
 
 
