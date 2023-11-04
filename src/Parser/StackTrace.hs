@@ -60,7 +60,7 @@ addNewMessage (str, (Range start end), src) pre =
     ++ str
     ++ " started at "
     ++ show start
-    ++ " and finiched at "
+    ++ " and finished at "
     ++ show end
     ++ "\n"
 -- ++ functionName src

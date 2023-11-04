@@ -43,8 +43,8 @@ parseAstStructure = parseWithSpace $ AstStructure <$> (
     <|> parseReturn
     <|> parseIf
     <|> parseWhile
+    <|> parseFor
     )
-    -- <|> parseFor
     -- <|> parseSingle
     -- <|> parseBlock
     -- <|> parseSequence

@@ -7,11 +7,10 @@
 
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
-import Debug.Trace
 import Eval.Atom (Atom (..))
-import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward, Machine, Pointer (..), Env (..), Args (..))
+import Eval.Instructions (Func, History, Index, Instruction (..), Insts, moveForward, Machine, Pointer (..), Env, Args)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
-import Eval.Syscall (Syscall (..), execSys)
+import Eval.Syscall (execSys)
 
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
@@ -24,7 +23,7 @@ convertValToInt :: [Value] -> Maybe [Index]
 convertValToInt (VAtom (AtomI idx) : xs) = case convertValToInt xs of
   Just arr -> Just $ idx : arr
   Nothing -> Nothing
-convertValToInt (_ : xs) = Nothing
+convertValToInt (_ : _) = Nothing
 convertValToInt [] = Just []
 
 setElem :: Index -> [a] -> a -> Either String [a]
@@ -62,82 +61,82 @@ createPtr arr vals = case convertValToInt vals of
 
 
 execInstr :: Machine -> Either String Machine
-execInstr (env, args, ((Take nbr : xs)), h, stack) =
-  Right (env, args, xs, (Take nbr : h), new_stack)
+execInstr (env, args, Take nbr : xs, h, stack) =
+  Right (env, args, xs, Take nbr : h, new_stack)
   where
     new_stack = VList start : end
     (start, end) = splitAt nbr stack
 
-execInstr (env, args, ((PushD val) : xs), h, stack) =
-  Right (env, args, xs, (PushD val : h), (VAtom val : stack))
+execInstr (env, args, (PushD val) : xs, h, stack) =
+  Right (env, args, xs, PushD val : h, VAtom val : stack)
 
-execInstr (env, args, ((PushI arg_index) : xs), h, stack) =
+execInstr (env, args, (PushI arg_index) : xs, h, stack) =
   case getElem arg_index args of
     Left err -> Left err
-    Right arg -> Right (env, args, xs, (PushI arg_index : h), (arg : stack))
+    Right arg -> Right (env, args, xs, PushI arg_index : h, arg : stack)
 
-execInstr (env, args, ((Op op) : xs), h, stack) =
+execInstr (env, args, (Op op) : xs, h, stack) =
   case execOperator stack op of
     Left err -> Left err
-    Right new_stack -> Right (env, args, xs, (Op op : h), new_stack)
+    Right new_stack -> Right (env, args, xs, Op op : h, new_stack)
 
-execInstr (env, args, ((JumpIfFalse line) : xs), h, (VAtom 0 : ys))
+execInstr (env, args, (JumpIfFalse line) : xs, h, VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
       Right (start, end) ->
-        Right (env, args, end, (reverse start ++ JumpIfFalse line : h), ys)
+        Right (env, args, end, reverse start ++ JumpIfFalse line : h, ys)
   | otherwise = case moveForward (line * (-1)) h of
       Left a -> Left a
       Right (start, end) ->
-        Right (env, args, (reverse start ++ JumpIfFalse line : xs), end, ys)
+        Right (env, args, reverse start ++ JumpIfFalse line : xs, end, ys)
 
-execInstr (env, args, ((JumpIfFalse a) : xs), h, (_ : ys)) =
-  Right (env, args, xs, (JumpIfFalse a : h), ys)
+execInstr (env, args, (JumpIfFalse a) : xs, h, _ : ys) =
+  Right (env, args, xs, JumpIfFalse a : h, ys)
 
-execInstr (_, _, ((JumpIfFalse _) : _), _, []) =
+execInstr (_, _, (JumpIfFalse _) : _, _, []) =
   Left "Error: JumpIf on empty stack"
 
-execInstr (env, args, ((Jump line) : xs), h, stack)
+execInstr (env, args, (Jump line) : xs, h, stack)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
       Right (start, end) ->
-        Right (env, args, end, (start ++ h), stack)
+        Right (env, args, end, start ++ h, stack)
   | otherwise = case moveForward (line * (-1)) h of
       Left a -> Left a
       Right (start, end) ->
-        Right (env, args, (reverse start ++ Jump line : xs), end, stack)
+        Right (env, args, reverse start ++ Jump line : xs, end, stack)
 
-execInstr (env, args, (Store : xs), h, (y : ys)) =
-  Right (env, (args ++ [y]), xs, (Store : h), ys)
+execInstr (env, args, Store : xs, h, y : ys) =
+  Right (env, args ++ [y], xs, Store : h, ys)
 
-execInstr (_, _, (Store : _), _, []) = Left "Error: Store with empty stack"
+execInstr (_, _, Store : _, _, []) = Left "Error: Store with empty stack"
 
-execInstr (env, args, (ArrAssign idx : xs), h, (VList x : y : ys)) =
+execInstr (env, args, ArrAssign idx : xs, h, VList x : y : ys) =
   case createPtr idx x of
     Left err -> Left err
     Right ptr -> case assignToPtr args ptr y of
       Left err -> Left err
-      Right new_args -> Right (env, new_args, xs, (ArrAssign idx : h), ys)
+      Right new_args -> Right (env, new_args, xs, ArrAssign idx : h, ys)
 
-execInstr (_, _, (ArrAssign _ : _), _, (VAtom _ : _)) =
+execInstr (_, _, ArrAssign _ : _, _, VAtom _ : _) =
   Left "ArrAssign take a list"
 
 execInstr (env, args, Assign i : xs, h, y : ys) = case getElem i args of
   Left err -> Left err
   Right _ ->
-    Right (env, newargs, xs, (Assign i : h), ys)
+    Right (env, newargs, xs, Assign i : h, ys)
   where
     newargs = take i args ++ [y] ++ drop (i + 1) args
 
-execInstr (_, _, (Ret : _), _, _) = Left "Error: Return with empty stack"
+execInstr (_, _, Ret : _, _, _) = Left "Error: Return with empty stack"
 
-execInstr (_, _, (x : _), _, _) = Left $ "Error: Undefined Yet: " ++ show x
+execInstr (_, _, x : _, _, _) = Left $ "Error: Undefined Yet: " ++ show x
 
-execInstr (_, _, [], _, _) = Left $ "Error: End of Tape"
+execInstr (_, _, [], _, _) = Left "Error: End of Tape"
 
 
 exec :: Machine -> IO (Either String (Maybe Value))
-exec (_, _, (Ret : _), _, (y : _)) = return $ Right $ Just y
+exec (_, _, Ret : _, _, y : _) = return $ Right $ Just y
 exec (env, args, (CallD f_index) : xs, h, stack) =
   case getElem f_index env of
     Left err -> return $ Left err
@@ -153,7 +152,7 @@ exec (env, args, (Sys call) : xs, h, stack) = do
   result <- execSys stack call
   case result of
     Left err -> return $ Left err
-    Right newstack -> exec (env, args, xs, (Sys call) : h, stack)
+    Right _ -> exec (env, args, xs, Sys call : h, stack)
 exec (env, args, xs, h, stack) =
   case execInstr (env, args, xs, h, stack) of
     Left err -> return $ Left err

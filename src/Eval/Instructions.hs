@@ -12,15 +12,15 @@ module Eval.Instructions
     Index,
     Func,
     History,
-    Machine (..),
+    Machine,
     Pointer (..),
-    Env (..),
-    Args (..),
+    Env,
+    Args,
   )
 where
 
-import Eval.Operator (Operator (..), Value (..), Stack, execOperator)
-import Eval.Syscall (Syscall (..), execSys)
+import Eval.Operator (Operator (..), Value (..), Stack)
+import Eval.Syscall (Syscall (..))
 import Eval.Atom (Atom (..))
 
 type Index = Int

@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Ast.CompileAST (Binary (..), generateBinary)
+import Control.Applicative (Alternative ((<|>)))
 import Ast.Display (compile)
 import Ast.Error (Compile (..))
 import Ast.Type
@@ -17,6 +18,7 @@ import Data.HashMap.Internal.Strict (keys)
 import Data.List (isPrefixOf)
 import Parser.Position(defaultPosition)
 import Parser.Parser(parser)
+import Parser.List(hasNothing, argsToMaybeValues, removeMaybes)
 
 defaultHelp :: String
 defaultHelp = "\
@@ -90,8 +92,17 @@ run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
-  print defs
-  pure()
+  (Binary env main_f) <- compile defs
+  if hasNothing (argsToMaybeValues args) == False
+  then do
+    result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
+    case result of
+      Left a -> putStrLn a
+      Right a -> print a
+    pure()
+  else do
+    print "invalid args"
+    pure()
 
 build :: ([String], [String]) -> IO ()
 build (filenames, name) =  if length(name) > 1
@@ -133,6 +144,9 @@ main = do
   -- print "\n"
   -- print main_f
   -- print "\n"
-  -- result <- exec env [] main_f [] []
+  -- result <- exec (env, [], main_f, [], [])
+  -- case result of
+  --   Left a -> putStrLn a
+  --   Right a -> print a
   pure()
 

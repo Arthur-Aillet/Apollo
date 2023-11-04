@@ -7,20 +7,17 @@
 
 module Ast.CompileVar (module Ast.CompileVar) where
 
-import Ast.Context (Compiler (..), Context (..), CurrentReturnType, LocalContext (..), Variables, createCtx, createLocalContext, firstValidIndex)
-import Ast.Error (Compile (..), Warning, failingComp, withW)
-import Ast.Operable (compOperable, compOperation, concatInner)
+import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
+import Ast.Error (Compile (..))
+import Ast.Operable (compOperable)
 import Ast.Type
-  ( Ast (..),
-    Definition (..),
-    Function (..),
+  (
     Operable (..),
-    Structure (..),
     Type (..),
   )
-import Ast.Utils (allEqual, listInner, zip5)
-import Data.HashMap.Lazy (adjust, empty, insert, member, (!?))
-import Eval.Exec
+
+import Data.HashMap.Lazy (adjust, insert)
+import Eval.Instructions ( Insts, Instruction(Store), Index )
 
 compVarDefinition :: Operable -> Variables -> Maybe Type -> Type -> String -> Context -> Compile (Insts, LocalContext)
 compVarDefinition op hmap r vtype name c =
