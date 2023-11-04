@@ -276,17 +276,20 @@ compBuiltin args builtin (OperatorDef ac Getting) _ _ =
 compBuiltin args builtin (OperatorDef ac Length) _ _ =
   compLen builtin args ac
 
+listStr :: Maybe Type
+listStr = Just $ TypeList $ Just TypeChar
+
 compShType :: String -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
-compShType name args count = case opeValidArgs name args count (Just $ TypeList $ Just TypeChar) of
+compShType n args count = case opeValidArgs n args count listStr of
   Ko warns err -> Ko warns err
   Ok w _ ->
-    (\a -> (a, Just $ TypeList $ Just TypeChar))
-      <$> concatInner
-        [ concatInner (map (fst <$>) (reverse args)),
-          Ok w [Take $ length args],
-          Ok w (map (\x -> PushD $ AtomC x True) $ reverse name),
-          Ok w [Take $ length name, CallS]
-        ]
+    (\a b -> (a ++ b, listStr))
+      <$> concatInner (map (fst <$>) (reverse args))
+      <*> Ok
+        w
+        ( (Take (length args) : map (\x -> PushD $ AtomC x True) (reverse n))
+            ++ [Take $ length n, CallS]
+        )
 
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =
@@ -306,7 +309,8 @@ compOperation (CallFunc func ops) (Context c) l = case c !? func of
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
-compOperation (CallSH name args) ctx l = compShType name comp_args (length args)
+compOperation (CallSH name args) ctx l =
+  compShType name comp_args (length args)
   where
     comp_args = map (\op -> compOperable op ctx l) args
 compOperation a _ _ = Ko [] ["Operation unsupported" ++ show a]

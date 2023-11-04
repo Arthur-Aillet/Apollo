@@ -7,16 +7,14 @@
 
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
+import Ast.Utils (listInnerMaybe)
+import Control.Exception (catch)
 import Eval.Atom (Atom (..))
 import Eval.Instructions (Args, Env, Func, History, Index, Instruction (..), Insts, Machine, Pointer (..), moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
 import Eval.Syscall (execSys)
-import System.Process ( readProcess )
-import Ast.Utils(listInnerMaybe)
-import Control.Exception (try, catch)
-import qualified Control.Exception as Ex
-import Text.Read (Lexeme(String))
 import qualified GHC.IO.Exception as Ex
+import System.Process (readProcess)
 
 getElem :: Index -> [a] -> Either String a
 getElem _ [] = Left "Error: Function args list empty"
@@ -124,16 +122,19 @@ execInstr (_, _, Ret : _, _, _) = Left "Error: Return with empty stack"
 execInstr (_, _, x : _, _, _) = Left $ "Error: Undefined Yet: " ++ show x
 execInstr (_, _, [], _, _) = Left "Error: End of Tape"
 
+handler :: Ex.IOError -> IO (Either String (Maybe Value))
+handler err = return $ Left $ "Exception Caught: " ++ show err
+
 execCommand :: String -> [String] -> Machine -> IO (Either String (Maybe Value))
-execCommand name cmd_args (env, args, CallS : xs, h, _:_:ys) =
-  catch (do
-    str <- readProcess name cmd_args []
-    exec (env, args, xs, CallS : h, new_stack str)
-    ) handler
+execCommand name cmd_args (env, args, CallS : xs, h, _ : _ : ys) =
+  catch
+    ( do
+        str <- readProcess name cmd_args []
+        exec (env, args, xs, CallS : h, new_stack str)
+    )
+    handler
   where
     new_stack st = VList (map (\c -> VAtom $ AtomC c True) st) : ys
-    handler :: Ex.IOError -> IO (Either String (Maybe Value))
-    handler err = return $ Left $ "Exception Caught: " ++ show err
 execCommand _ _ (_, _, _, _, _) = return $ Left "CallSh with invalid stack"
 
 valueToString :: Value -> Either String String
@@ -144,28 +145,30 @@ valueToString val = case val of
 
 exec :: Machine -> IO (Either String (Maybe Value))
 exec (_, _, Ret : _, _, y : _) = return $ Right $ Just y
-exec (env, args, (CallD f_index) : xs, h, stack) =
-  case getElem f_index env of
-    Left err -> return $ Left err
-    Right (args_nbr, insts) -> do
-      result <- exec (env, start, insts, [], [])
-      case result of
-        Left err -> return $ Left err
-        Right (Just val) -> exec (env, args, xs, CallD f_index : h, val : end)
-        Right Nothing -> exec (env, args, xs, CallD f_index : h, end)
-      where
-        (start, end) = splitAt args_nbr stack
+exec (env, args, (CallD f_index) : xs, h, stack) = case getElem f_index env of
+  Left err -> return $ Left err
+  Right (args_nbr, insts) -> do
+    result <- exec (env, start, insts, [], [])
+    case result of
+      Left err -> return $ Left err
+      Right (Just val) -> exec (env, args, xs, CallD f_index : h, val : end)
+      Right Nothing -> exec (env, args, xs, CallD f_index : h, end)
+    where
+      (start, end) = splitAt args_nbr stack
 exec (env, args, (Sys call) : xs, h, stack) = do
   result <- execSys stack call
   case result of
     Left err -> return $ Left err
     Right _ -> exec (env, args, xs, Sys call : h, stack)
-exec (env, args, CallS : xs, h, name:VList sh_args:ys) = case valueToString name of
-  Left err -> return $ Left err
-  Right v_name -> case listInnerMaybe $ map valueToString sh_args of
+exec (e, a, CallS : xs, h, name : VList s_a : ys) =
+  case valueToString name of
     Left err -> return $ Left err
-    Right v_args -> execCommand v_name v_args (env, args, CallS : xs, h, name:VList sh_args:ys)
-exec (_, _, CallS : _, _, _) = return $ Left "CallSh not enough element on stack"
+    Right v_name -> case listInnerMaybe $ map valueToString s_a of
+      Left err -> return $ Left err
+      Right v_args ->
+        execCommand v_name v_args (e, a, CallS : xs, h, name : VList s_a : ys)
+exec (_, _, CallS : _, _, _) =
+  return $ Left "CallSh not enough element on stack"
 exec (env, args, xs, h, stack) =
   case execInstr (env, args, xs, h, stack) of
     Left err -> return $ Left err
