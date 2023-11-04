@@ -7,5 +7,5 @@
 
 module Parser.Condition () where
 
-import Ast.Type (Ast (..))
+import Ast.Ast (Ast (..))
 import Parser.Type (Parser (..))

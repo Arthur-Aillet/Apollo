@@ -8,7 +8,7 @@
 module Ast.Context (Compiler, Index, Context (..), LocalContext (..), createCtx, createLocalContext, firstValidIndex, Variables, Defined, CurrentReturnType) where
 
 import Ast.Error (Compile (..))
-import Ast.Type
+import Ast.Ast
   ( Ast (..),
     Definition (..),
     Function (..),

@@ -14,7 +14,7 @@ import Ast.CompileVar
 import Ast.Context (Compiler, Context (..), LocalContext (..), firstValidIndex)
 import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Operable (compOperable)
-import Ast.Type
+import Ast.Ast
   ( Structure (..),
     Type (..),
   )

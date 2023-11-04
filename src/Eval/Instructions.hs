@@ -36,6 +36,7 @@ data Instruction
   | PushI Index
   | CallD Index
   | CallI Index
+  | CallS -- call SH Args Name
   | Op Operator
   | Sys Syscall
   | JumpIfFalse Int

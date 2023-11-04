@@ -12,7 +12,7 @@ module Ast.Operable (concatInner, compOperable, compOperation) where
 
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Type (Operable (..), Operation (CallFunc, CallStd, CallSys), Type (..), atomType, valueType)
+import Ast.Ast (Operable (..), Operation (CallFunc, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Utils (allEqual, concatInner, listInner, zip4)
 import Data.HashMap.Lazy ((!?))
 import Eval.Atom (Atom)
@@ -294,4 +294,6 @@ compOperation (CallFunc func ops) (Context c) l = case c !? func of
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
+--compOperation (CallFunc func ops) (Context c) l = case c !? func of
+
 compOperation a _ _ = Ko [] ["Operation unsupported" ++ show a]

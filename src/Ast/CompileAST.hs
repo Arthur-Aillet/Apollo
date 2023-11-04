@@ -11,7 +11,7 @@ import Ast.CompileStruct
 import Ast.Context (Context (..), LocalContext (..), createCtx, createLocalContext)
 import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Operable (compOperation)
-import Ast.Type
+import Ast.Ast
   ( Ast (..),
     Definition (..),
     Function (..),

@@ -10,7 +10,7 @@ module Ast.CompileArray (module Ast.CompileArray) where
 import Ast.Context (Context (..), LocalContext (..))
 import Ast.Error (Compile (..), Warning, failingComp)
 import Ast.Operable (compOperable)
-import Ast.Type
+import Ast.Ast
   ( Operable (..),
     Type (..),
   )

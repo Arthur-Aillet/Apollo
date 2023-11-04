@@ -10,7 +10,7 @@ module Ast.CompileVar (module Ast.CompileVar) where
 import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
 import Ast.Error (Compile (..), Error)
 import Ast.Operable (compOperable)
-import Ast.Type
+import Ast.Ast
   ( Operable (..),
     Type (..),
   )

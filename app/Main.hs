@@ -2,7 +2,7 @@ module Main (main) where
 
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Type
+import Ast.Ast
 import Eval
 import Eval.Exec
 import Eval.Operator (Value (..))

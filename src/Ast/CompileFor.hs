@@ -10,7 +10,7 @@ module Ast.CompileFor (module Ast.CompileFor) where
 import Ast.Context hiding (Index)
 import Ast.Error
 import Ast.Operable (compOperable)
-import Ast.Type
+import Ast.Ast
 import Data.HashMap.Lazy (insert)
 import Eval.Exec
 
