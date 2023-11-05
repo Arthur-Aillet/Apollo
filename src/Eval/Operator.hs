@@ -24,9 +24,6 @@ data Value
   | VList [Value]
   deriving (Eq, Show)
 
--- instance Show Value where
---   Show (VAtom) = Show VAtom
-
 type Stack = [Value]
 
 type ArgsNbr = Int

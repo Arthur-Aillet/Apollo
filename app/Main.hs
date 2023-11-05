@@ -1,21 +1,16 @@
 module Main (main) where
 
-import Ast.Ast
 import Ast.CompileAST (Binary (..), generateBinary)
 import Ast.Display (compile)
-import Control.Monad.IO.Class
-import Data.HashMap.Internal.Strict (keys)
-import Data.List (isPrefixOf)
 import Eval
-import Eval.Exec
-import Eval.Exec (Operator (Add, Or, Sub))
-import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
 import Parser.Position (defaultPosition)
 import Parser.Type (Parser (..), StackTrace)
 import PreProcess
 import System.Environment
 import Prelude
+import System.Exit (exitWith, ExitCode (ExitSuccess, ExitFailure), exitFailure)
+import Eval.Atom (Atom (..))
 
 defaultHelp :: String
 defaultHelp =
@@ -93,21 +88,26 @@ getStrsAfter (x : xs) target
 separateArgs :: [String] -> String -> ([String], [String])
 separateArgs args separator = (getStrsBefore args separator, getStrsAfter args separator)
 
+charToAtomC :: Char -> Value
+charToAtomC c = VAtom $ AtomC c False
+
+stringToVal :: String -> Value
+stringToVal str = VList $ map charToAtomC str
+
+stringsToVals :: [String] -> [Value]
+stringsToVals = map stringToVal
+
 run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
   (Binary env main_f) <- compile defs
-  if hasNothing (argsToMaybeValues args) == False
-    then do
-      result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
-      case result of
-        Left a -> putStrLn a
-        Right a -> print a
-      pure ()
-    else do
-      print "invalid args"
-      pure ()
+  result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
+  case result of
+    Left a -> putStrLn a
+    Right (Just (VAtom (AtomI a))) -> exitWith(ExitFailure a)
+    Right _ -> pure()
+  pure ()
 
 build :: ([String], [String]) -> IO ()
 build (filenames, name) =
