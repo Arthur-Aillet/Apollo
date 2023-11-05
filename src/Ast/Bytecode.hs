@@ -17,8 +17,6 @@ import Eval.Instructions (Instruction (..), Index, Env)
 import Eval.Atom (Atom (..), cAtom, iAtom, bAtom)
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (..))
-import Data.Bits
-import Data.Word
 import Unsafe.Coerce
 import Ast.Type (Type (..))
 
@@ -45,9 +43,9 @@ data InstructionEnum
   deriving (Show, Eq, Enum, Ord)
     -- insure this is synced to the types in Eval.Instructions
 
-type APHeader = [(Int, [Bytes])]
-
 decode :: [Bytes] -> Either String Env
+decode [] = Right []
+decode [_] = Left "invalid bytecode"
 decode (s : i : xs) = case fromBytecode (take size xs) of
   Left err -> Left err
   Right y -> case decode (drop size xs) of
@@ -62,9 +60,6 @@ encode ((idx, func) : xs) =
   [indexBytecode idx, intBytecode (length func)] ++ toBytecode func
   ++ encode xs
 encode [] = []
-
-bytecodeFormat :: (Int, Int, Int)
-bytecodeFormat = (1, 1, 8)
 
 atomBytecode :: Atom -> [Bytes]
 atomBytecode (AtomB x) = [typeBytecode TypeBool, toEnum $ fromEnum x]
@@ -121,6 +116,7 @@ bytecodeAtom t x
   | t == typeBytecode TypeChar = cAtom (bytecodeAtom (typeBytecode TypeInt) x)
   | t == typeBytecode TypeInt = AtomI (bytecodeInt x)
   | t == typeBytecode TypeFloat = AtomF (unsafeCoerce x)
+  | otherwise = AtomB False
 
 bytecodeInt :: Bytes -> Int
 bytecodeInt = unsafeCoerce
@@ -139,6 +135,7 @@ bytecodeType 1 = TypeChar
 bytecodeType 2 = TypeInt
 bytecodeType 3 = TypeFloat
 bytecodeType 4 = TypeList Nothing
+bytecodeType _ = TypeList Nothing
 
 bytecodeOperator :: Bytes -> Operator
 bytecodeOperator x = toEnum $ fromEnum x
@@ -147,6 +144,7 @@ bytecodeSyscall :: Bytes -> Syscall
 bytecodeSyscall x = toEnum $ fromEnum x
 
 fromBytecode :: [Bytes] -> Either String [Instruction]
+fromBytecode [_] = Left "invalid bytecode"
 fromBytecode (instr : count : xs) = case bytecodeInstruction instr of
   Left err -> Left err
   Right x -> case fromBytecode' x (bytecodeInt count) xs of
