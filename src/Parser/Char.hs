@@ -55,11 +55,11 @@ parseClosingCurlyBraquet =
 
 parseOpeningBraquet :: Parser Char
 parseOpeningBraquet =
-  replaceErr "parseOpeningBraquet: Not Found: Missing opening braquet" (parseChar '[')
+  replaceErr "Not Found: Missing opening braquet" (parseChar '[')
 
 parseClosingBraquet :: Parser Char
 parseClosingBraquet =
-  replaceErr "parseClosingBraquet: Not Found: Missing closing braquet" (parseChar ']')
+  replaceErr "Not Found: Missing closing braquet" (parseChar ']')
 
 ---------------------------------------------
 
