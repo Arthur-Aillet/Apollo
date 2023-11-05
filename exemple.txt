@@ -1,4 +1,4 @@
-@main () [int] {
-    float test = 1.0;
-    return ([test as int]);
+@main ([string] args) int {
+    print(args[0]);
+    return len(args);
 }
