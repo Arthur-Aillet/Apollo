@@ -36,6 +36,7 @@ data InstructionEnum
   | ECallD
   | ECallI
   | ECast
+  | ECallS
   | EOp
   | ESys
   | EJumpIfFalse
@@ -46,9 +47,9 @@ data InstructionEnum
 
 -- insure this is synced to the types in Eval.Instructions
 
-type APHeader = [(Int, [Bytes])]
-
 decode :: [Bytes] -> Either String Env
+decode [] = Right []
+decode [_] = Left "invalid bytecode"
 decode (s : i : xs) = case fromBytecode (take size xs) of
   Left err -> Left err
   Right y -> case decode (drop size xs) of
@@ -64,9 +65,6 @@ encode ((idx, func) : xs) =
     ++ toBytecode func
     ++ encode xs
 encode [] = []
-
-bytecodeFormat :: (Int, Int, Int)
-bytecodeFormat = (1, 1, 8)
 
 atomBytecode :: Atom -> [Bytes]
 atomBytecode (AtomB x) = [typeBytecode TypeBool, toEnum $ fromEnum x]
@@ -112,6 +110,7 @@ toBytecode' (PushI x) = (instructionBytecode EPushI, 1, [indexBytecode x])
 toBytecode' (CallD x) = (instructionBytecode ECallD, 1, [indexBytecode x])
 toBytecode' (CallI x) = (instructionBytecode ECallI, 1, [indexBytecode x])
 toBytecode' (Cast x) = (instructionBytecode ECast, 1, [typeBytecode x])
+toBytecode' CallS = (instructionBytecode ECallS, 0, [])
 toBytecode' (Op x) = (instructionBytecode EOp, 1, [operatorBytecode x])
 toBytecode' (Sys x) = (instructionBytecode ESys, 1, [syscallBytecode x])
 toBytecode' (JumpIfFalse x) = (instructionBytecode EJumpIfFalse, 1, [intBytecode x])
@@ -124,6 +123,7 @@ bytecodeAtom t x
   | t == typeBytecode TypeChar = cAtom (bytecodeAtom (typeBytecode TypeInt) x)
   | t == typeBytecode TypeInt = AtomI (bytecodeInt x)
   | t == typeBytecode TypeFloat = AtomF (unsafeCoerce x)
+  | otherwise = AtomB False
 
 bytecodeInt :: Bytes -> Int
 bytecodeInt = unsafeCoerce
@@ -143,6 +143,7 @@ bytecodeType 1 = TypeChar
 bytecodeType 2 = TypeInt
 bytecodeType 3 = TypeFloat
 bytecodeType 4 = TypeList Nothing
+bytecodeType _ = TypeList Nothing
 
 bytecodeOperator :: Bytes -> Operator
 bytecodeOperator x = toEnum $ fromEnum x
@@ -151,6 +152,7 @@ bytecodeSyscall :: Bytes -> Syscall
 bytecodeSyscall x = toEnum $ fromEnum x
 
 fromBytecode :: [Bytes] -> Either String [Instruction]
+fromBytecode [_] = Left "invalid bytecode"
 fromBytecode (instr : count : xs) = case bytecodeInstruction instr of
   Left err -> Left err
   Right x -> case fromBytecode' x (bytecodeInt count) xs of
@@ -168,6 +170,7 @@ fromBytecode' EPushI 1 (x : xs) = Right (PushI (bytecodeIndex x), xs)
 fromBytecode' ECallD 1 (x : xs) = Right (CallD (bytecodeIndex x), xs)
 fromBytecode' ECallI 1 (x : xs) = Right (CallI (bytecodeIndex x), xs)
 fromBytecode' ECast 1 (x : xs) = Right (Cast (bytecodeType x), xs)
+fromBytecode' ECallS 0 (xs) = Right (CallS, xs)
 fromBytecode' EOp 1 (x : xs) = Right (Op (bytecodeOperator x), xs)
 fromBytecode' ESys 1 (x : xs) = Right (Sys (bytecodeSyscall x), xs)
 fromBytecode' EJumpIfFalse 1 (x : xs) = Right (JumpIfFalse (bytecodeInt x), xs)

@@ -10,7 +10,8 @@ module Eval.Syscall (Syscall (..), execSys) where
 import Control.Exception (catch)
 import Eval.Atom (Atom (..))
 import Eval.Operator
-  ( Stack,
+  (
+    Stack,
     Value (..),
   )
 import System.IO (readFile')
