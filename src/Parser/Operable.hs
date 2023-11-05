@@ -36,13 +36,15 @@ parseDefinitionName = Parser $ \s p -> case runParser (parseMany (parseAnyChar d
 parseCast :: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
 
-parseOpCast :: Parser Operable
-parseOpCast = Parser $ \s p -> case runParser
-  ( parseOpValue
+parseOpCastOperable :: Parser Operable
+parseOpCastOperable = parseOpValue
       <|> parseOpVar
       <|> parseOpList
       <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
-  )
+
+parseOpCast :: Parser Operable
+parseOpCast = Parser $ \s p -> case runParser
+  parseOpCastOperable
   s
   p of
   Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of

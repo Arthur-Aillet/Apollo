@@ -14,7 +14,7 @@ import Eval.Operator (Operator (Add, Concat, Div, Mod, Mul, Sub))
 import Parser.Ast (parseAst)
 import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseNotAnyChar, parseOpeningCurlyBraquet, parseOpeningParenthesis)
 import Parser.Error (replaceErr)
-import Parser.Operable (parseDefinitionName, parseElement, parseOperable)
+import Parser.Operable (parseDefinitionName, parseElement)
 import Parser.Operation (checkOperator)
 import Parser.Position (Position (..))
 import Parser.Range (Range (..))
@@ -85,7 +85,7 @@ parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
     "Syntaxe error: bad variable definition"
-    ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing)) <* parseChar ';')
+    ((createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseElement) <|> pure Nothing)) <* parseChar ';')
 
 ----------------------------------------------------------------
 
@@ -219,7 +219,7 @@ parseWhile = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "whil
 
 parseFor :: Parser Structure
 parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *> parseDefinitionName) s p of
-  Right (it, itstr, itpos) -> case runParser (parseWithSpace $ parseSymbol "in" *> parseOperable) itstr itpos of
+  Right (it, itstr, itpos) -> case runParser (parseWithSpace $ parseSymbol "in" *> parseElement) itstr itpos of
     Right (op, opstr, oppos) -> case runParser parseThen opstr oppos of
       Right (thn, thnstr, thnpos) -> Right (For it op thn, thnstr, thnpos)
       Left a -> Left a
