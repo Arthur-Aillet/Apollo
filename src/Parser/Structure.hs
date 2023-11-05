@@ -14,7 +14,7 @@ import Eval.Operator (Operator (Add, Concat, Div, Mod, Mul, Sub))
 import Parser.Ast (parseAst)
 import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseNotAnyChar, parseOpeningCurlyBraquet, parseOpeningParenthesis)
 import Parser.Error (replaceErr)
-import Parser.Operable (parseDefinitionName, parseElement, parseOperable)
+import Parser.Operable (parseDefinitionName, parseElement)
 import Parser.Operation (checkOperator)
 import Parser.Position (Position (..))
 import Parser.Range (Range (..))
@@ -66,10 +66,6 @@ parseAstStructure =
               <|> parseFor
           )
 
--- <|> parseSingle
--- <|> parseBlock
--- <|> parseSequence
-
 ----------------------------------------------------------------
 
 acceptableCharacters :: String
@@ -97,16 +93,14 @@ createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
       Left a -> Left a
     Left a -> Left a
   Left a -> Left a
+
 parseVarDefinition :: Parser Structure
-parseVarDefinition =
-  replaceErr
-    "Syntax error: bad variable definition"
-    ( createVarDef
+parseVarDefinition = createVarDef
         (parseType <* parseChar ' ')
         (parseWithSpace parseDefinitionName)
         (optional (parseWithSpace (parseChar '=') *> parseElement))
         <* parseChar ';'
-    )
+
 ----------------------------------------------------------------
 
 getIncrement :: String -> Maybe Operator
@@ -154,16 +148,12 @@ parseEqualityOp name =
     <*> parseMaybeparenthesis parseElement
 
 parseVarEquality :: Parser Structure
-parseVarEquality =
-  replaceErr
-    "Syntax error: bad assignment"
-    ( VarAssignation
+parseVarEquality = VarAssignation
         <$> parseWithSpace parseDefinitionName
         <*> ( parseWithSpace (parseChar '=')
                 *> parseElement
                 <* parseWithSpace (parseChar ';')
             )
-    )
 
 parseVarIncrementation :: Parser Structure
 parseVarIncrementation = Parser $ \s p ->
@@ -300,6 +290,7 @@ findNextInstructionOrSequence = Parser $ \s p ->
     Left _ -> case runParser parseAChar s p of
       Right (a, str, pos) -> Right ([a], str, pos)
       Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
+      Left a -> Left a
 
 findNextInstruction :: Parser String
 findNextInstruction = Parser $ \s p -> case runParser findNewStruc s p of

@@ -62,8 +62,13 @@ addNewMessage (str, Range start end, src) pre =
     ++ show end
     ++ "\n"
 
+
+
 instance Show StackTrace where
-  show (StackTrace list) = foldr addNewMessage (red ++ "Errors found during parsing:\n" ++ resetColor) list
+  show (StackTrace list) = foldr addNewMessage msg list
+    where
+      msg | length list <= 1 = (red ++ "Error found during parsing:\n" ++ resetColor)
+          | otherwise = (red ++ "Errors found during parsing:\n" ++ resetColor)
 
 instance Eq SourceLocation where
   (SourceLocation fn1 file1 p1) == (SourceLocation fn2 file2 p2) =
