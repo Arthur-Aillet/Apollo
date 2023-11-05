@@ -36,10 +36,11 @@ attachIndex [] _ = []
 attachIndex ((str, t) : xs) acc =
   (str, (acc, t, True)) : attachIndex xs (acc + 1)
 
-createCtx :: [Definition] -> Context -> Int -> Compile Context
-createCtx (FuncDefinition "main" _ : xs) ctx nbr = createCtx xs ctx nbr
-createCtx (FuncDefinition name (Function args rval _) : xs) (Context ctx) nbr =
-  createCtx xs (Context $ insert name (nbr, args, rval) ctx) (nbr + 1)
+createCtx :: [Definition] -> (Context, Bool) -> Int -> Compile (Context, Bool)
+createCtx (FuncDefinition "main" (Function args rval _) : xs) (Context ctx, _) nbr =
+  createCtx xs (Context $ insert "main" (0, args, rval) ctx, True) nbr
+createCtx (FuncDefinition name (Function args rval _) : xs) (Context ctx, bool) nbr =
+  createCtx xs (Context $ insert name (nbr, args, rval) ctx, bool) (nbr + 1)
 createCtx [] ctx _ = Ok [] ctx
 
 createLocalContext :: [(String, Type)] -> Maybe Type -> LocalContext

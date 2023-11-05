@@ -107,9 +107,9 @@ run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
-  (Binary env main_f) <- compile defs
+  (Binary env) <- compile defs
   if not (hasNothing (argsToMaybeValues args))
-    then execute env args main_f
+    then execute env args (snd $ head env)
     else void $ print "invalid args"
 
 build :: ([String], [String]) -> IO ()
@@ -122,7 +122,7 @@ build (filenames, name)
 
 launch :: ([String], [String]) -> IO ()
 launch (binary, _)
-  | length binary > 1 = putStr launchHelp >> pure ()
+  | length binary > 1 = void $ putStr launchHelp
   | otherwise = pure ()
 
 argDispatch :: [String] -> IO ()
