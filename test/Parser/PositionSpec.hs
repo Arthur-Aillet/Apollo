@@ -22,7 +22,7 @@ getPosition :: Int -> Int -> Position
 getPosition x y = Position {line = y, char = x}
 
 getRangePosition :: Int -> Int -> SourceLocation
-getRangePosition x y = SourceLocation {functionName = "", fileName = "", l = y, c = x}
+getRangePosition x y = SourceLocation {functionName = "", fileName = "", pos = getPosition x y}
 
 defaultPositionTest :: Test
 defaultPositionTest = TestCase $ assertEqual "default position is line = 0, char = 0" (getPosition 0 0) defaultPosition
