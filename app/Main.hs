@@ -21,6 +21,8 @@ import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
 
+import Eval.ASM
+
 defaultHelp :: String
 defaultHelp =
   "\
@@ -145,14 +147,16 @@ dumpASM (binary, _)
     let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
     let env = decode bytes
     case env of
-      Right env2 -> print env2
+      Right env2 -> mapM_ (\x -> mapM_ putStrLn x >> putStrLn "") (disassemble env2)
       Left err -> putStrLn err
 
 argDispatch :: [String] -> IO ()
 argDispatch ("-h" : args) = helpMsg args >> exitSuccess
+argDispatch ("--help" : args) = helpMsg args >> exitSuccess
 argDispatch ("run" : args) = run $ separateArgs args "--"
 argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
+argDispatch ("disassemble" : args) = dumpASM $ separateArgs args "--"
 argDispatch _ = helpMsg ["invalid"] >> exitWith (ExitFailure 1)
 
 main :: IO ()
