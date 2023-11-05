@@ -21,7 +21,6 @@ import Eval.Syscall (Syscall (..))
 import Unsafe.Coerce
 import Ast.Type (Type (..))
 import Data.Word (Word64)
-import Debug.Trace
 
 type Bytes = Word64
 
