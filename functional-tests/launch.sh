@@ -92,7 +92,6 @@ then
           ((nbr=nbr+1))
           NAME=${f##*/}
           printf "Testing [%-15s] file:" $NAME
-          touch /tmp/Apollo_Tests/current_apollo
           ./apollo run < $f > /tmp/Apollo_Tests/current_apollo
           DIFF=$(diff /tmp/Apollo_Tests/current_apollo functional-tests/answers/$FILE_ANSWER)
           if [ "$DIFF" == "" ]
