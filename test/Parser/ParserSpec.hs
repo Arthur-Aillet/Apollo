@@ -1,10 +1,9 @@
 module Parser.ParserSpec (parserTests) where
 
-import Parser.PositionSpec
-import Parser.CharSpec
-import Parser.SymbolSpec
 import Parser.BoolSpec
-
+import Parser.CharSpec
+import Parser.PositionSpec
+import Parser.SymbolSpec
 import Test.HUnit
 
 parserTests :: Test
@@ -30,7 +29,6 @@ parserTests =
       -- "" ~: parseOpeningQuoteTests,
       -- "parseClosingQuote" ~: parseClosingQuoteTests
     ]
-
 
 -- parseStringTests :: Test
 -- parseStringTests =

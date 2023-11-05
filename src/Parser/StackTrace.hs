@@ -15,29 +15,28 @@ module Parser.StackTrace
   )
 where
 
-import Parser.Position (Position (..))
+import Parser.Position (Position (..), defaultPosition)
 import Parser.Range (Range (..))
+import Ast.Display(red, yellow, resetColor)
 
 newtype StackTrace = StackTrace [(String, Range, SourceLocation)]
 
 data SourceLocation = SourceLocation
   { functionName :: String,
     fileName :: String,
-    l :: Int,
-    c :: Int
+    pos :: Position
   }
 
 defaultLocation :: SourceLocation
 defaultLocation =
-  SourceLocation {functionName = "", fileName = "", l = 0, c = 0}
+  SourceLocation {functionName = "", fileName = "", pos = defaultPosition}
 
 addSourceLocation :: String -> Position -> SourceLocation
-addSourceLocation name pos =
+addSourceLocation name p =
   SourceLocation
     { functionName = name,
       fileName = "",
-      l = line pos,
-      c = char pos
+      pos = p
     }
 
 modifySourceLocation :: SourceLocation -> [(String, Range, SourceLocation)] -> [(String, Range, SourceLocation)]
@@ -54,11 +53,9 @@ addNewMessage (str, Range start end, src) pre =
     ++ "\t in "
     ++ show (functionName src)
     ++ "("
-    ++ show (l src)
-    ++ ":"
-    ++ show (c src)
+    ++ show (pos src)
     ++ "): "
-    ++ str
+    ++ yellow ++ str ++ resetColor
     ++ " started at "
     ++ show start
     ++ " and finished at "
@@ -66,11 +63,11 @@ addNewMessage (str, Range start end, src) pre =
     ++ "\n"
 
 instance Show StackTrace where
-  show (StackTrace list) = foldr addNewMessage "Errors are: \n" list
+  show (StackTrace list) = foldr addNewMessage (red ++ "Errors found during parsing:\n" ++ resetColor) list
 
 instance Eq SourceLocation where
-  (SourceLocation fn1 file1 l1 c1) == (SourceLocation fn2 file2 l2 c2) =
-    fn1 == fn2 && file1 == file2 && l1 == l2 && c1 == c2
+  (SourceLocation fn1 file1 p1) == (SourceLocation fn2 file2 p2) =
+    fn1 == fn2 && file1 == file2 && p1 == p2
 
 instance Eq StackTrace where
   (StackTrace xs) == (StackTrace ys) = xs == ys

@@ -7,16 +7,16 @@
 
 module Parser.PositionSpec (module Parser.PositionSpec) where
 
-import Test.HUnit
 import Parser.Position (Position (..), defaultPosition, moveCursor)
-import Parser.StackTrace (SourceLocation(..))
+import Parser.StackTrace (SourceLocation (..))
+import Test.HUnit
 
 positionTests :: Test
 positionTests =
   TestList
-  [ "defaultPosition" ~: defaultPositionTest,
-    "moveCursor" ~: moveCursorTests
-  ]
+    [ "defaultPosition" ~: defaultPositionTest,
+      "moveCursor" ~: moveCursorTests
+    ]
 
 getPosition :: Int -> Int -> Position
 getPosition x y = Position {line = y, char = x}

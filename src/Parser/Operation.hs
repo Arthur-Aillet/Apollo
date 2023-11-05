@@ -8,7 +8,7 @@
 module Parser.Operation (module Parser.Operation) where
 
 import Ast.Ast (Operable (..), Operation (..))
-import Control.Applicative (Alternative ((<|>)))
+import Control.Applicative (Alternative ((<|>), empty))
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (Print))
 import Parser.Char (parseChar, parseClosingBraquet, parseClosingParenthesis, parseOpeningParenthesis)
@@ -40,7 +40,7 @@ parsePredicat :: Parser String
 parsePredicat =
   foldl
     (\prec symbol -> prec <|> parseSymbol symbol)
-    faillingParser
+    empty
     ["+", "-", "*", "/", "%", "==", "<", "<=", ">", ">=", "!=", "&&", "||", ":"]
 
 ---------------------------------------------

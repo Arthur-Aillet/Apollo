@@ -38,16 +38,16 @@ makeStack :: String -> Position -> Position -> StackTrace
 makeStack str p pos = StackTrace [(str, Range p pos, defaultLocation)]
 
 msg1Err :: String -> String
-msg1Err inst = "Syntaxe error: instruction " ++ inst ++ " is not valid"
+msg1Err inst = "Syntax error: instruction " ++ inst ++ " is not valid"
 
 msg2Err :: String
-msg2Err = "Syntaxe error: invalid instruction or bad assignation"
+msg2Err = "Syntax error: invalid instruction or bad assignation"
 
 parseError :: Parser Ast
 parseError = Parser $ \s p ->
   case runParser (parseWithSpace parseSymbolType) s p of
     Right (_, _, ps) ->
-      Left (makeStack "Syntaxe error: bad variable definition" p ps)
+      Left (makeStack "Syntax error: bad variable definition" p ps)
     Left _ -> case runParser parseSpecificInstruction s p of
       Right (inst, _, pos) -> Left (makeStack (msg1Err inst) p pos)
       Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
@@ -83,7 +83,7 @@ acceptableCharacters =
 parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash =
   replaceErr
-    "Syntaxe error: bad return"
+    "Syntax error: bad return"
     (parseMany (parseChar '\\' *> parseAChar <|> parseAChar))
 
 ----------------------------------------------------------------
@@ -100,7 +100,7 @@ createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
-    "Syntaxe error: bad variable definition"
+    "Syntax error: bad variable definition"
     ( createVarDef
         (parseType <* parseChar ' ')
         (parseWithSpace parseDefinitionName)
@@ -156,7 +156,7 @@ parseEqualityOp name =
 parseVarEquality :: Parser Structure
 parseVarEquality =
   replaceErr
-    "Syntaxe error: bad assignment"
+    "Syntax error: bad assignment"
     ( VarAssignation
         <$> parseWithSpace parseDefinitionName
         <*> ( parseWithSpace (parseChar '=')
@@ -210,14 +210,10 @@ parseReturnWithoutParenthesis =
   parseWithSpace (parseSymbol "return") *> parseElement
 
 parseReturn :: Parser Structure
-parseReturn =
-  replaceErr
-    "Syntaxe error: bad return"
-    ( Return
+parseReturn = Return
         <$> ( (parseReturnWithParenthesis <|> parseReturnWithoutParenthesis)
                 <* parseChar ';'
             )
-    )
 
 ----------------------------------------------------------------
 
@@ -274,8 +270,8 @@ parseFor =
 parseSingle :: Parser Structure
 parseSingle = Single <$> parseAst
 
-findNewStruc :: Parser String
-findNewStruc =
+findStruct :: Parser String
+findStruct =
   parseWithSpace
     ( parseSymbolType
         <|> parseSymbol "return"
@@ -283,18 +279,37 @@ findNewStruc =
         <|> parseSymbol "else"
     )
 
-findNextInstruction :: Parser String
-findNextInstruction = Parser $ \s p -> case runParser (parseWithSpace findNewStruc) s p of
-  Right _ -> Right ("", s, p)
-  Left (StackTrace [("Not Found: End of Input", ran, src)]) -> Left (StackTrace [("", ran, src)])
-  Left _ -> case runParser (parseChar '}') s p of
+findNewStruc :: Parser String
+findNewStruc =
+  Parser $ \s p -> case runParser findStruct s p of
+    Right _ -> Right ("", s, p)
+    Left (StackTrace [("Not Found: End of Input", ran, src)]) ->
+      Left (StackTrace [("", ran, src)])
+    Left a -> Left a
+
+findSequenceEnd :: Parser String
+findSequenceEnd = Parser $ \s p ->
+  case runParser (parseChar '}') s p of
     Right _ -> Left (StackTrace [("", Range p p, defaultLocation)])
-    Left _ -> case runParser (parseWithSpace (parseNotAnyChar [';', '{'])) s p of
-      Right (_, str, pos) -> runParser findNextInstruction str pos
-      Left (StackTrace [("Not Found: List is empty", ran, src)]) -> Left (StackTrace [("", ran, src)])
-      Left _ -> case runParser parseAChar s p of
-        Right (a, str, pos) -> Right ([a], str, pos)
-        Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
+    Left a -> Left a
+
+findNextInstructionOrSequence :: Parser String
+findNextInstructionOrSequence = Parser $ \s p ->
+  case runParser (parseWithSpace (parseNotAnyChar [';', '{'])) s p of
+    Right (_, str, pos) -> runParser findNextInstruction str pos
+    Left (StackTrace [("Not Found: List is empty", ran, src)]) ->
+      Left (StackTrace [("", ran, src)])
+    Left _ -> case runParser parseAChar s p of
+      Right (a, str, pos) -> Right ([a], str, pos)
+      Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
+
+findNextInstruction :: Parser String
+findNextInstruction = Parser $ \s p -> case runParser findNewStruc s p of
+  Right a -> Right a
+  Left (StackTrace [("", ran, src)]) -> Left (StackTrace [("", ran, src)])
+  Left _ -> case runParser findSequenceEnd s p of
+    Left (StackTrace [("", ran, src)]) -> Left (StackTrace [("", ran, src)])
+    _ -> runParser findNextInstructionOrSequence s p
 
 moveToError :: Position -> Parser String
 moveToError ps = Parser $ \s p ->
@@ -304,19 +319,24 @@ moveToError ps = Parser $ \s p ->
       Right (_, str, pos) -> runParser (moveToError ps) str pos
       Left a -> Left a
 
+parseNextInstruction :: Parser [Ast] -> Range -> String -> Parser [Ast]
+parseNextInstruction parser (Range p1 p2) err = Parser $ \s p ->
+  case runParser (nextP p2) s p of
+    Right _ -> Left (StackTrace [(err, Range p1 p2, defaultLocation)])
+    Left (StackTrace [("", Range _ p3, _)]) ->
+      Left (StackTrace [(err, Range p1 p3, defaultLocation)])
+    Left (StackTrace ys) ->
+      Left (StackTrace (ys ++ [(err, Range p1 p2, defaultLocation)]))
+  where
+    nextP pos =
+      moveToError pos *> findNextInstruction *> parseManyInstructions parser
+
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
-  Left (StackTrace [(xs, Range p1 p2, src)]) ->
-    case runParser (nextP p2) s p of
-      Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
-      Left (StackTrace [("", Range _ p3, _)]) ->
-        Left (StackTrace [(xs, Range p1 p3, src)])
-      Left (StackTrace ys) -> Left (StackTrace ((xs, Range p1 p2, src) : ys))
+  Left (StackTrace [(xs, ran, _)]) ->
+    runParser (parseNextInstruction parser ran xs) s p
   Left a -> Left a
-  where
-    nextP p2 =
-      moveToError p2 *> findNextInstruction *> parseManyInstructions parser
 
 parseManyAst :: Parser [Ast]
 parseManyAst =
