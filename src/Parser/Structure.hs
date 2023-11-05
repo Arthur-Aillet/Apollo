@@ -38,16 +38,16 @@ makeStack :: String -> Position -> Position -> StackTrace
 makeStack str p pos = StackTrace [(str, Range p pos, defaultLocation)]
 
 msg1Err :: String -> String
-msg1Err inst = "Syntaxe error: instruction " ++ inst ++ " is not valid"
+msg1Err inst = "Syntax error: instruction " ++ inst ++ " is not valid"
 
 msg2Err :: String
-msg2Err = "Syntaxe error: invalid instruction or bad assignation"
+msg2Err = "Syntax error: invalid instruction or bad assignation"
 
 parseError :: Parser Ast
 parseError = Parser $ \s p ->
   case runParser (parseWithSpace parseSymbolType) s p of
     Right (_, _, ps) ->
-      Left (makeStack "Syntaxe error: bad variable definition" p ps)
+      Left (makeStack "Syntax error: bad variable definition" p ps)
     Left _ -> case runParser parseSpecificInstruction s p of
       Right (inst, _, pos) -> Left (makeStack (msg1Err inst) p pos)
       Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
@@ -83,7 +83,7 @@ acceptableCharacters =
 parseStringWithHandleBackslash :: Parser String
 parseStringWithHandleBackslash =
   replaceErr
-    "Syntaxe error: bad return"
+    "Syntax error: bad return"
     (parseMany (parseChar '\\' *> parseAChar <|> parseAChar))
 
 ----------------------------------------------------------------
@@ -100,7 +100,7 @@ createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
-    "Syntaxe error: bad variable definition"
+    "Syntax error: bad variable definition"
     ( createVarDef
         (parseType <* parseChar ' ')
         (parseWithSpace parseDefinitionName)
@@ -156,7 +156,7 @@ parseEqualityOp name =
 parseVarEquality :: Parser Structure
 parseVarEquality =
   replaceErr
-    "Syntaxe error: bad assignment"
+    "Syntax error: bad assignment"
     ( VarAssignation
         <$> parseWithSpace parseDefinitionName
         <*> ( parseWithSpace (parseChar '=')
@@ -210,14 +210,10 @@ parseReturnWithoutParenthesis =
   parseWithSpace (parseSymbol "return") *> parseElement
 
 parseReturn :: Parser Structure
-parseReturn =
-  replaceErr
-    "Syntaxe error: bad return"
-    ( Return
+parseReturn = Return
         <$> ( (parseReturnWithParenthesis <|> parseReturnWithoutParenthesis)
                 <* parseChar ';'
             )
-    )
 
 ----------------------------------------------------------------
 
@@ -271,15 +267,6 @@ parseFor =
 
 parseSingle :: Parser Structure
 parseSingle = Single <$> parseAst
-
--- findNewStruc :: Parser String
--- findNewStruc =
---   parseWithSpace
---     ( parseSymbolType
---         <|> parseSymbol "return"
---         <|> parseSymbol "if"
---         <|> parseSymbol "else"
---     )
 
 findStruct :: Parser String
 findStruct =
@@ -337,7 +324,7 @@ parseNextInstruction parser (Range p1 p2) err = Parser $ \s p ->
     Left (StackTrace [("", Range _ p3, _)]) ->
       Left (StackTrace [(err, Range p1 p3, defaultLocation)])
     Left (StackTrace ys) ->
-      Left (StackTrace ((err, Range p1 p2, defaultLocation) : ys))
+      Left (StackTrace (ys ++ [(err, Range p1 p2, defaultLocation)]))
   where
     nextP pos =
       moveToError pos *> findNextInstruction *> parseManyInstructions parser
