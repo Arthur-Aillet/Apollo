@@ -21,5 +21,5 @@ parseBoolTests =
     [ "True" ~: (Right (True, ";", getPosition 4 0)) @=? (runParser parseBool "true;" defaultPosition),
       "False" ~: (Right (False, "   ;", getPosition 5 0)) @=? (runParser parseBool "false   ;" defaultPosition),
       "Empty list" ~: (Left (StackTrace [("Not Found: End of Input", defaultRange, defaultLocation)])) @=? (runParser parseBool "" defaultPosition),
-      "just #" ~: (Left (StackTrace [("Not Found: charactere is not 't' (is '#')", defaultRange, defaultLocation)])) @=? (runParser parseBool "#" defaultPosition)
+      "just #" ~: (Left (StackTrace [("Not Found: char is not 't' (is '#')", defaultRange, defaultLocation)])) @=? (runParser parseBool "#" defaultPosition)
     ]

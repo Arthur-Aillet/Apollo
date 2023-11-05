@@ -31,7 +31,7 @@ parseSymbolTests :: Test
 parseSymbolTests =
   TestList
     [ "Test 1" ~: (Right ("azerty", " hello", (getPosition 6 0))) @=? (runParser (parseSymbol "azerty") "azerty hello" defaultPosition),
-      "Test 2" ~: (Left (StackTrace [("Not Found: charactere is not 'e' (is 'a')", defaultRange, defaultLocation)])) @=? (runParser (parseSymbol "ezryta") "azerty hello" defaultPosition),
+      "Test 2" ~: (Left (StackTrace [("Not Found: char is not 'e' (is 'a')", defaultRange, defaultLocation)])) @=? (runParser (parseSymbol "ezryta") "azerty hello" defaultPosition),
       "Test 3" ~: (Left (StackTrace [("Not Found: End of Input", defaultRange, defaultLocation)])) @=? (runParser (parseSymbol "azerty") "" defaultPosition)
     ]
 
@@ -54,8 +54,8 @@ parseListTypeTests =
     [ "TypeList (TypeInt)" ~: (Right ("[int]", "", getPosition 5 0)) @=? (runParser parseListType "[int]" defaultPosition),
       "TypeList (TypeString)" ~: (Right ("[string]", "", getPosition 8 0)) @=? (runParser parseListType "[string]" defaultPosition),
       "TypeList (TypeBool)" ~: (Right ("[bool]", "", getPosition 6 0)) @=? (runParser parseListType "[bool]" defaultPosition),
-      "Type invalide (TypeList)" ~: (Left (StackTrace [("Not Found: charactere is not 't' (is 'v')", Range (getPosition 3 0) (getPosition 3 0), defaultLocation)])) @=? (runParser parseListType "[invalid]" defaultPosition),
-      "Type invalide (Symbole manquant)" ~: (Left (StackTrace [("Not Found: Missing closing braquet", Range (getPosition 4 0) (getPosition 4 0), defaultLocation)])) @=? (runParser parseListType "[int" defaultPosition)
+      "Type invalide (TypeList)" ~: (Left (StackTrace [("Not Found: char is not 't' (is 'v')", Range (getPosition 3 0) (getPosition 3 0), defaultLocation)])) @=? (runParser parseListType "[invalid]" defaultPosition),
+      "Type invalide (Symbole manquant)" ~: (Left (StackTrace [("parseClosingBraquet: Not Found: Missing closing braquet", Range (getPosition 4 0) (getPosition 4 0), defaultLocation)])) @=? (runParser parseListType "[int" defaultPosition)
     ]
 
 parseSymbolTypeTests :: Test
@@ -66,7 +66,7 @@ parseSymbolTypeTests =
       "Type valide (TypeBool)" ~: (Right ("bool", "", getPosition 4 0)) @=? (runParser parseSymbolType "bool" defaultPosition),
       "Type valide (TypeChar)" ~: (Right ("char", "", getPosition 4 0)) @=? (runParser parseSymbolType "char" defaultPosition),
       "Type valide (TypeList)" ~: (Right ("[int]", "", getPosition 5 0)) @=? (runParser parseSymbolType "[int]" defaultPosition),
-      "Type invalide" ~: (Left (StackTrace [("Not Found: charactere is not 't' (is 'v')", Range (getPosition 2 0) (getPosition 2 0), defaultLocation)])) @=? (runParser parseSymbolType "invalid" defaultPosition)
+      "Type invalide" ~: (Left (StackTrace [("Not Found: char is not 't' (is 'v')", Range (getPosition 2 0) (getPosition 2 0), defaultLocation)])) @=? (runParser parseSymbolType "invalid" defaultPosition)
     ]
 
 parseTypeTests :: Test
@@ -77,7 +77,7 @@ parseTypeTests =
       "Type valide (TypeBool)" ~: (Right (TypeBool, "", getPosition 4 0)) @=? (runParser parseType "bool" defaultPosition),
       "Type valide (TypeChar)" ~: (Right (TypeChar, "", getPosition 4 0)) @=? (runParser parseType "char" defaultPosition),
       "Type valide (TypeList)" ~: (Right ((TypeList (Just TypeInt)), "", getPosition 5 0)) @=? (runParser parseType "[int]" defaultPosition),
-      "Type invalide" ~: (Left (StackTrace [("Not Found: charactere is not 't' (is 'v')", Range (getPosition 2 0) (getPosition 2 0), defaultLocation)])) @=? (runParser parseType "invalid" defaultPosition)
+      "Type invalide" ~: (Left (StackTrace [("Not Found: char is not 't' (is 'v')", Range (getPosition 2 0) (getPosition 2 0), defaultLocation)])) @=? (runParser parseType "invalid" defaultPosition)
     ]
 
 parseMaybeTypeTests :: Test

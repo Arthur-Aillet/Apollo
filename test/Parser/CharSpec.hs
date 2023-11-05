@@ -54,8 +54,8 @@ parseOpeningAndClosingTests =
       "Error parseClosingParenthesis" ~: (Left (StackTrace [("Not Found: Missing closing Parenthesis", defaultRange, defaultLocation)])) @=? (runParser parseClosingParenthesis "foobar" defaultPosition),
       "Error parseOpeningCurlyBraquet" ~: (Left (StackTrace [("Not Found: Missing opening curlybraquet", defaultRange, defaultLocation)])) @=? (runParser parseOpeningCurlyBraquet "foobar" defaultPosition),
       "Error parseClosingCurlyBraquet" ~: (Left (StackTrace [("Not Found: Missing closing curlybraquet", defaultRange, defaultLocation)])) @=? (runParser parseClosingCurlyBraquet "foobar" defaultPosition),
-      "Error parseOpeningBraquet" ~: (Left (StackTrace [("Not Found: Missing opening braquet", defaultRange, defaultLocation)])) @=? (runParser parseOpeningBraquet "foobar" defaultPosition),
-      "Error parseClosingBraquet" ~: (Left (StackTrace [("Not Found: Missing closing braquet", defaultRange, defaultLocation)])) @=? (runParser parseClosingBraquet "foobar" defaultPosition)
+      "Error parseOpeningBraquet" ~: (Left (StackTrace [("parseOpeningBraquet: Not Found: Missing opening braquet", defaultRange, defaultLocation)])) @=? (runParser parseOpeningBraquet "foobar" defaultPosition),
+      "Error parseClosingBraquet" ~: (Left (StackTrace [("parseClosingBraquet: Not Found: Missing closing braquet", defaultRange, defaultLocation)])) @=? (runParser parseClosingBraquet "foobar" defaultPosition)
     ]
 
 parseCharTests :: Test
@@ -63,7 +63,7 @@ parseCharTests =
   TestList
     [ "Test 1" ~: (Right ('\n', "hello world!", (getPosition 0 1))) @=? (runParser (parseChar '\n') "\nhello world!" defaultPosition),
       "Test 2" ~: (Right ('h', "ello world!", (getPosition 1 0))) @=? (runParser (parseChar 'h') "hello world!" defaultPosition),
-      "Test 3" ~: (Left (StackTrace [("Not Found: charactere is not '\n' (is 'h')", defaultRange, defaultLocation)])) @=? (runParser (parseChar '\n') "hello world!" defaultPosition)
+      "Test 3" ~: (Left (StackTrace [("Not Found: char is not '\n' (is 'h')", defaultRange, defaultLocation)])) @=? (runParser (parseChar '\n') "hello world!" defaultPosition)
     ]
 
 parseNotCharTests :: Test
