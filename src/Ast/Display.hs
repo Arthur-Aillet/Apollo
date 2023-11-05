@@ -8,7 +8,8 @@
 module Ast.Display (compile) where
 
 import Ast.Ast (Definition)
-import Ast.CompileAST (Binary (..), generateBinary)
+import Eval.Instructions (Env)
+import Ast.CompileAST (generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
@@ -49,7 +50,7 @@ displayError err =
       ++ resetColor
       ++ concatMap (\x -> '\t' : x ++ "\n") err
 
-compile :: [Definition] -> IO Binary
+compile :: [Definition] -> IO Env
 compile defs = case generateBinary defs of
   Ko w err ->
     displayWarnings w

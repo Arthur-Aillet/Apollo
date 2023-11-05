@@ -7,7 +7,6 @@
 
 module Main (main) where
 
-import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
 import Control.Monad (void)
 import Eval (exec)
@@ -107,7 +106,7 @@ run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
-  (Binary env) <- compile defs
+  env <- compile defs
   if not (hasNothing (argsToMaybeValues args))
     then execute env args (snd $ head env)
     else void $ print "invalid args"

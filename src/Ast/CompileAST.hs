@@ -19,30 +19,28 @@ import Ast.Operable (compOperation)
 import Data.HashMap.Lazy (empty)
 import Eval.Exec
 
-data Binary = Binary Env deriving (Show)
-
 mainErr :: [String]
 mainErr = ["Main function missing"]
 
-generateBinary :: [Definition] -> Compile Binary
+generateBinary :: [Definition] -> Compile Env
 generateBinary defs = case createCtx defs (Context empty, False) 1 of
   Ko warns err -> Ko warns err
   Ok warns (ctx, False) ->
-    failingComp (compAllFunc defs (Binary []) ctx) warns mainErr
-  Ok warns (ctx, True) -> case compAllFunc defs (Binary []) ctx of
+    failingComp (compAllFunc defs [] ctx) warns mainErr
+  Ok warns (ctx, True) -> case compAllFunc defs [] ctx of
     Ko warns2 err -> withW warns $ Ko warns2 err
     other -> other
 
-compAllFunc :: [Definition] -> Binary -> Context -> Compile Binary
-compAllFunc ((FuncDefinition "main" (Function args y z)) : xs) (Binary env) ctx =
+compAllFunc :: [Definition] -> Env -> Context -> Compile Env
+compAllFunc ((FuncDefinition "main" (Function args y z)) : xs) env ctx =
   case compFunc (Function args y z) ctx of
-    Ko warns err -> failingComp (compAllFunc xs (Binary env) ctx) warns err
-    Ok w f -> withW w $ compAllFunc xs (Binary $ (length args, f): env) ctx
-compAllFunc ((FuncDefinition _ (Function args y z)) : xs) (Binary env) c =
+    Ko warns err -> failingComp (compAllFunc xs env ctx) warns err
+    Ok w f -> withW w $ compAllFunc xs ((length args, f): env) ctx
+compAllFunc ((FuncDefinition _ (Function args y z)) : xs) env c =
   case compFunc (Function args y z) c of
     Ko warns err -> Ko warns err
     Ok w f ->
-      withW w $ compAllFunc xs (Binary $ env ++ [(length args, f)]) c
+      withW w $ compAllFunc xs (env ++ [(length args, f)]) c
 compAllFunc [] bin _ = Ok [] bin
 
 compFunc :: Function -> Context -> Compile Insts
