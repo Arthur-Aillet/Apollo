@@ -19,10 +19,10 @@ import Parser.Operation (parseOperation)
 
 import Parser.Range (Range (Range))
 import Parser.StackTrace (defaultLocation)
+import Parser.String (parseString)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..), StackTrace (StackTrace))
-import Parser.String (parseString)
 
 defChars :: [Char]
 defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"

@@ -22,7 +22,7 @@ import Eval.Atom (Atom (..))
 data Value
   = VAtom Atom
   | VList [Value]
-  deriving (Eq, show)
+  deriving (Eq, Show)
 
 -- instance Show Value where
 --   Show (VAtom) = Show VAtom
