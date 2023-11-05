@@ -55,7 +55,7 @@ compOperable (OpCast op ntype) c l =
     Ko w e -> Ko w e
     Ok w (fop, ftype)
       | ntype == ftype -> withW [warn] $ Ok w (fop, ntype)
-      | otherwise -> Ok w (fop, ntype)
+      | otherwise -> Ok w (fop ++ [Cast ntype], ntype)
       where
         warn = "Cast from " ++ show ntype ++ " to " ++ show ntype
 

@@ -57,7 +57,7 @@ data Operator
   | Concat
   | Get
   | Len
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
 operate op xs = case xs of

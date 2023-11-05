@@ -9,7 +9,7 @@ module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, 
 
 import Ast.Utils (listInnerMaybe)
 import Control.Exception (catch)
-import Eval.Atom (Atom (..))
+import Eval.Atom (Atom (..), bAtom, cAtom, iAtom, fAtom)
 import Eval.Instructions (Args, Env, Func, History, Index, Instruction (..), Insts, Machine, Pointer (..), moveForward)
 import Eval.Operator (Operator (..), Stack, Value (..), execOperator)
 import Eval.Syscall (execSys)

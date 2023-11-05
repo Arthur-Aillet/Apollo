@@ -19,6 +19,7 @@ module Eval.Instructions
   )
 where
 
+import Ast.Type (Type (..))
 import Eval.Atom (Atom (..))
 import Eval.Operator
   ( Operator (..),
@@ -40,6 +41,7 @@ data Instruction
   | PushI Index
   | CallD Index
   | CallI Index
+  | Cast Type
   | CallS -- call SH Args Name
   | Op Operator
   | Sys Syscall
