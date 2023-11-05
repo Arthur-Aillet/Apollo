@@ -186,8 +186,7 @@ handler :: SomeException -> IO (Either String Env)
 handler e = return $ Left $ show e
 
 load :: String -> IO (Either String Env)
-load binary = do
-  catch ( do
+load binary = catch ( do
     bytestring <- ByteString.readFile binary
     return $ case Binary.decodeOrFail (ByteString.fromStrict bytestring) of
       Left (_, _, err) -> Left err
@@ -212,7 +211,8 @@ dumpASM (binary, _)
     prog <- load (head binary)
     case prog of
       Right env ->
-        mapM_ (\x -> mapM_ putStrLn x >> putStrLn "") (disassemble env) >> return 0
+        mapM_ (\x -> mapM_ putStrLn x >> putStrLn "")
+          (disassemble env) >> return 0
       Left err -> putStrLn err >> return 1
 
 argDispatch :: [String] -> IO Int
