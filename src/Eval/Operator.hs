@@ -22,7 +22,10 @@ import Eval.Atom (Atom (..))
 data Value
   = VAtom Atom
   | VList [Value]
-  deriving (Eq, Show)
+  deriving (Eq, show)
+
+-- instance Show Value where
+--   Show (VAtom) = Show VAtom
 
 type Stack = [Value]
 

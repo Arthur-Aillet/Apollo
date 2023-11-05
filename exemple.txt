@@ -1,4 +1,4 @@
 @main () [int] {
-    [int] i = [1, 2, 3, 4];
-    return i;
+    float test = 1.0;
+    return ([test as int]);
 }

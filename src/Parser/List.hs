@@ -4,12 +4,13 @@ import Ast.Ast (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Exec (Atom (AtomB, AtomC), Value (VAtom, VList))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingsQuote, parseOpeningBraquet, parseOpeningsQuote)
+import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingsQuote, parseOpeningBraquet, parseOpeningsQuote, parseAnyChar)
 import Parser.Int (parseFloat, parseInt)
 import {-# SOURCE #-} Parser.Operable (parseElement)
-import Parser.Position (defaultPosition)
+import Parser.Position (defaultPosition, moveCursor)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
+import Parser.String (acceptableCharacters)
 
 parseElemWithComa :: Parser Operable
 parseElemWithComa = parseElement <* parseWithSpace (parseChar ',')
@@ -62,8 +63,29 @@ parseListValue = Parser $ \s p -> case runParser (parseWithSpace (parseOpeningBr
   Right (elements, str, pos) -> Right (VList elements, str, pos)
   Left a -> Left a
 
+getSpecialChar :: Char -> Value
+getSpecialChar 'n' = VAtom $ AtomC '\n' False
+getSpecialChar 't' = VAtom $ AtomC '\t' False
+getSpecialChar char = VAtom $ AtomC char False
+
+parseStrValue :: Parser [Value]
+parseStrValue = Parser $ \s p -> case runParser (parseAnyChar acceptableCharacters) s p of
+  Right ('\\', nextchar : newstr, newpos) -> case runParser parseStrValue newstr (moveCursor (moveCursor newpos False) False) of
+    Right (found, endstr, endpos) -> Right (getSpecialChar nextchar : found, endstr, endpos)
+    Left a -> Left a
+  Right (char, [], newpos) -> Right ([VAtom (AtomC char False)], [], newpos)
+  Right (char, newstr, newpos) -> case runParser parseStrValue newstr newpos of
+    Right (found, endstr, endpos) -> Right (VAtom (AtomC char False) : found, endstr, endpos)
+    Left a -> Left a
+  Left a -> Left a
+
+parseStringValue :: Parser Value
+parseStringValue = Parser $ \s p -> case runParser (parseWithSpace parseStrValue) s p of
+  Right (elements, str, pos) -> Right (VList elements, str, pos)
+  Left a -> Left a
+
 stringToVal :: String -> Maybe Value
-stringToVal str = case runParser (parseWithSpace (parseAtomValue <|> parseListValue)) str defaultPosition of
+stringToVal str = case runParser (parseWithSpace (parseAtomValue <|> parseListValue <|> parseStringValue)) str defaultPosition of
   Right (result, _, _) -> Just result
   Left _ -> Nothing
 

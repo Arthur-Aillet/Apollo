@@ -10,7 +10,7 @@ module Parser.Structure (module Parser.Structure) where
 import Ast.Ast (Ast (..), Operable (..), Operation (CallStd), Structure (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (AtomI))
-import Eval.Operator (Operator (Add, Div, Mod, Mul, Sub))
+import Eval.Operator (Operator (Add, Div, Mod, Mul, Sub, Concat))
 import Parser.Ast (parseAst)
 import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseNotAnyChar, parseOpeningCurlyBraquet, parseOpeningParenthesis)
 import Parser.Error (replaceErr)
@@ -110,6 +110,7 @@ getOpequality "-=" = Just Sub
 getOpequality "*=" = Just Mul
 getOpequality "/=" = Just Div
 getOpequality "%=" = Just Mod
+getOpequality ":=" = Just Concat
 getOpequality _ = Nothing
 
 parseOpEquality :: Parser String
@@ -119,6 +120,7 @@ parseOpEquality =
     <|> parseSymbol "*="
     <|> parseSymbol "/="
     <|> parseSymbol "%="
+    <|> parseSymbol ":="
 
 parseEqualityOp :: String -> Parser Operable
 parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseOpEquality getOpequality) s p of
