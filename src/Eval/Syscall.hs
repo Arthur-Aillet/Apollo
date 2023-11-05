@@ -9,7 +9,7 @@ module Eval.Syscall (Syscall (..), execSys) where
 
 import Eval.Atom (Atom (..))
 import Eval.Operator
-  ( Operator (..),
+  (
     Stack,
     Value (..),
   )
