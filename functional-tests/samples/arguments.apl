@@ -33,12 +33,12 @@
     return result;
 }
 
-@main([string] argv) {
-    string one = argv[0]
-    string two = argv[1]
-    string three = argv[2]
-    string four = argv[3]
-    string five = argv[4]
+@main([string] argv) int {
+    string one = argv[0];
+    string two = argv[1];
+    string three = argv[2];
+    string four = argv[3];
+    string five = argv[4];
     if (@isSameStr(one, "true")) && ((@strToInt(two)) == 2) {
         if (@isSameStr(three, "3.0")) && ((@strToInt(two)) == 4) {
             if (@isSameStr(five, "icanonlycountofour")) {

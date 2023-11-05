@@ -93,13 +93,13 @@ extractname strs =
     else (strs, "a.out")
 
 help :: [String] -> IO ()
-help [] = putStr defaultHelp
+help _ = putStr defaultHelp
 help list
   | isAfter list "-h" "run" = putStr runHelp
   | isAfter list "-h" "build" = putStr buildHelp
   | isAfter list "-h" "launch" = putStr launchHelp
   | isAfter list "-h" "compile" = putStr compiledHelp
-help _ = putStr invalidHelp
+  | otherwise = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
 getStrsBefore (x : []) target
