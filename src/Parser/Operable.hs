@@ -15,7 +15,6 @@ import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClos
 import Parser.Int (parseFloat, parseInt)
 import Parser.List (parseList)
 import Parser.Operation (parseOperation)
-
 import Parser.Range (Range (Range))
 import Parser.StackTrace (defaultLocation)
 import Parser.String (parseString)

@@ -10,10 +10,11 @@ module Ast.Bytecode
     toBytecode,
     encode,
     decode,
-    Bytes
-  ) where
+    Bytes,
+  )
+where
 
-import Ast.Type ( Type(..), Type(..) )
+import Ast.Type (Type (..))
 import Data.Word
 import Eval.Atom (Atom (..), bAtom, cAtom, iAtom)
 import Eval.Instructions (Env, Index, Instruction (..))
@@ -61,8 +62,9 @@ decode [_] = Left "invalid bytecode (almost empty decode)"
 encode :: Env -> [Bytes]
 encode ((idx, func) : xs) =
   (indexBytecode idx : intBytecode (length bytes) : bytes)
-  ++ encode xs
-    where bytes = toBytecode func
+    ++ encode xs
+  where
+    bytes = toBytecode func
 encode [] = []
 
 atomBytecode :: Atom -> [Bytes]
@@ -158,8 +160,8 @@ fromBytecode :: [Bytes] -> Either String [Instruction]
 fromBytecode (instr : count : xs) = case bytecodeInstruction instr of
   Left err -> Left err
   Right einstr -> case fromBytecode' einstr (bytecodeInt count) xs of
-      Left err -> Left err
-      Right (bytes, rest) -> (bytes : ) <$> fromBytecode rest
+    Left err -> Left err
+    Right (bytes, rest) -> (bytes :) <$> fromBytecode rest
 fromBytecode [] = Right []
 -- fromBytecode [0] = Right []
 fromBytecode [x] =
