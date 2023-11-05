@@ -6,21 +6,21 @@
 -}
 
 module Ast.Bytecode
-  (
-    fromBytecode,
+  ( fromBytecode,
     toBytecode,
     encode,
     decode,
-  ) where
+  )
+where
 
-import Eval.Instructions (Instruction (..), Index, Env)
-import Eval.Atom (Atom (..), cAtom, iAtom, bAtom)
-import Eval.Operator (Operator (..))
-import Eval.Syscall (Syscall (..))
+import Ast.Type (Type (..))
 import Data.Bits
 import Data.Word
+import Eval.Atom (Atom (..), bAtom, cAtom, iAtom)
+import Eval.Instructions (Env, Index, Instruction (..))
+import Eval.Operator (Operator (..))
+import Eval.Syscall (Syscall (..))
 import Unsafe.Coerce
-import Ast.Type (Type (..))
 
 type Bytes = Word
 
@@ -43,7 +43,8 @@ data InstructionEnum
   | ERet
   | EInstructionError -- out of bounds
   deriving (Show, Eq, Enum, Ord)
-    -- insure this is synced to the types in Eval.Instructions
+
+-- insure this is synced to the types in Eval.Instructions
 
 type APHeader = [(Int, [Bytes])]
 
@@ -59,8 +60,9 @@ decode (s : i : xs) = case fromBytecode (take size xs) of
 
 encode :: Env -> [Bytes]
 encode ((idx, func) : xs) =
-  [indexBytecode idx, intBytecode (length func)] ++ toBytecode func
-  ++ encode xs
+  [indexBytecode idx, intBytecode (length func)]
+    ++ toBytecode func
+    ++ encode xs
 encode [] = []
 
 bytecodeFormat :: (Int, Int, Int)
@@ -95,8 +97,9 @@ syscallBytecode :: Syscall -> Bytes
 syscallBytecode x = toEnum $ fromEnum x
 
 toBytecode :: [Instruction] -> [Bytes]
-toBytecode (instr : xs) = (a : b : c ) ++ (toBytecode xs)
-  where (a, b, c) = toBytecode' instr
+toBytecode (instr : xs) = (a : b : c) ++ (toBytecode xs)
+  where
+    (a, b, c) = toBytecode' instr
 toBytecode [] = []
 
 toBytecode' :: Instruction -> Bytecode
@@ -129,9 +132,10 @@ bytecodeIndex :: Bytes -> Index
 bytecodeIndex x = toEnum $ fromEnum x
 
 bytecodeInstruction :: Bytes -> Either String InstructionEnum
-bytecodeInstruction x = if fromEnum x < fromEnum EInstructionError
-  then Right (toEnum $ bytecodeInt x)
-  else Left ("Instruction bytecode deos not exist: " ++ show x)
+bytecodeInstruction x =
+  if fromEnum x < fromEnum EInstructionError
+    then Right (toEnum $ bytecodeInt x)
+    else Left ("Instruction bytecode deos not exist: " ++ show x)
 
 bytecodeType :: Bytes -> Type
 bytecodeType 0 = TypeBool
@@ -150,12 +154,11 @@ fromBytecode :: [Bytes] -> Either String [Instruction]
 fromBytecode (instr : count : xs) = case bytecodeInstruction instr of
   Left err -> Left err
   Right x -> case fromBytecode' x (bytecodeInt count) xs of
-      Left err -> Left err
-      Right (y, ys) -> (y : ) <$> fromBytecode ys
+    Left err -> Left err
+    Right (y, ys) -> (y :) <$> fromBytecode ys
 fromBytecode [] = Right []
 
 fromBytecode' :: InstructionEnum -> Int -> [Bytes] -> Either String (Instruction, [Bytes])
-
 fromBytecode' EPushD 2 (x : y : xs) = Right (PushD (bytecodeAtom x y), xs)
 fromBytecode' EStore 0 (xs) = Right (Store, xs)
 fromBytecode' ETake 1 (x : xs) = Right (Take (bytecodeInt x), xs)

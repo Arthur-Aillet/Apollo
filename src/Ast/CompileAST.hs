@@ -35,7 +35,7 @@ compAllFunc :: [Definition] -> Env -> Context -> Compile Env
 compAllFunc ((FuncDefinition "main" (Function args y z)) : xs) env ctx =
   case compFunc (Function args y z) ctx of
     Ko warns err -> failingComp (compAllFunc xs env ctx) warns err
-    Ok w f -> withW w $ compAllFunc xs ((length args, f): env) ctx
+    Ok w f -> withW w $ compAllFunc xs ((length args, f) : env) ctx
 compAllFunc ((FuncDefinition _ (Function args y z)) : xs) env c =
   case compFunc (Function args y z) c of
     Ko warns err -> Ko warns err

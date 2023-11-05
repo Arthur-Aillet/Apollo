@@ -24,7 +24,6 @@ instance Show Type where
   show (TypeList (Just type')) = "[" ++ show type' ++ "]"
   show (TypeList Nothing) = "[]"
 
-
 numType :: Type -> Bool
 numType TypeBool = True
 numType TypeChar = True

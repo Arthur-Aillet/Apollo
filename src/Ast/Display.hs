@@ -8,9 +8,9 @@
 module Ast.Display (compile) where
 
 import Ast.Ast (Definition)
-import Eval.Instructions (Env)
 import Ast.CompileAST (generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
+import Eval.Instructions (Env)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 yellow :: String
