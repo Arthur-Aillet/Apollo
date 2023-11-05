@@ -22,25 +22,16 @@
     return result;
 }
 
-@intToStr(int i) string {
-    string result = "";
-    int number = i;
-    int temp = 0;
-    while (number != 0) {
-        temp = number % 10;
-        result = [('0' + temp as char )] : result ;
-        number /= 10;
+@fibonacci(int a, int b, int stop) int {
+    if stop == 0 {
+        return (a + b);
     }
-    if ((len(result)) == 0) {
-        result = "0";
-    }
-    return result;
+    return (@fibonacci(b, (a + b), (stop - 1)));
 }
 
-@main ([string] args) int {
-    int result = 500;
-    string arg = args[0];
-    result = @strToInt(arg);
-    print(@intToStr(result));
-    return (result);
+@main ([string] argv) int {
+    string arg = argv[0];
+    int i = @strToInt(arg);
+    int result = @fibonacci(1, 1, i);
+    return result;
 }

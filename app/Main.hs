@@ -97,50 +97,57 @@ stringToVal str = VList $ map charToAtomC str
 stringsToVals :: [String] -> [Value]
 stringsToVals = map stringToVal
 
-execute :: Env -> [String] -> Insts -> IO ()
+execute :: Env -> [String] -> Insts -> IO Int
 execute env args main_f = do
   result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
   case result of
-    Left a -> putStrLn a
+    Left a -> do
+      putStrLn a
+      exitWith(ExitFailure 0)
     Right (Just (VAtom (AtomI a))) -> exitWith(ExitFailure a)
-    Right _ -> pure()
+    Right (Just (VAtom (AtomC a _))) -> exitWith(ExitFailure $ fromEnum a)
+    Right (Just (VAtom (AtomF a))) -> exitWith(ExitFailure (round a :: Int))
+    Right _ -> exitWith(ExitFailure 1)
 
-run :: ([String], [String]) -> IO ()
+run :: ([String], [String]) -> IO Int
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
   (Binary env main_f) <- compile defs
   execute env args main_f
-  pure ()
 
-build :: ([String], [String]) -> IO ()
+build :: ([String], [String]) -> IO Int
 build (filenames, name) =
   if length (name) > 1
     then do
       putStr buildHelp
-      pure ()
+      exitWith(ExitFailure 0)
     else do
       files <- readFiles filenames
       defs <- parser files
-      pure ()
+      exitWith(ExitFailure 1)
 
-launch :: ([String], [String]) -> IO ()
+launch :: ([String], [String]) -> IO Int
 launch (binary, args) =
   if length (binary) > 1
     then do
       putStr launchHelp
-      pure ()
+      exitWith(ExitFailure 0)
     else do
-      pure ()
+      exitWith(ExitFailure 1)
 
-argDispatch :: [String] -> IO ()
-argDispatch ("-h" : args) = help args
+argDispatch :: [String] -> IO Int
+argDispatch ("-h" : args) = do
+  help args
+  exitWith(ExitFailure 0)
 argDispatch ("run" : args) = run $ separateArgs args "--"
 argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
-argDispatch _ = help ["invalid"]
+argDispatch _ = do
+  help ["invalid"]
+  exitWith(ExitFailure 0)
 
-main :: IO ()
+main :: IO Int
 main = do
   args <- getArgs
   argDispatch args

@@ -223,9 +223,11 @@ parseReturn =
 
 parsecond :: Parser Operable
 parsecond =
-  parseWithSpace parseOpeningParenthesis
-    *> parseWithSpace parseElement
-    <* parseWithSpace parseClosingParenthesis
+  parseWithSpace (
+    parseMaybeparenthesis (
+      parseWithSpace parseElement
+      )
+  )
 
 parseIf :: Parser Structure
 parseIf =
@@ -263,7 +265,7 @@ parseWhile =
 parseFor :: Parser Structure
 parseFor =
   For
-    <$> parseWithSpace (parseSymbol "for" *> parseDefinitionName)
+    <$> parseWithSpace (parseSymbol "for" *> parseWithSpace parseDefinitionName)
     <*> parseWithSpace (parseSymbol "in" *> parseElement)
     <*> parseThen
 
