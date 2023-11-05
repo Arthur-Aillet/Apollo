@@ -74,10 +74,17 @@ parseBuiltin = parseSymbol "len"
 
 getSysCall :: String -> Maybe Syscall
 getSysCall "print" = Just Print
+getSysCall "read" = Just Print
+getSysCall "write" = Just Print
+getSysCall "append" = Just Print
 getSysCall _ = Nothing
 
 parseSysCall :: Parser String
-parseSysCall = parseSymbol "print"
+parseSysCall =
+  parseSymbol "print"
+    <|> parseSymbol "read"
+    <|> parseSymbol "write"
+    <|> parseSymbol "append"
 
 ---------------------------------------------
 

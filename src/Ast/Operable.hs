@@ -116,6 +116,12 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 compPrinting :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compSyscallType (Just $ TypeList $ Just TypeChar) Nothing
 
+compReading :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compReading =
+  compSyscallType
+    (Just $ TypeList $ Just TypeChar)
+    (Just $ TypeList $ Just TypeChar)
+
 cMsg :: [String]
 cMsg = ["Can't get on empty list"]
 
@@ -267,8 +273,6 @@ compBuiltin _ builtin (OperatorDef ac Logical) True ops =
   evalLogical builtin (toVa ops) ac
 compBuiltin args builtin (OperatorDef ac Logical) False _ =
   compLogical builtin args ac
--- compBuiltin args builtin (OperatorDef ac Printing) _ _ =
--- compPrinting builtin args ac
 compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
@@ -296,8 +300,11 @@ compOperation (CallStd builtin ops) c l =
   compBuiltin args builtin (defsOp builtin) (allValue ops) ops
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallSys builtin ops) c l =
-  compPrinting builtin args 1
+compOperation (CallSys builtin ops) c l
+  | builtin == Print = compPrinting builtin args 1
+  | builtin == Write = compPrinting builtin args 2
+  | builtin == Append = compPrinting builtin args 2
+  | builtin == Read = compReading builtin args 1
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
