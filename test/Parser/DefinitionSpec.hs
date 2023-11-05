@@ -12,12 +12,12 @@ import Test.HUnit
 import Parser.Definition
 import Parser.Position (defaultPosition)
 import Parser.PositionSpec (getPosition)
-import Parser.StackTrace (StackTrace (..), defaultLocation)
+import Parser.StackTrace (defaultLocation)
 import Parser.Type (Parser (..))
 
 import Ast.Ast (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..))
 import Eval.Atom (Atom (..))
-import Eval.Operator (Value (..), Operator(..))
+import Eval.Operator (Operator(..))
 import Ast.Display (red, resetColor, yellow, green)
 
 
@@ -51,7 +51,8 @@ invalidInstruction =
 parseFuncDefinitionTests :: Test
 parseFuncDefinitionTests =
     TestList
-    [ "Valid return" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [] (Just TypeInt) (AstStructure (Sequence [AstStructure (Return (OpValue (AtomI 4)))]))),"", getPosition 1 2))) @=? (show (runParser parseFuncDefinition "@foo() int {\nreturn 4;\n}" defaultPosition)),
+    [ "Valid" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [("i", TypeInt),("c",TypeChar),("b", TypeBool),("f", TypeFloat)] Nothing (AstStructure (Sequence []))),"", getPosition 39 0))) @=? (show (runParser parseFuncDefinition "@foo(int i, char c, bool b, float f) {}" defaultPosition)),
+      "Valid return" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [] (Just TypeInt) (AstStructure (Sequence [AstStructure (Return (OpValue (AtomI 4)))]))),"", getPosition 1 2))) @=? (show (runParser parseFuncDefinition "@foo() int {\nreturn 4;\n}" defaultPosition)),
       "Valid if" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [] (Just TypeInt) (AstStructure (Sequence [AstStructure (If [(OpOperation (CallStd Eq [OpVariable "b",OpValue (AtomI 2)]),AstStructure (Sequence [AstStructure (Return (OpValue (AtomI 4)))]))] Nothing)]))),"", getPosition 1 2))) @=? (show (runParser parseFuncDefinition "@foo() int {\nif (b == 2) {return 4;}\n}" defaultPosition)),
       "Valid for" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [] (Just TypeInt) (AstStructure (Sequence [AstStructure (For "i" (OpVariable "range") (AstStructure (Sequence [])))]))),"", getPosition 1 2))) @=? (show (runParser parseFuncDefinition "@foo() int {\nfor i in range {}\n}" defaultPosition)),
       "Valid for" ~: ("Right " ++ (show (FuncDefinition "foo" (Function [] (Just TypeInt) (AstStructure (Sequence [AstStructure (While (OpOperation (CallStd NEq [OpVariable "i",OpValue (AtomI 0)])) (AstStructure (Sequence [])))]))),"", getPosition 1 2))) @=? (show (runParser parseFuncDefinition "@foo() int {\nwhile (i != 0) {}\n}" defaultPosition)),

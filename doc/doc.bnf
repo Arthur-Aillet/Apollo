@@ -18,7 +18,7 @@
 <Float>                 = <PosFloat> | <NegFloat>;
 <StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\""; # \ handle
 <List>                  = "[" {<Elem> ","} <Elem> "]";
-<Range>                 = <Number>".."<Number>[":"Number]
+<Range>                 = <Number>".."<Number>[":"Number];
 <Bool>                  = "true" | "false";
 <Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
 
@@ -29,7 +29,7 @@
 <LogicalPredicate>      = "&&" | "||";
 <CalculusPredicate>     = "/" | "%" | "-" | "+";
 <UnaryPredicate>        = "!"
-<Operation>             = ["("] <Elem> <BinaryPredicate> <Elem> [")"] | ["("] <UnaryPredicate> <Elem> [")"]
+<Operation>             = ["("] <Elem> <BinaryPredicate> <Elem> [")"] | ["("] <UnaryPredicate> <Elem> [")"];
 
 <DeclareVariable>       = <Type> <String>;
 <DefineVariable>        = <DeclareVariable> "=" <Elem>;
@@ -63,5 +63,5 @@
 # <Then>                  = <Call> ">>" <Call>;
 # <Bind>                  = <DeclareVariable> "<-" <Call>;
 
-<Instruction>           = <Structure> | <Action>
+<Instruction>           = <Structure> | <Action>;
 <Instructions>          = {<Instruction>};
