@@ -8,7 +8,7 @@
 module Parser.Structure (module Parser.Structure) where
 
 import Ast.Ast (Ast (..), Operable (..), Operation (CallStd), Structure (..), Type (..))
-import Control.Applicative (Alternative ((<|>)))
+import Control.Applicative (Alternative ((<|>)), optional)
 import Eval.Atom (Atom (AtomI))
 import Eval.Operator (Operator (Add, Div, Mod, Mul, Sub))
 import Parser.Ast (parseAst)
@@ -79,19 +79,18 @@ parseStringWithHandleBackslash =
 ----------------------------------------------------------------
 
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
-createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
-  Right (typ, str, pos) -> case runParser parStr str pos of
-    Right (name, string, position) -> case runParser op string position of
-      Right (ope, new_str, new_pos) -> Right (VarDefinition name typ ope, new_str, new_pos)
-      Left a -> Left a
-    Left a -> Left a
-  Left a -> Left a
+createVarDef parType parStr op = VarDefinition <$> parStr <*> parType <*> op
 
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
     "Syntaxe error: bad variable definition"
-    (createVarDef (parseType <* parseChar ' ') (parseWithSpace parseDefinitionName) (Just <$> (parseWithSpace (parseChar '=') *> parseOperable) <|> pure Nothing) <* parseChar ';')
+    ( createVarDef
+        (parseType <* parseChar ' ')
+        (parseWithSpace parseDefinitionName)
+        (optional (parseWithSpace (parseChar '=') *> parseOperable))
+        <* parseChar ';'
+    )
 
 ----------------------------------------------------------------
 
@@ -132,11 +131,10 @@ parseOpEquality =
     <|> parseSymbol "%="
 
 parseEqualityOp :: String -> Parser Operable
-parseEqualityOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseOpEquality getOpequality) s p of
-  Right (operand, newstr, newpos) -> case runParser (parseMaybeparenthesis parseElement) newstr newpos of
-    Right (elemright, rstr, rpos) -> Right (OpOperation $ CallStd operand [OpVariable name, elemright], rstr, rpos)
-    Left a -> Left a
-  Left a -> Left a
+parseEqualityOp name =
+  (\operand elem -> OpOperation $ CallStd operand [OpVariable name, elem])
+    <$> parseWithSpace (checkOperator parseOpEquality getOpequality)
+    <*> parseMaybeparenthesis parseElement
 
 parseVarEquality :: Parser Structure
 parseVarEquality =
@@ -151,18 +149,28 @@ parseVarEquality =
     )
 
 parseVarIncrementation :: Parser Structure
-parseVarIncrementation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
-  Right (name, newstr, newpos) -> case runParser (parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
-    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+parseVarIncrementation = Parser $ \s p ->
+  case runParser (parseWithSpace parseDefinitionName) s p of
+    Right (name, str2, pos2) ->
+      case runParser (op_par name) str2 pos2 of
+        Right (op, str3, pos3) -> Right (VarAssignation name op, str3, pos3)
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
+  where
+    op_par name =
+      parseWithSpace (parseIncrementOp name) <* parseWithSpace (parseChar ';')
 
 parseVarOperation :: Parser Structure
-parseVarOperation = Parser $ \s p -> case runParser (parseWithSpace parseDefinitionName) s p of
-  Right (name, newstr, newpos) -> case runParser (parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')) newstr newpos of
-    Right (op, opstr, oppos) -> Right (VarAssignation name op, opstr, oppos)
+parseVarOperation = Parser $ \s p ->
+  case runParser (parseWithSpace parseDefinitionName) s p of
+    Right (name, str2, pos2) ->
+      case runParser (op_par name) str2 pos2 of
+        Right (op, str3, pos3) -> Right (VarAssignation name op, str3, pos3)
+        Left a -> Left a
     Left a -> Left a
-  Left a -> Left a
+  where
+    op_par name =
+      parseWithSpace (parseEqualityOp name) <* parseWithSpace (parseChar ';')
 
 parseVarAssignation :: Parser Structure
 parseVarAssignation =
@@ -173,10 +181,15 @@ parseVarAssignation =
 ----------------------------------------------------------------
 
 parseReturnWithParenthesis :: Parser Operable
-parseReturnWithParenthesis = parseWithSpace (parseSymbol "return") *> parseOpeningParenthesis *> parseElement <* parseWithSpace parseClosingParenthesis
+parseReturnWithParenthesis =
+  parseWithSpace (parseSymbol "return")
+    *> parseOpeningParenthesis
+    *> parseElement
+    <* parseWithSpace parseClosingParenthesis
 
 parseReturnWithoutParenthesis :: Parser Operable
-parseReturnWithoutParenthesis = parseWithSpace (parseSymbol "return") *> parseElement
+parseReturnWithoutParenthesis =
+  parseWithSpace (parseSymbol "return") *> parseElement
 
 parseReturn :: Parser Structure
 parseReturn =
@@ -193,15 +206,11 @@ parsecond =
     <* parseWithSpace parseClosingParenthesis
 
 parseIf :: Parser Structure
-parseIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "if" *> parsecond) s p of
-  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
-    Right (thn, thnstr, thnpos) -> case runParser (parseMany parseElIf) thnstr thnpos of
-      Right (elifs, elifstr, elifpos) -> case runParser parseElse elifstr elifpos of
-        Right (els, elstr, elspos) -> Right (If ((cond, thn) : elifs) els, elstr, elspos)
-        Left a -> Left a
-      Left a -> Left a
-    Left a -> Left a
-  Left a -> Left a
+parseIf =
+  (\then' elifs -> If (then' : elifs))
+    <$> ((,) <$> parseWithSpace (parseSymbol "if" *> parsecond) <*> parseThen)
+    <*> parseMany parseElIf
+    <*> parseElse
 
 parseThen :: Parser Ast
 parseThen =
@@ -210,11 +219,10 @@ parseThen =
     <* parseWithSpace parseClosingCurlyBraquet
 
 parseElIf :: Parser (Operable, Ast)
-parseElIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "elif" *> parsecond) s p of
-  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
-    Right (thn, thnstr, thnpos) -> Right ((cond, thn), thnstr, thnpos)
-    Left a -> Left a
-  Left a -> Left a
+parseElIf =
+  (,)
+    <$> parseWithSpace (parseSymbol "elif" *> parsecond)
+    <*> parseThen
 
 parseElse :: Parser (Maybe Ast)
 parseElse = Parser $ \s p ->
@@ -227,20 +235,15 @@ parseElse = Parser $ \s p ->
 ----------------------------------------------------------------
 
 parseWhile :: Parser Structure
-parseWhile = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "while" *> parsecond) s p of
-  Right (cond, condstr, condpos) -> case runParser parseThen condstr condpos of
-    Right (thn, thnstr, thnpos) -> Right (While cond thn, thnstr, thnpos)
-    Left a -> Left a
-  Left a -> Left a
+parseWhile =
+  While <$> parseWithSpace (parseSymbol "while" *> parsecond) <*> parseThen
 
 parseFor :: Parser Structure
-parseFor = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "for" *> parseDefinitionName) s p of
-  Right (it, itstr, itpos) -> case runParser (parseWithSpace $ parseSymbol "in" *> parseOperable) itstr itpos of
-    Right (op, opstr, oppos) -> case runParser parseThen opstr oppos of
-      Right (thn, thnstr, thnpos) -> Right (For it op thn, thnstr, thnpos)
-      Left a -> Left a
-    Left a -> Left a
-  Left a -> Left a
+parseFor =
+  For
+    <$> parseWithSpace (parseSymbol "for" *> parseDefinitionName)
+    <*> parseWithSpace (parseSymbol "in" *> parseOperable)
+    <*> parseThen
 
 ----------------------------------------------------------------
 

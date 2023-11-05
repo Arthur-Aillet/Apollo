@@ -1,15 +1,21 @@
+{-
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Main
+-}
+
 module Main (main) where
 
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Control.Monad
-import Eval
+import Control.Monad (void)
+import Eval (exec)
 import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
-import PreProcess
-import System.Environment
+import PreProcess (readFiles)
+import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
-import Prelude
 
 defaultHelp :: String
 defaultHelp =
@@ -102,8 +108,7 @@ run (filenames, args) = do
         Left a -> putStrLn a
         Right a -> print a
       pure ()
-    else
-      void $ print "invalid args"
+    else void $ print "invalid args"
 
 build :: ([String], [String]) -> IO ()
 build (filenames, name)

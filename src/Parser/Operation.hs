@@ -37,10 +37,11 @@ getPredicat ":" = Just Concat
 getPredicat _ = Nothing
 
 parsePredicat :: Parser String
-parsePredicat = foldl
-  (\prec symbol -> prec <|> parseSymbol symbol)
-  faillingParser
-  ["+","-","*","/","%","==","<","<=",">",">=","!=","&&","||",":"]
+parsePredicat =
+  foldl
+    (\prec symbol -> prec <|> parseSymbol symbol)
+    faillingParser
+    ["+", "-", "*", "/", "%", "==", "<", "<=", ">", ">=", "!=", "&&", "||", ":"]
 
 ---------------------------------------------
 

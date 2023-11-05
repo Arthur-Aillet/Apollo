@@ -15,11 +15,11 @@ import Parser.Type (Parser (..))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 parser :: String -> IO [Definition]
-parser str = case parser of
+parser str = case newparser of
   Right (def, _, _) -> return def
   Left a -> print a >> exitWith (ExitFailure 1)
   where
-    parser =
+    newparser =
       runParser
         ( parseManyFuncDef (parseManyStructure parseFuncDefinition)
         )

@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST
 -}

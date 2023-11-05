@@ -1,5 +1,5 @@
 name: launch-functional-tests
-run-name: ${{ github.actor }} is running functional tests out our GLaDOS 🤖
+run-name: ${{ github.actor }} is running functional tests out our Apollo 🤖
 on:
   push:
     paths:
@@ -24,4 +24,3 @@ jobs:
             ${{ runner.os }}-
       - name: Build and run functional tests
         run: "make func-test"
-  
