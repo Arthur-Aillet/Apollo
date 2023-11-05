@@ -50,7 +50,6 @@ atomBytecode (AtomB x) = [typeBytecode TypeBool, toEnum $ fromEnum x]
 atomBytecode (AtomC x y) = [typeBytecode TypeChar, atomBytecode (iAtom (AtomC x y)) !! 1]
 atomBytecode (AtomI x) = [typeBytecode TypeInt, intBytecode x]
 atomBytecode (AtomF x) = [typeBytecode TypeFloat, unsafeCoerce x]
--- T0DO
 
 intBytecode :: Int -> Bytes
 intBytecode = unsafeCoerce
@@ -100,7 +99,7 @@ bytecodeAtom t x
   | t == typeBytecode TypeBool = bAtom (bytecodeAtom (typeBytecode TypeInt) x)
   | t == typeBytecode TypeChar = cAtom (bytecodeAtom (typeBytecode TypeInt) x)
   | t == typeBytecode TypeInt = AtomI (bytecodeInt x)
-  -- TODO
+  | t == typeBytecode TypeFloat = AtomF (unsafeCoerce x)
 
 bytecodeInt :: Bytes -> Int
 bytecodeInt = unsafeCoerce
