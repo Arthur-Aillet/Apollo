@@ -72,7 +72,7 @@ operate1 _ _ = Left "only one arg was supplied to op"
 operate2 :: Operator -> ((Atom, Atom) -> Either String Atom)
 operate2 Add = \(a, b) -> Right $ sum [a, b]
 operate2 Sub = \(a, b) -> Right (a - b)
-operate2 Mul = Right . product
+operate2 Mul =  \(a, b) -> Right (a * b)
 operate2 Div = \(a, b) ->
   if b /= 0
     then Right (a / b)
