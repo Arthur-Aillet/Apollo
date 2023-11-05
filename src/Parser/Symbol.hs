@@ -9,7 +9,7 @@ module Parser.Symbol (module Parser.Symbol) where
 
 import Ast.Ast (Type (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar, parseOpeningBraquet, parseClosingBraquet)
+import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
@@ -51,12 +51,13 @@ parseListType = Parser $ \s p -> case runParser parseOpeningBraquet s p of
   Left a -> Left a
 
 parseSymbolType :: Parser String
-parseSymbolType = parseSymbol "int"
-              <|> parseSymbol "float"
-              <|> parseSymbol "bool"
-              <|> parseSymbol "char"
-              <|> parseSymbol "string"
-              <|> parseListType
+parseSymbolType =
+  parseSymbol "int"
+    <|> parseSymbol "float"
+    <|> parseSymbol "bool"
+    <|> parseSymbol "char"
+    <|> parseSymbol "string"
+    <|> parseListType
 
 parseType :: Parser Type
 parseType = isgoodType (goodType <$> parseSymbolType)

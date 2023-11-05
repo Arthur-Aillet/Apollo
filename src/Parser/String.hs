@@ -7,12 +7,12 @@
 
 module Parser.String (module Parser.String) where
 
-import Parser.Char (parseClosingQuote, parseOpeningQuote, parseAnyChar)
-import Parser.Syntax (parseMany, parseWithSpace)
-import Parser.Type (Parser (..))
-import Parser.Position (moveCursor)
 import Ast.Ast (Operable (OpValue))
-import Eval.Atom (Atom(AtomC))
+import Eval.Atom (Atom (AtomC))
+import Parser.Char (parseAnyChar, parseClosingQuote, parseOpeningQuote)
+import Parser.Position (moveCursor)
+import Parser.Syntax (parseWithSpace)
+import Parser.Type (Parser (..))
 
 exInput :: String
 exInput = "\"test\""
@@ -44,4 +44,4 @@ parseBetweenQuotes :: Parser a -> Parser a
 parseBetweenQuotes parser = parseOpeningQuote *> parser <* parseClosingQuote
 
 parseString :: Parser [Operable]
-parseString =  parseWithSpace ( parseBetweenQuotes parseStr)
+parseString = parseWithSpace (parseBetweenQuotes parseStr)

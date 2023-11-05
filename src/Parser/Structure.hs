@@ -10,7 +10,7 @@ module Parser.Structure (module Parser.Structure) where
 import Ast.Ast (Ast (..), Operable (..), Operation (CallStd), Structure (..), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (AtomI))
-import Eval.Operator (Operator (Add, Div, Mod, Mul, Sub, Concat))
+import Eval.Operator (Operator (Add, Concat, Div, Mod, Mul, Sub))
 import Parser.Ast (parseAst)
 import Parser.Char (parseAChar, parseChar, parseClosingCurlyBraquet, parseClosingParenthesis, parseNotAnyChar, parseOpeningCurlyBraquet, parseOpeningParenthesis)
 import Parser.Error (replaceErr)
