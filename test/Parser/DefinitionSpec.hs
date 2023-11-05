@@ -12,7 +12,6 @@ import Test.HUnit
 import Parser.Definition
 import Parser.Position (defaultPosition)
 import Parser.PositionSpec (getPosition)
-import Parser.StackTrace (defaultLocation)
 import Parser.Type (Parser (..))
 
 import Ast.Ast (Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..))

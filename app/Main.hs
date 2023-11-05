@@ -9,10 +9,8 @@ module Main (main) where
 
 import Ast.Bytecode
 import Ast.Display (compile)
-import Control.Monad (void)
 import qualified Data.Binary as Binary
 import qualified Data.ByteString as ByteString
-import qualified Data.ByteString.Builder as Builder
 import Eval (exec)
 import Eval.Atom
 import Eval.Operator(Value(..))
@@ -23,7 +21,7 @@ import System.Environment (getArgs)
 import System.Exit (ExitCode (..), exitSuccess, exitWith)
 import Eval.ASM
 import Control.Exception (catch, SomeException)
-import Data.List
+import Data.List (elemIndex)
 
 defaultHelp2 :: String
 defaultHelp2 =
@@ -100,17 +98,17 @@ getIndex list element = case elemIndex element list of
 isAfter :: [String] -> String -> String -> Bool
 isAfter list a b = getIndex list b - getIndex list a == 1
 
-getName :: [String] -> String
-getName (x : xs)
-  | isAfter xs "-o" x = x
-  | otherwise = getName xs
-getName [] = ""
+-- getName :: [String] -> String
+-- getName (x : xs)
+--   | isAfter xs "-o" x = x
+--   | otherwise = getName xs
+-- getName [] = ""
 
-extractname :: [String] -> ([String], String)
-extractname strs =
-  if "-o" `elem` strs
-    then (delete "-o" (delete (getName strs) strs), getName strs)
-    else (strs, "a.out")
+-- extractname :: [String] -> ([String], String)
+-- extractname strs =
+--   if "-o" `elem` strs
+--     then (delete "-o" (delete (getName strs) strs), getName strs)
+--     else (strs, "a.out")
 
 help :: [String] -> IO ()
 help list

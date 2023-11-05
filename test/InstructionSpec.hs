@@ -10,32 +10,12 @@ module InstructionSpec
   )
 where
 
-import Data.Either
-import Eval.Exec
-import Eval.Instructions
 import Test.HUnit
 
 instructionTests :: Test
 instructionTests =
   TestList
     []
-
-absFunc :: Func
-absFunc =
-  [ PushI 0,
-    PushD (AtomI 0),
-    Op Lt,
-    JumpIfFalse 2,
-    PushI 0,
-    Ret,
-    PushI 0,
-    PushD (AtomI (-1)),
-    Op Mul,
-    Ret
-  ]
-
-createEnv :: Env
-createEnv = [(1, absFunc)]
 
 {--
 moveForwardTests :: Test
