@@ -25,9 +25,16 @@ parseElems :: Parser [Operable]
 parseElems = parseMany (parseWithSpace (parseElemWithComa <|> parseElement))
 
 parseList :: Parser [Operable]
-parseList = Parser $ \s p -> case runParser (parseWithSpace (parseOpeningBraquet *> parseElems <* parseClosingBraquet)) s p of
+parseList = Parser $ \s p -> case runParser parser s p of
   Right (elements, str, pos) -> Right (elements, str, pos)
   Left a -> Left a
+  where
+    parser =
+      parseWithSpace
+        ( parseOpeningBraquet
+            *> parseElems
+            <* parseClosingBraquet
+        )
 
 ----------------------------------------------------
 

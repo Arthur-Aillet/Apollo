@@ -17,7 +17,7 @@ import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseMaybeparenthesis, parseWithSpace)
-import Parser.Type (Parser (..))
+import Parser.Type (Parser (..), faillingParser)
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -37,21 +37,10 @@ getPredicat ":" = Just Concat
 getPredicat _ = Nothing
 
 parsePredicat :: Parser String
-parsePredicat =
-  parseSymbol "+"
-    <|> parseSymbol "-"
-    <|> parseSymbol "*"
-    <|> parseSymbol "/"
-    <|> parseSymbol "%"
-    <|> parseSymbol "=="
-    <|> parseSymbol "<"
-    <|> parseSymbol "<="
-    <|> parseSymbol ">"
-    <|> parseSymbol ">="
-    <|> parseSymbol "!="
-    <|> parseSymbol "&&"
-    <|> parseSymbol "||"
-    <|> parseSymbol ":"
+parsePredicat = foldl
+  (\prec symbol -> prec <|> parseSymbol symbol)
+  faillingParser
+  ["+","-","*","/","%","==","<","<=",">",">=","!=","&&","||",":"]
 
 ---------------------------------------------
 

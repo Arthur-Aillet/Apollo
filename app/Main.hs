@@ -2,14 +2,14 @@ module Main (main) where
 
 import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
+import Control.Monad
 import Eval
 import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
 import PreProcess
 import System.Environment
+import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
 import Prelude
-import System.Exit (ExitCode (ExitFailure), exitWith, exitSuccess)
-import Control.Monad
 
 defaultHelp :: String
 defaultHelp =
@@ -102,9 +102,8 @@ run (filenames, args) = do
         Left a -> putStrLn a
         Right a -> print a
       pure ()
-    else do
-      print "invalid args"
-      pure ()
+    else
+      void $ print "invalid args"
 
 build :: ([String], [String]) -> IO ()
 build (filenames, name)

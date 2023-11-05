@@ -15,6 +15,13 @@ import Parser.Type (Parser (..))
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 parser :: String -> IO [Definition]
-parser str = case runParser (parseManyFuncDef (parseManyStructure parseFuncDefinition)) str defaultPosition of
+parser str = case parser of
   Right (def, _, _) -> return def
   Left a -> print a >> exitWith (ExitFailure 1)
+  where
+    parser =
+      runParser
+        ( parseManyFuncDef (parseManyStructure parseFuncDefinition)
+        )
+        str
+        defaultPosition

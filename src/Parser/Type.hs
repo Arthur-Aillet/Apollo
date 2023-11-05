@@ -5,7 +5,7 @@
 -- Parser type
 -}
 
-module Parser.Type (Parser (..), StackTrace (..), defaultRange) where
+module Parser.Type (Parser (..), StackTrace (..), defaultRange, faillingParser) where
 
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Position (Position (..))
@@ -18,6 +18,9 @@ newtype Parser a = Parser
       Position ->
       Either StackTrace (a, String, Position)
   }
+
+faillingParser :: Parser a
+faillingParser = Parser $ \_ _ -> Left $ StackTrace []
 
 instance Functor Parser where
   fmap fct parser = Parser $ \string pos -> case runParser parser string pos of

@@ -57,9 +57,10 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 getcharOpValue :: Parser Char -> Parser Operable
-getcharOpValue parser = Parser $ \s p -> case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
-  Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
-  Left a -> Left a
+getcharOpValue parser = Parser $ \s p ->
+  case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+    Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
+    Left a -> Left a
 
 getIntOpValue :: Parser Atom -> Parser Operable
 getIntOpValue parser = Parser $ \s p -> case runParser parser s p of

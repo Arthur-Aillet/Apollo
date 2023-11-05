@@ -106,9 +106,14 @@ parseIncrement =
     <|> parseSymbol "--"
 
 parseIncrementOp :: String -> Parser Operable
-parseIncrementOp name = Parser $ \s p -> case runParser (parseWithSpace $ checkOperator parseIncrement getIncrement) s p of
-  Right (operand, newstr, newpos) -> Right (OpOperation $ CallStd operand [OpVariable name, OpValue $ AtomI 1], newstr, newpos)
-  Left a -> Left a
+parseIncrementOp name = Parser $ \s p ->
+  case runParser parser s p of
+    Right (operand, newstr, newpos) ->
+      Right (OpOperation $ CallStd operand sugar, newstr, newpos)
+    Left a -> Left a
+  where
+    sugar = [OpVariable name, OpValue $ AtomI 1]
+    parser = parseWithSpace $ checkOperator parseIncrement getIncrement
 
 getOpequality :: String -> Maybe Operator
 getOpequality "+=" = Just Add
@@ -212,11 +217,12 @@ parseElIf = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "elif"
   Left a -> Left a
 
 parseElse :: Parser (Maybe Ast)
-parseElse = Parser $ \s p -> case runParser (parseWithSpace $ parseSymbol "else") s p of
-  Right (_, newstr, newpos) -> case runParser parseThen newstr newpos of
-    Right (thn, thnstr, thnpos) -> Right (Just thn, thnstr, thnpos)
-    Left a -> Left a
-  Left _ -> Right (Nothing, s, p)
+parseElse = Parser $ \s p ->
+  case runParser (parseWithSpace $ parseSymbol "else") s p of
+    Right (_, newstr, newpos) -> case runParser parseThen newstr newpos of
+      Right (thn, thnstr, thnpos) -> Right (Just thn, thnstr, thnpos)
+      Left a -> Left a
+    Left _ -> Right (Nothing, s, p)
 
 ----------------------------------------------------------------
 
