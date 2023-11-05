@@ -2,6 +2,7 @@ module Main (main) where
 
 import Ast.CompileAST (Binary (..), generateBinary)
 import Ast.Display (compile)
+import Data.List (delete, elem, elemIndex)
 import Eval
 import Parser.Parser (parser)
 import PreProcess
@@ -13,9 +14,17 @@ defaultHelp :: String
 defaultHelp =
   "\
   \Usage:\n\
-  \\t./apollo [\ESC[33mrun\ESC[0m [files] (-- [args]) | \ESC[33mbuild\ESC[0m [files] (-- [name])| \ESC[33mlaunch\ESC[0m [binary] (-- [args])]\n\
+  \\t./apollo [\
+  \ \ESC[33mrun\ESC[0m [files] (-- [args]) |\
+  \ \ESC[33mbuild\ESC[0m [files] (-- [name]) |\
+  \ \ESC[33mlaunch\ESC[0m [binary] (-- [args]) |\
+  \ \ESC[33mcompiled\ESC[0m [files] ]\n\
   \use\n\
-  \  ./apollo -h [\ESC[33mrun\ESC[0m | \ESC[33mbuild\ESC[0m | \ESC[33mlaunch\ESC[0m]\n\
+  \  ./apollo -h [ \
+  \ \ESC[33mrun\ESC[0m |\
+  \ \ESC[33mbuild\ESC[0m |\
+  \ \ESC[33mlaunch\ESC[0m |\
+  \ \ESC[33mcompiled\ESC[0m]\n\
   \for more details about these commands\n\
   \"
 
@@ -35,10 +44,10 @@ buildHelp =
   "\
   \Compiles the ginven files in a binary\n\
   \Usage:\n\
-  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-- \ESC[33m[name]\ESC[0m)\n\
+  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-o \ESC[33m[name]\ESC[0m)\n\
   \\ESC[33mfiles\ESC[0m\t\tlist of files to execute\n\
   \\ESC[33mname\ESC[0m\t\tthe name to give the binary.\
-  \if none is given, it will be named a.out and \"--\" is unnecessary\n\
+  \if none is given, it will be named a.out and \"-o\" is unnecessary\n\
   \"
 
 launchHelp :: String
@@ -52,6 +61,9 @@ launchHelp =
   \if none are provided \"--\" is unnecessary\n\
   \"
 
+compiledHelp :: String
+compiledHelp = "pending"
+
 invalidHelp :: String
 invalidHelp =
   "\
@@ -61,11 +73,33 @@ invalidHelp =
   \for help\n\
   \"
 
+getIndex :: [String] -> String -> Int
+getIndex list element = case elemIndex element list of
+  Just a -> a
+  Nothing -> -1
+
+isAfter :: [String] -> String -> String -> Bool
+isAfter list a b = getIndex list b - getIndex list a == 1
+
+getName :: [String] -> String
+getName (x : xs)
+  | isAfter xs "-o" x = x
+  | otherwise = getName xs
+getName [] = ""
+
+extractname :: [String] -> ([String], String)
+extractname strs =
+  if "-o" `elem` strs
+    then (delete "-o" (delete (getName strs) strs), getName strs)
+    else (strs, "a.out")
+
 help :: [String] -> IO ()
-help ([]) = putStr defaultHelp
-help ("run" : []) = putStr runHelp
-help ("build" : []) = putStr buildHelp
-help ("launch" : []) = putStr launchHelp
+help [] = putStr defaultHelp
+help list
+  | isAfter list "-h" "run" = putStr runHelp
+  | isAfter list "-h" "build" = putStr buildHelp
+  | isAfter list "-h" "launch" = putStr launchHelp
+  | isAfter list "-h" "compile" = putStr compiledHelp
 help _ = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
@@ -113,16 +147,12 @@ run (filenames, args) = do
   (Binary env main_f) <- compile defs
   execute env args main_f
 
-build :: ([String], [String]) -> IO Int
-build (filenames, name) =
-  if length (name) > 1
-    then do
-      putStr buildHelp
-      exitWith (ExitFailure 0)
-    else do
-      files <- readFiles filenames
-      defs <- parser files
-      exitWith (ExitFailure 1)
+build :: [String] -> IO Int
+build args = do
+  let (filenames, name) = extractname args
+  files <- readFiles filenames
+  defs <- parser files
+  exitWith (ExitFailure 1)
 
 launch :: ([String], [String]) -> IO Int
 launch (binary, args) =
@@ -134,11 +164,11 @@ launch (binary, args) =
       exitWith (ExitFailure 1)
 
 argDispatch :: [String] -> IO Int
-argDispatch ("-h" : args) = do
-  help args
+argDispatch list | "-h" `elem` list = do
+  help list
   exitWith (ExitFailure 0)
 argDispatch ("run" : args) = run $ separateArgs args "--"
-argDispatch ("build" : args) = build $ separateArgs args "--"
+argDispatch ("build" : args) = build $ args
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
 argDispatch _ = do
   help ["invalid"]
