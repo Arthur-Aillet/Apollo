@@ -17,6 +17,7 @@ import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import Eval.Exec (Atom (AtomC), Value (VAtom, VList))
 
 defaultHelp :: String
 defaultHelp =

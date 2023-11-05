@@ -9,8 +9,12 @@ module Parser.List (module Parser.List) where
 
 import Ast.Ast (Operable (..))
 import Control.Applicative (Alternative ((<|>)))
-import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet)
+import Eval.Exec (Atom (AtomB, AtomC), Value (VAtom, VList))
+import Parser.Bool (parseBool)
+import Parser.Char (parseAChar, parseChar, parseClosingBraquet, parseClosingQuote, parseOpeningBraquet, parseOpeningQuote)
+import Parser.Int (parseFloat, parseInt)
 import {-# SOURCE #-} Parser.Operable (parseElement)
+import Parser.Position (defaultPosition)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..))
 

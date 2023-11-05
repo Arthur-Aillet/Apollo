@@ -13,6 +13,7 @@ import Parser.Operation (parseOperation)
 import {-# SOURCE #-} Parser.Structure (parseAstStructure)
 import Parser.Syntax (parseMaybeparenthesis)
 import Parser.Type (Parser (..))
+import Parser.Char(parseChar)
 
 getAstOperation :: Parser Operation -> Parser Ast
 getAstOperation parser = Parser $ \s p -> case runParser parser s p of

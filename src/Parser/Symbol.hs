@@ -10,6 +10,7 @@ module Parser.Symbol (module Parser.Symbol) where
 import Ast.Ast (Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Parser.Char (parseChar, parseClosingBraquet, parseOpeningBraquet)
+import Parser.Position (Position)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
