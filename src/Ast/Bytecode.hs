@@ -11,6 +11,7 @@ module Ast.Bytecode
     toBytecode,
     encode,
     decode,
+    Bytes
   ) where
 
 import Eval.Instructions (Instruction (..), Index, Env)
@@ -19,8 +20,10 @@ import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (..))
 import Unsafe.Coerce
 import Ast.Type (Type (..))
+import Data.Word (Word64)
+import Debug.Trace
 
-type Bytes = Word
+type Bytes = Word64
 
 type Bytecode = (Bytes, Bytes, [Bytes])
 
@@ -46,25 +49,27 @@ data InstructionEnum
 
 decode :: [Bytes] -> Either String Env
 decode [] = Right []
-decode [_] = Left "invalid bytecode"
-decode (s : i : xs) = case fromBytecode (take size xs) of
+decode (i : s : xs) = case fromBytecode (take size xs) of
   Left err -> Left err
   Right y -> case decode (drop size xs) of
     Left err -> Left err
     Right ys -> Right ((idx, y) : ys)
   where
-    size = bytecodeInt s
+    size = (bytecodeInt s)
     idx = bytecodeIndex i
+decode [_] = Left "invalid bytecode (almost empty decode)"
 
 encode :: Env -> [Bytes]
 encode ((idx, func) : xs) =
-  [indexBytecode idx, intBytecode (length func)] ++ toBytecode func
+  (indexBytecode idx : intBytecode (length bytes) : bytes)
   ++ encode xs
+    where bytes = toBytecode func
 encode [] = []
 
 atomBytecode :: Atom -> [Bytes]
 atomBytecode (AtomB x) = [typeBytecode TypeBool, toEnum $ fromEnum x]
-atomBytecode (AtomC x y) = [typeBytecode TypeChar, atomBytecode (iAtom (AtomC x y)) !! 1]
+atomBytecode (AtomC x y) =
+  [typeBytecode TypeChar, atomBytecode (iAtom (AtomC x y)) !! 1]
 atomBytecode (AtomI x) = [typeBytecode TypeInt, intBytecode x]
 atomBytecode (AtomF x) = [typeBytecode TypeFloat, unsafeCoerce x]
 
@@ -96,11 +101,13 @@ toBytecode (instr : xs) = (a : b : c ) ++ (toBytecode xs)
 toBytecode [] = []
 
 toBytecode' :: Instruction -> Bytecode
-toBytecode' (PushD x) = (instructionBytecode EPushD, intBytecode 2, atomBytecode x)
+toBytecode' (PushD x) =
+  (instructionBytecode EPushD, intBytecode 2, atomBytecode x)
 toBytecode' Store = (instructionBytecode EStore, 0, [])
 toBytecode' (Take x) = (instructionBytecode ETake, 1, [indexBytecode x])
 toBytecode' (Assign x) = (instructionBytecode EAssign, 1, [indexBytecode x])
-toBytecode' (ArrAssign x) = (instructionBytecode EArrAssign, 1, [indexBytecode x])
+toBytecode' (ArrAssign x) =
+  (instructionBytecode EArrAssign, 1, [indexBytecode x])
 toBytecode' (PushI x) = (instructionBytecode EPushI, 1, [indexBytecode x])
 toBytecode' (CallD x) = (instructionBytecode ECallD, 1, [indexBytecode x])
 toBytecode' (CallI x) = (instructionBytecode ECallI, 1, [indexBytecode x])
@@ -108,7 +115,8 @@ toBytecode' (Cast x) = (instructionBytecode ECast, 1, [typeBytecode x])
 toBytecode' CallS = (instructionBytecode ECallS, 0, [])
 toBytecode' (Op x) = (instructionBytecode EOp, 1, [operatorBytecode x])
 toBytecode' (Sys x) = (instructionBytecode ESys, 1, [syscallBytecode x])
-toBytecode' (JumpIfFalse x) = (instructionBytecode EJumpIfFalse, 1, [intBytecode x])
+toBytecode' (JumpIfFalse x) =
+  (instructionBytecode EJumpIfFalse, 1, [intBytecode x])
 toBytecode' (Jump x) = (instructionBytecode EJump, 1, [intBytecode x])
 toBytecode' Ret = (instructionBytecode ERet, 0, [])
 
@@ -146,16 +154,17 @@ bytecodeSyscall :: Bytes -> Syscall
 bytecodeSyscall x = toEnum $ fromEnum x
 
 fromBytecode :: [Bytes] -> Either String [Instruction]
-fromBytecode [_] = Left "invalid bytecode"
 fromBytecode (instr : count : xs) = case bytecodeInstruction instr of
   Left err -> Left err
-  Right x -> case fromBytecode' x (bytecodeInt count) xs of
+  Right einstr -> case fromBytecode' einstr (bytecodeInt count) xs of
       Left err -> Left err
-      Right (y, ys) -> (y : ) <$> fromBytecode ys
+      Right (bytes, rest) -> (bytes : ) <$> fromBytecode rest
 fromBytecode [] = Right []
+-- fromBytecode [0] = Right []
+fromBytecode [x] =
+  Left $ "invalid bytecode (almost empty fromBytecode):" ++ show x
 
 fromBytecode' :: InstructionEnum -> Int -> [Bytes] -> Either String (Instruction, [Bytes])
-
 fromBytecode' EPushD 2 (x : y : xs) = Right (PushD (bytecodeAtom x y), xs)
 fromBytecode' EStore 0 (xs) = Right (Store, xs)
 fromBytecode' ETake 1 (x : xs) = Right (Take (bytecodeInt x), xs)
@@ -171,4 +180,5 @@ fromBytecode' ESys 1 (x : xs) = Right (Sys (bytecodeSyscall x), xs)
 fromBytecode' EJumpIfFalse 1 (x : xs) = Right (JumpIfFalse (bytecodeInt x), xs)
 fromBytecode' EJump 1 (x : xs) = Right (Jump (bytecodeInt x), xs)
 fromBytecode' ERet 0 (xs) = Right (Ret, xs)
-fromBytecode' i count xs = error ("impossible " ++ show i ++ " " ++ show count ++ " " ++ show xs)
+fromBytecode' i count xs =
+  Left ("impossible " ++ show i ++ " " ++ show count ++ " " ++ show xs)

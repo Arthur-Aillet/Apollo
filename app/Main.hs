@@ -16,6 +16,10 @@ import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString as ByteString
+import qualified Data.Binary as Binary
+import Ast.Bytecode
 
 defaultHelp :: String
 defaultHelp =
@@ -117,12 +121,22 @@ build (filenames, name)
   | otherwise = do
       files <- readFiles filenames
       defs <- parser files
-      pure ()
+      env <- compile defs
+      let encoded = encode env
+      let file = head (name ++ ["a.bin"])
+      ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
 
 launch :: ([String], [String]) -> IO ()
-launch (binary, _)
+launch (binary, args)
   | length binary > 1 = void $ putStr launchHelp
-  | otherwise = pure ()
+  | otherwise = do
+      bytestring <- ByteString.readFile (head binary)
+      let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
+      let env = decode bytes
+      case env of
+        Right env2 -> execute env2 args (snd $ head env2)
+        Left err -> putStrLn err
+
 
 argDispatch :: [String] -> IO ()
 argDispatch ("-h" : args) = helpMsg args >> exitSuccess
