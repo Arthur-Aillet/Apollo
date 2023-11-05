@@ -36,7 +36,7 @@ data Instruction
   | PushI Index
   | CallD Index
   | CallI Index
-  | Cast Index Type
+  | Cast Type
   | Op Operator
   | Sys Syscall
   | JumpIfFalse Int
