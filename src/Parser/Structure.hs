@@ -95,11 +95,12 @@ createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
   Left a -> Left a
 
 parseVarDefinition :: Parser Structure
-parseVarDefinition = createVarDef
-        (parseType <* parseChar ' ')
-        (parseWithSpace parseDefinitionName)
-        (optional (parseWithSpace (parseChar '=') *> parseElement))
-        <* parseChar ';'
+parseVarDefinition =
+  createVarDef
+    (parseType <* parseChar ' ')
+    (parseWithSpace parseDefinitionName)
+    (optional (parseWithSpace (parseChar '=') *> parseElement))
+    <* parseChar ';'
 
 ----------------------------------------------------------------
 
@@ -148,12 +149,13 @@ parseEqualityOp name =
     <*> parseMaybeparenthesis parseElement
 
 parseVarEquality :: Parser Structure
-parseVarEquality = VarAssignation
-        <$> parseWithSpace parseDefinitionName
-        <*> ( parseWithSpace (parseChar '=')
-                *> parseElement
-                <* parseWithSpace (parseChar ';')
-            )
+parseVarEquality =
+  VarAssignation
+    <$> parseWithSpace parseDefinitionName
+    <*> ( parseWithSpace (parseChar '=')
+            *> parseElement
+            <* parseWithSpace (parseChar ';')
+        )
 
 parseVarIncrementation :: Parser Structure
 parseVarIncrementation = Parser $ \s p ->
@@ -187,7 +189,6 @@ parseVarAssignation =
 
 ----------------------------------------------------------------
 
-
 parseReturnWithParenthesis :: Parser Operable
 parseReturnWithParenthesis =
   parseWithSpace (parseSymbol "return")
@@ -200,20 +201,21 @@ parseReturnWithoutParenthesis =
   parseWithSpace (parseSymbol "return") *> parseElement
 
 parseReturn :: Parser Structure
-parseReturn = Return
-        <$> ( (parseReturnWithParenthesis <|> parseReturnWithoutParenthesis)
-                <* parseChar ';'
-            )
+parseReturn =
+  Return
+    <$> ( (parseReturnWithParenthesis <|> parseReturnWithoutParenthesis)
+            <* parseChar ';'
+        )
 
 ----------------------------------------------------------------
 
 parsecond :: Parser Operable
 parsecond =
-  parseWithSpace (
-    parseMaybeparenthesis (
-      parseWithSpace parseElement
-      )
-  )
+  parseWithSpace
+    ( parseMaybeparenthesis
+        ( parseWithSpace parseElement
+        )
+    )
 
 parseIf :: Parser Structure
 parseIf =
@@ -251,7 +253,8 @@ parseWhile =
 parseFor :: Parser Structure
 parseFor =
   For
-    <$> parseWithSpace (parseSymbol "for" *> parseWithSpace parseDefinitionName)
+    <$> parseWithSpace
+      (parseSymbol "for" *> parseWithSpace parseDefinitionName)
     <*> parseWithSpace (parseSymbol "in" *> parseElement)
     <*> parseThen
 

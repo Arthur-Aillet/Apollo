@@ -71,7 +71,8 @@ findNextFunction nb_brackets = Parser $ \s p -> case runParser parseAChar s p of
     if nb_brackets == -1
       then runParser (findNextFunction 1) str pos
       else runParser (findNextFunction (nb_brackets + 1)) str pos
-  Right ('}', str, pos) -> runParser (findNextFunction (nb_brackets - 1)) str pos
+  Right ('}', str, pos) ->
+    runParser (findNextFunction (nb_brackets - 1)) str pos
   Right (_, str, pos) -> runParser (findNextFunction nb_brackets) str pos
   Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
   Left a -> Left a

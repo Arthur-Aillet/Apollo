@@ -6,7 +6,8 @@
 -}
 
 module Parser.Position (Position (..), defaultPosition, moveCursor) where
-import Ast.Display(green, resetColor)
+
+import Ast.Display (green, resetColor)
 
 data Position = Position {line :: Int, char :: Int} deriving (Eq)
 

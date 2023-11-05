@@ -6,8 +6,8 @@ import Eval
 import Parser.Parser (parser)
 import PreProcess
 import System.Environment
+import System.Exit (ExitCode (ExitFailure), exitWith)
 import Prelude
-import System.Exit (exitWith, ExitCode (ExitFailure))
 
 defaultHelp :: String
 defaultHelp =
@@ -100,11 +100,11 @@ execute env args main_f = do
   case result of
     Left a -> do
       putStrLn a
-      exitWith(ExitFailure 0)
-    Right (Just (VAtom (AtomI a))) -> exitWith(ExitFailure a)
-    Right (Just (VAtom (AtomC a _))) -> exitWith(ExitFailure $ fromEnum a)
-    Right (Just (VAtom (AtomF a))) -> exitWith(ExitFailure (round a :: Int))
-    Right _ -> exitWith(ExitFailure 1)
+      exitWith (ExitFailure 0)
+    Right (Just (VAtom (AtomI a))) -> exitWith (ExitFailure a)
+    Right (Just (VAtom (AtomC a _))) -> exitWith (ExitFailure $ fromEnum a)
+    Right (Just (VAtom (AtomF a))) -> exitWith (ExitFailure (round a :: Int))
+    Right _ -> exitWith (ExitFailure 1)
 
 run :: ([String], [String]) -> IO Int
 run (filenames, args) = do
@@ -118,31 +118,31 @@ build (filenames, name) =
   if length (name) > 1
     then do
       putStr buildHelp
-      exitWith(ExitFailure 0)
+      exitWith (ExitFailure 0)
     else do
       files <- readFiles filenames
       defs <- parser files
-      exitWith(ExitFailure 1)
+      exitWith (ExitFailure 1)
 
 launch :: ([String], [String]) -> IO Int
 launch (binary, args) =
   if length (binary) > 1
     then do
       putStr launchHelp
-      exitWith(ExitFailure 0)
+      exitWith (ExitFailure 0)
     else do
-      exitWith(ExitFailure 1)
+      exitWith (ExitFailure 1)
 
 argDispatch :: [String] -> IO Int
 argDispatch ("-h" : args) = do
   help args
-  exitWith(ExitFailure 0)
+  exitWith (ExitFailure 0)
 argDispatch ("run" : args) = run $ separateArgs args "--"
 argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
 argDispatch _ = do
   help ["invalid"]
-  exitWith(ExitFailure 0)
+  exitWith (ExitFailure 0)
 
 main :: IO Int
 main = do

@@ -50,9 +50,11 @@ isgoodType parser = Parser $ \s p -> case runParser parser s p of
 parseListType :: Parser String
 parseListType = Parser $ \s p -> case runParser parseOpeningBraquet s p of
   Right (opb, opbstr, opbpos) -> case runParser parseSymbolType opbstr opbpos of
-    Right (typestr, typstr, typpos) -> case runParser parseClosingBraquet typstr typpos of
-      Right (clb, clbstr, clbpos) -> Right (opb : typestr ++ [clb], clbstr, clbpos)
-      Left a -> Left a
+    Right (typestr, typstr, typpos) ->
+      case runParser parseClosingBraquet typstr typpos of
+        Right (clb, clbstr, clbpos) ->
+          Right (opb : typestr ++ [clb], clbstr, clbpos)
+        Left a -> Left a
     Left a -> Left a
   Left a -> Left a
 

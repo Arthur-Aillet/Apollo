@@ -15,9 +15,9 @@ module Parser.StackTrace
   )
 where
 
+import Ast.Display (red, resetColor, yellow)
 import Parser.Position (Position (..), defaultPosition)
 import Parser.Range (Range (..))
-import Ast.Display(red, yellow, resetColor)
 
 newtype StackTrace = StackTrace [(String, Range, SourceLocation)]
 
@@ -50,25 +50,21 @@ addNewMessage :: (String, Range, SourceLocation) -> String -> String
 addNewMessage ("", _, _) pre = pre
 addNewMessage (str, Range start end, src) pre =
   pre
-    ++ "\t in "
     ++ show (functionName src)
-    ++ "("
-    ++ show (pos src)
-    ++ "): "
-    ++ yellow ++ str ++ resetColor
+    ++ ("(" ++ show (pos src) ++ "): ")
+    ++ (yellow ++ str ++ resetColor)
     ++ " started at "
     ++ show start
     ++ " and finished at "
     ++ show end
     ++ "\n"
 
-
-
 instance Show StackTrace where
   show (StackTrace list) = foldr addNewMessage msg list
     where
-      msg | length list <= 1 = (red ++ "Error found during parsing:\n" ++ resetColor)
-          | otherwise = (red ++ "Errors found during parsing:\n" ++ resetColor)
+      msg
+        | length list <= 1 = (red ++ "Error found during parsing:\n\tin" ++ resetColor)
+        | otherwise = (red ++ "Errors found during parsing:\n\tin" ++ resetColor)
 
 instance Eq SourceLocation where
   (SourceLocation fn1 file1 p1) == (SourceLocation fn2 file2 p2) =

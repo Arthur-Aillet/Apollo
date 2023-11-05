@@ -8,7 +8,7 @@
 module Parser.Operation (module Parser.Operation) where
 
 import Ast.Ast (Operable (..), Operation (..))
-import Control.Applicative (Alternative ((<|>), empty))
+import Control.Applicative (Alternative (empty, (<|>)))
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (Print))
 import Parser.Char (parseChar, parseClosingBraquet, parseClosingParenthesis, parseOpeningParenthesis)
@@ -41,7 +41,9 @@ parsePredicat =
   foldl
     (\prec symbol -> prec <|> parseSymbol symbol)
     empty
-    ["+", "-", "*", "/", "%", "==", "<", "<=", ">", ">=", "!=", "&&", "||", ":"]
+    ( ["+", "-", "*", "/", "%", "=="]
+        ++ ["<", "<=", ">", ">=", "!=", "&&", "||", ":"]
+    )
 
 ---------------------------------------------
 
@@ -81,6 +83,9 @@ parseSysCall = parseSymbol "print"
 
 ---------------------------------------------
 
+invalidOperator :: String -> String
+invalidOperator operatorstr = "Invalid operator : \"" ++ operatorstr ++ "\""
+
 checkOperator :: Parser String -> (String -> Maybe a) -> Parser a
 checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
   Right (operatorstr, str, pos) -> case getter operatorstr of
@@ -88,12 +93,7 @@ checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
     Nothing ->
       Left
         ( StackTrace
-            [ ( "Invalid operator : \""
-                  ++ operatorstr
-                  ++ "\"",
-                Range p pos,
-                defaultLocation
-              )
+            [ (invalidOperator operatorstr, Range p pos, defaultLocation)
             ]
         )
   Left a -> Left a
