@@ -89,8 +89,14 @@ parseStringWithHandleBackslash =
 ----------------------------------------------------------------
 
 createVarDef :: Parser Type -> Parser String -> Parser (Maybe Operable) -> Parser Structure
-createVarDef parType parStr op = VarDefinition <$> parStr <*> parType <*> op
-
+createVarDef parType parStr op = Parser $ \s p -> case runParser parType s p of
+  Right (typ, str, pos) -> case runParser parStr str pos of
+    Right (name, string, position) -> case runParser op string position of
+      Right (ope, new_str, new_pos) ->
+        Right ((VarDefinition name typ ope), new_str, new_pos)
+      Left a -> Left a
+    Left a -> Left a
+  Left a -> Left a
 parseVarDefinition :: Parser Structure
 parseVarDefinition =
   replaceErr
@@ -98,10 +104,9 @@ parseVarDefinition =
     ( createVarDef
         (parseType <* parseChar ' ')
         (parseWithSpace parseDefinitionName)
-        (optional (parseWithSpace (parseChar '=') *> parseOperable))
+        (optional (parseWithSpace (parseChar '=') *> parseElement))
         <* parseChar ';'
     )
-
 ----------------------------------------------------------------
 
 getIncrement :: String -> Maybe Operator
@@ -192,6 +197,7 @@ parseVarAssignation =
 
 ----------------------------------------------------------------
 
+
 parseReturnWithParenthesis :: Parser Operable
 parseReturnWithParenthesis =
   parseWithSpace (parseSymbol "return")
@@ -258,7 +264,7 @@ parseFor :: Parser Structure
 parseFor =
   For
     <$> parseWithSpace (parseSymbol "for" *> parseDefinitionName)
-    <*> parseWithSpace (parseSymbol "in" *> parseOperable)
+    <*> parseWithSpace (parseSymbol "in" *> parseElement)
     <*> parseThen
 
 ----------------------------------------------------------------
@@ -318,5 +324,3 @@ parseManyAst =
 
 parseSequence :: Parser Structure
 parseSequence = Sequence <$> parseManyAst
-
-----------------------------------------------------------------
