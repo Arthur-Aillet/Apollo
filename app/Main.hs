@@ -20,7 +20,11 @@ defaultHelp =
   \ \ESC[33mlaunch\ESC[0m [binary] (-- [args]) |\
   \ \ESC[33mcompiled\ESC[0m [files] ]\n\
   \use\n\
-  \  ./apollo -h [\ESC[33mrun\ESC[0m | \ESC[33mbuild\ESC[0m | \ESC[33mlaunch\ESC[0m]\n\
+  \  ./apollo -h [ \
+  \ \ESC[33mrun\ESC[0m |\
+  \ \ESC[33mbuild\ESC[0m |\
+  \ \ESC[33mlaunch\ESC[0m |\
+  \ \ESC[33mcompiled\ESC[0m]\n\
   \for more details about these commands\n\
   \"
 
@@ -40,10 +44,10 @@ buildHelp =
   "\
   \Compiles the ginven files in a binary\n\
   \Usage:\n\
-  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-- \ESC[33m[name]\ESC[0m)\n\
+  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-o \ESC[33m[name]\ESC[0m)\n\
   \\ESC[33mfiles\ESC[0m\t\tlist of files to execute\n\
   \\ESC[33mname\ESC[0m\t\tthe name to give the binary.\
-  \if none is given, it will be named a.out and \"--\" is unnecessary\n\
+  \if none is given, it will be named a.out and \"-o\" is unnecessary\n\
   \"
 
 launchHelp :: String
