@@ -34,6 +34,7 @@ data InstructionEnum
   | ECallD
   | ECallI
   | ECast
+  | ECallS
   | EOp
   | ESys
   | EJumpIfFalse
@@ -104,6 +105,7 @@ toBytecode' (PushI x) = (instructionBytecode EPushI, 1, [indexBytecode x])
 toBytecode' (CallD x) = (instructionBytecode ECallD, 1, [indexBytecode x])
 toBytecode' (CallI x) = (instructionBytecode ECallI, 1, [indexBytecode x])
 toBytecode' (Cast x) = (instructionBytecode ECast, 1, [typeBytecode x])
+toBytecode' CallS = (instructionBytecode ECallS, 0, [])
 toBytecode' (Op x) = (instructionBytecode EOp, 1, [operatorBytecode x])
 toBytecode' (Sys x) = (instructionBytecode ESys, 1, [syscallBytecode x])
 toBytecode' (JumpIfFalse x) = (instructionBytecode EJumpIfFalse, 1, [intBytecode x])
@@ -163,6 +165,7 @@ fromBytecode' EPushI 1 (x : xs) = Right (PushI (bytecodeIndex x), xs)
 fromBytecode' ECallD 1 (x : xs) = Right (CallD (bytecodeIndex x), xs)
 fromBytecode' ECallI 1 (x : xs) = Right (CallI (bytecodeIndex x), xs)
 fromBytecode' ECast 1 (x : xs) = Right (Cast (bytecodeType x), xs)
+fromBytecode' ECallS 0 (xs) = Right (CallS, xs)
 fromBytecode' EOp 1 (x : xs) = Right (Op (bytecodeOperator x), xs)
 fromBytecode' ESys 1 (x : xs) = Right (Sys (bytecodeSyscall x), xs)
 fromBytecode' EJumpIfFalse 1 (x : xs) = Right (JumpIfFalse (bytecodeInt x), xs)
