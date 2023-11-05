@@ -20,7 +20,7 @@ import Eval.Instructions (Env, Insts)
 import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
-import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import System.Exit (ExitCode (..), exitSuccess, exitWith)
 import Eval.ASM
 import Control.Exception (catch, SomeException)
 import Data.List
@@ -148,14 +148,18 @@ stringToVal str = VList $ map charToAtomC str
 stringsToVals :: [String] -> [Value]
 stringsToVals = map stringToVal
 
+exitCorrect :: Int -> ExitCode
+exitCorrect 0 = ExitSuccess
+exitCorrect a = ExitFailure a
+
 execute :: Env -> [String] -> Insts -> IO Int
 execute env args main_f = do
   result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
   case result of
     Left a -> putStrLn a >> exitSuccess
-    Right (Just (VAtom (AtomI a))) -> exitWith (ExitFailure a)
-    Right (Just (VAtom (AtomC a _))) -> exitWith (ExitFailure $ fromEnum a)
-    Right (Just (VAtom (AtomF a))) -> exitWith (ExitFailure (round a :: Int))
+    Right (Just (VAtom (AtomI a))) -> exitWith (exitCorrect a)
+    Right (Just (VAtom (AtomC a _))) -> exitWith (exitCorrect $ fromEnum a)
+    Right (Just (VAtom (AtomF a))) -> exitWith (exitCorrect (round a :: Int))
     Right _ -> exitWith (ExitFailure 1)
 
 run :: ([String], [String]) -> IO Int
