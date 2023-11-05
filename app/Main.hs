@@ -4,10 +4,14 @@ import Ast.Display (compile)
 import Data.List (delete, elem, elemIndex)
 import Eval
 import Parser.Parser (parser)
-import PreProcess
-import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
-import Prelude
+import PreProcess (readFiles)
+import System.Environment (getArgs)
+import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString as ByteString
+import qualified Data.Binary as Binary
+import Ast.Bytecode
+import Control.Monad (void)
 
 defaultHelp :: String
 defaultHelp =
@@ -146,28 +150,36 @@ run (filenames, args) = do
   env <- compile defs
   execute env args (snd $ head env)
 
-build :: [String] -> IO Int
-build args = do
-  let (filenames, name) = extractname args
-  files <- readFiles filenames
-  defs <- parser files
-  exitWith (ExitFailure 1)
+build :: ([String], [String]) -> IO Int
+build (filenames, name)
+  | length name > 1 = putStr buildHelp >> return 1
+  | otherwise = do
+      files <- readFiles filenames
+      defs <- parser files
+      env <- compile defs
+      let encoded = encode env
+      let file = head (name ++ ["a.bin"])
+      ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
+      return 0
 
 launch :: ([String], [String]) -> IO Int
-launch (binary, args) =
-  if length (binary) > 1
-    then do
-      putStr launchHelp
-      exitWith (ExitFailure 0)
-    else do
-      exitWith (ExitFailure 1)
+launch (binary, args)
+  | length binary > 1 = putStr launchHelp >> return 1
+  | otherwise = do
+      bytestring <- ByteString.readFile (head binary)
+      let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
+      let env = decode bytes
+      case env of
+        Right env2 -> execute env2 args (snd $ head env2) >> return 0
+        Left err -> putStrLn err >> return 1
+
 
 argDispatch :: [String] -> IO Int
 argDispatch list | "-h" `elem` list = do
   help list
   exitWith (ExitFailure 0)
 argDispatch ("run" : args) = run $ separateArgs args "--"
-argDispatch ("build" : args) = build $ args
+argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
 argDispatch _ = do
   help ["invalid"]
