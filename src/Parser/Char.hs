@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo
+-- Apollo
 -- File description:
 -- ParseChar
 -}
@@ -18,7 +18,12 @@ parseAChar :: Parser Char
 parseAChar = Parser $ \string pos -> case string of
   ('\n' : xs) -> Right ('\n', xs, moveCursor pos True)
   (x : xs) -> Right (x, xs, moveCursor pos False)
-  [] -> Left (StackTrace [("Not Found: End of Input", Range pos pos, defaultLocation)])
+  [] ->
+    Left
+      ( StackTrace
+          [ ("Not Found: End of Input", Range pos pos, defaultLocation)
+          ]
+      )
 
 parseDigit :: Parser Char
 parseDigit = parseAnyChar ['0' .. '9']
@@ -26,16 +31,20 @@ parseDigit = parseAnyChar ['0' .. '9']
 ---------------------------------------------
 
 parseOpeningQuote :: Parser Char
-parseOpeningQuote = replaceErr "Not Found: Missing opening Quote" (parseChar '"')
+parseOpeningQuote =
+  replaceErr "Not Found: Missing opening Quote" (parseChar '"')
 
 parseClosingQuote :: Parser Char
-parseClosingQuote = replaceErr "Not Found: Missing closing Quote" (parseChar '"')
+parseClosingQuote =
+  replaceErr "Not Found: Missing closing Quote" (parseChar '"')
 
 parseOpeningsQuote :: Parser Char
-parseOpeningsQuote = replaceErr "Not Found: Missing opening Quote" (parseChar '\'')
+parseOpeningsQuote =
+  replaceErr "Not Found: Missing opening Quote" (parseChar '\'')
 
 parseClosingsQuote :: Parser Char
-parseClosingsQuote = replaceErr "Not Found: Missing closing Quote" (parseChar '\'')
+parseClosingsQuote =
+  replaceErr "Not Found: Missing closing Quote" (parseChar '\'')
 
 parseOpeningParenthesis :: Parser Char
 parseOpeningParenthesis =
@@ -51,15 +60,21 @@ parseOpeningCurlyBraquet =
 
 parseClosingCurlyBraquet :: Parser Char
 parseClosingCurlyBraquet =
-  replaceErr "Not Found: Missing closing curlybraquet" (parseChar '}')
+  replaceErr
+    "Not Found: Missing closing curlybraquet"
+    (parseChar '}')
 
 parseOpeningBraquet :: Parser Char
 parseOpeningBraquet =
-  replaceErr "Not Found: Missing opening braquet" (parseChar '[')
+  replaceErr
+    "parseOpeningBraquet: Not Found: Missing opening braquet"
+    (parseChar '[')
 
 parseClosingBraquet :: Parser Char
 parseClosingBraquet =
-  replaceErr "Not Found: Missing closing braquet" (parseChar ']')
+  replaceErr
+    "parseClosingBraquet: Not Found: Missing closing braquet"
+    (parseChar ']')
 
 ---------------------------------------------
 
@@ -70,7 +85,7 @@ parseChar x = Parser $ \string pos -> case runParser parseAChar string pos of
     | otherwise ->
         Left (StackTrace [(err, err_range, defaultLocation)])
     where
-      err = "Not Found: charactere is not '" ++ [x] ++ "' (is " ++ show char ++ ")"
+      err = "Not Found: char is not '" ++ [x] ++ "' (is " ++ show char ++ ")"
       err_range = Range pos pos
   Left err -> Left err
 
@@ -91,7 +106,8 @@ parseAnyChar =
     (failingWith "Not Found: List is empty")
 
 parseNotAnyChar :: [Char] -> Parser Char
-parseNotAnyChar [] = Parser $ \_ p -> Left (StackTrace [("Not Found: List is empty", Range p p, defaultLocation)])
+parseNotAnyChar [] = Parser $ \_ p ->
+  Left (StackTrace [("Not Found: List is empty", Range p p, defaultLocation)])
 parseNotAnyChar (x : xs) = Parser $ \s p -> case runParser (parseNotChar x) s p of
   Right a
     | length (x : xs) == 1 -> Right a

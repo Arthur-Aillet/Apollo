@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo2
+-- Apollo2
 -- File description:
 -- Operable.hs
 -}
@@ -28,29 +28,27 @@ defChars :: [Char]
 defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"
 
 parseDefinitionName :: Parser String
-parseDefinitionName = Parser $ \s p -> case runParser (parseMany (parseAnyChar defChars)) s p of
-  Right ([], _, pos) -> Left (StackTrace [("empty definition", Range p pos, defaultLocation)])
-  Right a -> Right a
-  Left a -> Left a
+parseDefinitionName = Parser $ \s p ->
+  case runParser (parseMany (parseAnyChar defChars)) s p of
+    Right ([], _, pos) ->
+      Left (StackTrace [("empty definition", Range p pos, defaultLocation)])
+    Right a -> Right a
+    Left a -> Left a
 
 parseCast :: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
 
-parseOpCastOperable :: Parser Operable
-parseOpCastOperable = parseOpValue
-      <|> parseOpVar
-      <|> parseOpList
-      <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
-
 parseOpCast :: Parser Operable
-parseOpCast = Parser $ \s p -> case runParser
-  parseOpCastOperable
-  s
-  p of
-  Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of
-    Right (rhs, rstr, rpos) -> Right (OpCast lhs rhs, rstr, rpos)
-    Left a -> Left a
-  Left a -> Left a
+parseOpCast =
+  OpCast
+    <$> ( parseOpValue
+            <|> parseOpVar
+            <|> parseOpList
+            <|> parseOpeningParenthesis
+              *> parseOpOperation
+              <* parseClosingParenthesis
+        )
+    <*> parseCast
 
 ---------------------------------------------
 
@@ -60,9 +58,10 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
   Left a -> Left a
 
 getcharOpValue :: Parser Char -> Parser Operable
-getcharOpValue parser = Parser $ \s p -> case runParser (parseOpeningsQuote *> parser <* parseClosingsQuote) s p of
-  Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
-  Left a -> Left a
+getcharOpValue parser = Parser $ \s p ->
+  case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+    Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
+    Left a -> Left a
 
 getIntOpValue :: Parser Atom -> Parser Operable
 getIntOpValue parser = Parser $ \s p -> case runParser parser s p of

@@ -1,16 +1,22 @@
+{-
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Main
+-}
+
 module Main (main) where
 
-import Ast.CompileAST (Binary (..), generateBinary)
+import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Eval
+import Control.Monad (void)
+import Eval (exec)
+import Eval.Instructions (Env, Insts)
+import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
-import Parser.Position (defaultPosition)
-import Parser.Type (Parser (..), StackTrace)
-import PreProcess
-import System.Environment
-import Prelude
-import System.Exit (exitWith, ExitCode (ExitSuccess, ExitFailure), exitFailure)
-import Eval.Atom (Atom (..))
+import PreProcess (readFiles)
+import System.Environment (getArgs)
+import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
 
 defaultHelp :: String
 defaultHelp =
@@ -64,29 +70,38 @@ invalidHelp =
   \for help\n\
   \"
 
-help :: [String] -> IO ()
-help ([]) = putStr defaultHelp
-help ("run" : []) = putStr runHelp
-help ("build" : []) = putStr buildHelp
-help ("launch" : []) = putStr launchHelp
-help _ = putStr invalidHelp
+helpMsg :: [String] -> IO ()
+helpMsg [] = putStr defaultHelp
+helpMsg ["run"] = putStr runHelp
+helpMsg ["build"] = putStr buildHelp
+helpMsg ["launch"] = putStr launchHelp
+helpMsg _ = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
-getStrsBefore (x : []) target
+getStrsBefore [] _ = []
+getStrsBefore [x] target
   | x == target = []
   | otherwise = [x]
 getStrsBefore (x : xs) target
   | x == target = []
-  | otherwise = (x : getStrsBefore xs target)
+  | otherwise = x : getStrsBefore xs target
 
 getStrsAfter :: [String] -> String -> [String]
-getStrsAfter ([]) _ = []
+getStrsAfter [] _ = []
 getStrsAfter (x : xs) target
   | x == target = xs
   | otherwise = getStrsAfter xs target
 
 separateArgs :: [String] -> String -> ([String], [String])
-separateArgs args separator = (getStrsBefore args separator, getStrsAfter args separator)
+separateArgs args separator =
+  (getStrsBefore args separator, getStrsAfter args separator)
+
+execute :: Env -> [String] -> Insts -> IO ()
+execute env args main_f = do
+  result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
+  case result of
+    Left a -> putStrLn a
+    Right a -> print a
 
 charToAtomC :: Char -> Value
 charToAtomC c = VAtom $ AtomC c False
@@ -102,39 +117,29 @@ run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
   (Binary env main_f) <- compile defs
-  result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
-  case result of
-    Left a -> putStrLn a
-    Right (Just (VAtom (AtomI a))) -> exitWith(ExitFailure a)
-    Right _ -> pure()
-  pure ()
+  if not (hasNothing (argsToMaybeValues args))
+    then execute env args main_f
+    else void $ print "invalid args"
 
 build :: ([String], [String]) -> IO ()
-build (filenames, name) =
-  if length (name) > 1
-    then do
-      putStr buildHelp
-      pure ()
-    else do
+build (filenames, name)
+  | length name > 1 = void (putStr buildHelp)
+  | otherwise = do
       files <- readFiles filenames
       defs <- parser files
       pure ()
 
 launch :: ([String], [String]) -> IO ()
-launch (binary, args) =
-  if length (binary) > 1
-    then do
-      putStr launchHelp
-      pure ()
-    else do
-      pure ()
+launch (binary, _)
+  | length binary > 1 = putStr launchHelp >> pure ()
+  | otherwise = pure ()
 
 argDispatch :: [String] -> IO ()
-argDispatch ("-h" : args) = help args
+argDispatch ("-h" : args) = helpMsg args >> exitSuccess
 argDispatch ("run" : args) = run $ separateArgs args "--"
 argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
-argDispatch _ = help ["invalid"]
+argDispatch _ = helpMsg ["invalid"] >> exitWith (ExitFailure 1)
 
 main :: IO ()
 main = do
