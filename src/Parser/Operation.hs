@@ -137,7 +137,7 @@ parseSysCallFct :: Parser Operation
 parseSysCallFct =
   CallSys
     <$> parseWithSpace (checkOperator parseSysCall getSysCall)
-    <*> ((: []) <$> parseMaybeparenthesis parseOperable)
+    <*> (parseargs <|> parseNoargs)
 
 ---------------------------------------------
 
