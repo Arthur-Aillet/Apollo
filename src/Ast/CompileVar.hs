@@ -1,19 +1,19 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- variable Compilation
 -}
 
 module Ast.CompileVar (module Ast.CompileVar) where
 
-import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
-import Ast.Error (Compile (..), Error)
-import Ast.Operable (compOperable)
 import Ast.Ast
   ( Operable (..),
     Type (..),
   )
+import Ast.Context (Context (..), CurrentReturnType, LocalContext (..), Variables, firstValidIndex)
+import Ast.Error (Compile (..), Error)
+import Ast.Operable (compOperable)
 import Data.HashMap.Lazy (adjust, insert)
 import Eval.Exec
 

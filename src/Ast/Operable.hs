@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST To Insts Operable
 -}
@@ -10,12 +10,12 @@
 
 module Ast.Operable (concatInner, compOperable, compOperation) where
 
+import Ast.Ast (Operable (..), Operation (CallFunc, CallSH, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Context (Context (Context), LocalContext (..))
 import Ast.Error (Compile (..), failingComp, withW)
-import Ast.Ast (Operable (..), Operation (CallFunc, CallStd, CallSys), Type (..), atomType, valueType)
 import Ast.Utils (allEqual, concatInner, listInner, zip4)
 import Data.HashMap.Lazy ((!?))
-import Eval.Atom (Atom)
+import Eval.Atom (Atom (AtomC))
 import Eval.Instructions (Instruction (..), Insts)
 import Eval.Operator (Operator (..), OperatorDef (..), OperatorType (..), Value (..), defsOp, operate)
 import Eval.Syscall (Syscall (..))
@@ -55,7 +55,7 @@ compOperable (OpCast op ntype) c l =
     Ko w e -> Ko w e
     Ok w (fop, ftype)
       | ntype == ftype -> withW [warn] $ Ok w (fop, ntype)
-      | otherwise -> Ok w (fop, ntype)
+      | otherwise -> Ok w (fop ++ [Cast ntype], ntype)
       where
         warn = "Cast from " ++ show ntype ++ " to " ++ show ntype
 
@@ -68,7 +68,7 @@ argsHasError (Ok w []) (_ : _) = Ko w ["Too few arguments"]
 argsHasError (Ok w (_ : _)) [] = Ko w ["Too many arguments"]
 argsHasError (Ok w []) [] = Ok w ()
 
-typeErr :: Show a => a -> Type -> Type -> String
+typeErr :: (Show a) => a -> Type -> Type -> String
 typeErr op at wt =
   "Builtin \""
     ++ show op
@@ -78,17 +78,17 @@ typeErr op at wt =
     ++ show wt
     ++ " was awaited"
 
-opeValidArgs :: Show a => a -> [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
+opeValidArgs :: (Show a) => a -> [Compile (Insts, Type)] -> Int -> Maybe Type -> Compile Type
 opeValidArgs op (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs op xs (nbr - 1) type') w err
 opeValidArgs _ [] 0 (Just waited_type) = Ok [] waited_type
 opeValidArgs op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 opeValidArgs op (Ok w _ : _) 0 (Just _) =
-  Ko w ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko w ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 opeValidArgs op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 opeValidArgs op (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs op xs (nbr - 1) (Just arg_type)
 opeValidArgs op (Ok w (_, at) : xs) nbr (Just wt)
@@ -115,6 +115,12 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 
 compPrinting :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compSyscallType (Just $ TypeList $ Just TypeChar) Nothing
+
+compReading :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compReading =
+  compSyscallType
+    (Just $ TypeList $ Just TypeChar)
+    (Just $ TypeList $ Just TypeChar)
 
 cMsg :: [String]
 cMsg = ["Can't get on empty list"]
@@ -192,12 +198,12 @@ compSyscallType in' out op args count = case opeValidArgs op args count in' of
 allOfType :: Operator -> [Atom] -> Int -> Maybe Type -> Compile Type
 allOfType _ [] 0 (Just waited_type) = Ok [] waited_type
 allOfType op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 allOfType op (_ : _) 0 (Just _) =
-  Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 allOfType op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 allOfType op (val : xs) nbr Nothing =
   allOfType op xs (nbr - 1) (Just $ atomType val)
 allOfType op (val : xs) nbr (Just wt)
@@ -267,8 +273,6 @@ compBuiltin _ builtin (OperatorDef ac Logical) True ops =
   evalLogical builtin (toVa ops) ac
 compBuiltin args builtin (OperatorDef ac Logical) False _ =
   compLogical builtin args ac
--- compBuiltin args builtin (OperatorDef ac Printing) _ _ =
-  -- compPrinting builtin args ac
 compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
@@ -276,13 +280,36 @@ compBuiltin args builtin (OperatorDef ac Getting) _ _ =
 compBuiltin args builtin (OperatorDef ac Length) _ _ =
   compLen builtin args ac
 
+listStr :: Maybe Type
+listStr = Just $ TypeList $ Just TypeChar
+
+compShType :: String -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compShType n args count = case opeValidArgs n args count listStr of
+  Ko warns err -> Ko warns err
+  Ok w _ ->
+    (\a b -> (a ++ b, listStr))
+      <$> concatInner (map (fst <$>) (reverse args))
+      <*> Ok
+        w
+        ( (Take (length args) : map (\x -> PushD $ AtomC x True) (reverse n))
+            ++ [Take $ length n, CallS]
+        )
+
 compOperation :: Operation -> Context -> LocalContext -> Compile (Insts, Maybe Type)
 compOperation (CallStd builtin ops) c l =
   compBuiltin args builtin (defsOp builtin) (allValue ops) ops
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallSys builtin ops) c l =
-  compPrinting builtin args 1
+compOperation (CallSys Print ops) c l = compPrinting Print args 1
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Write ops) c l = compPrinting Write args 2
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Append ops) c l = compPrinting Append args 2
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Read ops) c l = compReading Read args 1
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
@@ -294,6 +321,8 @@ compOperation (CallFunc func ops) (Context c) l = case c !? func of
       fca = concat <$> listInner (map (fst <$>) args_compiled)
       types = listInner $ map (snd <$>) args_compiled
       args_compiled = map (\op -> compOperable op (Context c) l) (reverse ops)
---compOperation (CallFunc func ops) (Context c) l = case c !? func of
-
+compOperation (CallSH name args) ctx l =
+  compShType name comp_args (length args)
+  where
+    comp_args = map (\op -> compOperable op ctx l) args
 compOperation a _ _ = Ko [] ["Operation unsupported" ++ show a]

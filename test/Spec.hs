@@ -2,7 +2,7 @@ import AtomSpec (atomTests)
 import Control.Monad
 import InstructionSpec (instructionTests)
 import OperatorSpec (operatorTests)
-import ParserSpec (parserTests)
+import Parser.ParserSpec (parserTests)
 import Test.HUnit
 
 main :: IO ()

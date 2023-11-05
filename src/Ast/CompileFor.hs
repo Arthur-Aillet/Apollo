@@ -1,36 +1,38 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- for Compilation
 -}
 
 module Ast.CompileFor (module Ast.CompileFor) where
 
+import Ast.Ast
 import Ast.Context hiding (Index)
 import Ast.Error
 import Ast.Operable (compOperable)
-import Ast.Ast
 import Data.HashMap.Lazy (insert)
 import Eval.Exec
 
 compForFstPart :: Index -> Index -> Insts -> Insts
-compForFstPart arr_pos count_pos last_part = [PushI arr_pos, Op Len] -- Gen Len list
-        ++ [PushI count_pos, Op NEq] -- End Reached?
-        ++ [JumpIfFalse (length last_part + 1)] -- Jump
+compForFstPart arr_pos count_pos last_part =
+  [PushI arr_pos, Op Len] -- Gen Len list
+    ++ [PushI count_pos, Op NEq] -- End Reached?
+    ++ [JumpIfFalse (length last_part + 1)] -- Jump
 
 compForToStart :: Insts -> Insts -> Insts
 compForToStart fst_part last_part =
   [Jump ((length fst_part + length last_part) * (-1))]
 
 compForSetup :: Insts -> Index -> Insts -> Insts -> Index -> Insts
-compForSetup arr_insts arr_pos fst_part last_part count_pos = arr_insts
-        ++ [Store] -- Store arr
-        ++ [PushI arr_pos, Op Len] -- Gen Len list
-        ++ [PushD (AtomI 0), Op NEq] -- Reach End
-        ++ [JumpIfFalse (length fst_part + length last_part + 1 + 6)]
-        ++ [PushD (AtomI 0), Store] -- Store count
-        ++ [PushI count_pos, PushI arr_pos, Op Get, Store] -- Store Iter
+compForSetup arr_insts arr_pos fst_part last_part count_pos =
+  arr_insts
+    ++ [Store] -- Store arr
+    ++ [PushI arr_pos, Op Len] -- Gen Len list
+    ++ [PushD (AtomI 0), Op NEq] -- Reach End
+    ++ [JumpIfFalse (length fst_part + length last_part + 1 + 6)]
+    ++ [PushD (AtomI 0), Store] -- Store count
+    ++ [PushI count_pos, PushI arr_pos, Op Get, Store] -- Store Iter
 
 compForInsts :: Insts -> Insts -> Index -> Index -> Index -> LocalContext -> (Insts, LocalContext)
 compForInsts arr_insts content_insts count_pos arr_pos iter_pos l = (final, l)

@@ -1,20 +1,22 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST
 -}
 
-module Ast.Ast (Type(..), Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), numType, atomType, valueType) where
+module Ast.Ast (module Ast.Type, Ast (..), Function (..), Structure (..), Operation (..), Type (..), Definition (..), Operable (..), atomType, valueType) where
 
+import Ast.Type
 import Eval.Atom (Atom (..))
 import Eval.Operator (Operator, Value (..))
 import Eval.Syscall (Syscall)
-import Ast.Type
+
 data Function = Function [(String, Type)] (Maybe Type) Ast deriving (Show, Eq)
 
 data Definition
-  = FuncDefinition String Function -- define a function
+  = FuncDefinition String Function
+  deriving (Show) -- define a function
 
 data Structure -- layout, structure and connection of statements, having no value
   = Resolved -- expression resolving to no value
@@ -47,21 +49,6 @@ data Operable -- statement having a value
   | OpOperation Operation -- operation resulting in an operable value
   | OpIOPipe String -- named pipe, String is likely a placeholder
   deriving (Show, Eq)
-
-instance Show Type where
-  show TypeBool = "bool"
-  show TypeChar = "char"
-  show TypeInt = "int"
-  show TypeFloat = "float"
-  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
-  show (TypeList Nothing) = "[]"
-
-numType :: Type -> Bool
-numType TypeBool = True
-numType TypeChar = True
-numType TypeInt = True
-numType TypeFloat = True
-numType _ = False
 
 valueType :: Value -> Type
 valueType (VAtom a) = atomType a

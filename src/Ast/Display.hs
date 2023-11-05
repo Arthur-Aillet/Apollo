@@ -1,15 +1,16 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST display
 -}
 
-module Ast.Display (compile) where
+module Ast.Display (compile, resetColor, yellow, red, green) where
 
-import Ast.CompileAST (Binary (..), generateBinary)
-import Ast.Error (Compile (..), Error, Warning)
 import Ast.Ast (Definition)
+import Ast.CompileAST (generateBinary)
+import Ast.Error (Compile (..), Error, Warning)
+import Eval.Instructions (Env)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 yellow :: String
@@ -17,6 +18,9 @@ yellow = "\x1b[33m"
 
 red :: String
 red = "\x1b[31m"
+
+green :: String
+green = "\x1b[32m"
 
 resetColor :: String
 resetColor = "\x1b[0m"
@@ -49,7 +53,7 @@ displayError err =
       ++ resetColor
       ++ concatMap (\x -> '\t' : x ++ "\n") err
 
-compile :: [Definition] -> IO Binary
+compile :: [Definition] -> IO Env
 compile defs = case generateBinary defs of
   Ko w err ->
     displayWarnings w

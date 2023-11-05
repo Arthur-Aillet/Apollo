@@ -17,7 +17,7 @@ module Eval.Operator
   )
 where
 
-import Eval.Atom (Atom (..))
+import Eval.Atom (Atom (..), bAtom)
 
 data Value
   = VAtom Atom
@@ -57,29 +57,39 @@ data Operator
   | Concat
   | Get
   | Len
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum)
 
 operate :: Operator -> ([Atom] -> Either String Atom)
-operate Add = Right . sum
-operate Sub = \[a, b] -> Right (a - b)
-operate Mul = Right . product
-operate Div = \[a, b] ->
+operate op xs = case xs of
+  (x : y : _) -> operate2 op (x, y)
+  [x] -> operate1 op x
+  [] -> Left "no args to operator"
+
+operate1 :: Operator -> (Atom -> Either String Atom)
+operate1 Not x = Right $ AtomB $ x /= AtomB False
+operate1 _ _ = Left "only one arg was supplied to op"
+
+operate2 :: Operator -> ((Atom, Atom) -> Either String Atom)
+operate2 Add = \(a, b) -> Right $ sum [a, b]
+operate2 Sub = \(a, b) -> Right (a - b)
+operate2 Mul = \(a, b) -> Right (a * b)
+operate2 Div = \(a, b) ->
   if b /= 0
     then Right (a / b)
     else Left "Division by zero"
-operate Mod = \[a, b] ->
+operate2 Mod = \(a, b) ->
   if b /= 0
     then Right (a `mod` b)
     else Left "Modulo by zero"
-operate Eq = \[a, b] -> Right $ AtomB $ a == b
-operate Lt = \[a, b] -> Right $ AtomB $ a < b
-operate Gt = \[a, b] -> Right $ AtomB $ a > b
-operate GEt = \[a, b] -> Right $ AtomB $ a >= b
-operate GEt = \[a, b] -> Right $ AtomB $ a >= b
-operate NEq = \[a, b] -> Right $ AtomB $ a /= b
-operate And = \[AtomB a, AtomB b] -> Right $ AtomB $ a && b
-operate Or = \[AtomB a, AtomB b] -> Right $ AtomB $ a || b
-operate Not = \[AtomB a] -> Right $ AtomB $ not a
+operate2 Eq = \(a, b) -> Right $ AtomB $ a == b
+operate2 Lt = \(a, b) -> Right $ AtomB $ a < b
+operate2 Gt = \(a, b) -> Right $ AtomB $ a > b
+operate2 LEt = \(a, b) -> Right $ AtomB $ a <= b
+operate2 GEt = \(a, b) -> Right $ AtomB $ a >= b
+operate2 NEq = \(a, b) -> Right $ AtomB $ a /= b
+operate2 And = \(a, b) -> Right $ bAtom $ a * b
+operate2 Or = \(a, b) -> Right $ bAtom $ abs a + abs b
+operate2 _ = \_ -> Left "too many args were supplied to op"
 
 defsOp :: Operator -> OperatorDef
 defsOp Add = OperatorDef 2 Calculus
@@ -134,7 +144,6 @@ execOperator (x : y : xs) Get = case (x, y) of
     Right val -> Right $ val : xs
   recived ->
     Left $ "Get take a index and a lists not " ++ show recived
-
 execOperator (x : y : xs) Concat = case (x, y) of
   (VList list1, VList list2) -> Right $ VList (list1 ++ list2) : xs
   _ -> Left "Concat take two lists"
