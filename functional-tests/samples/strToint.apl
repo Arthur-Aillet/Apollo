@@ -13,8 +13,6 @@
     int iterator = 0;
     while ((len(str)) != iterator) {
         if (@isBetween('0' as int, '9' as int, (str[iterator]) as int)) {
-            print(@intToStr(result));
-            print("\n");
             result += ((str[iterator]) as int) - 48;
             result *= 10;
             iterator += 1;

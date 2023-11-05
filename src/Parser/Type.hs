@@ -7,7 +7,7 @@
 
 module Parser.Type (Parser (..), StackTrace (..), defaultRange, faillingParser) where
 
-import Control.Applicative (Alternative ((<|>)))
+import Control.Applicative (Alternative (empty, (<|>)))
 import Parser.Position (Position (..))
 import Parser.Range (defaultRange)
 import Parser.StackTrace (StackTrace (..))
@@ -38,6 +38,7 @@ instance Applicative Parser where
   a <* b = const <$> a <*> b
 
 instance Alternative Parser where
+  empty = Parser $ \_ _ -> Left $ StackTrace []
   first <|> second =
     Parser
       ( \s pos -> case (runParser first s pos, runParser second s pos) of

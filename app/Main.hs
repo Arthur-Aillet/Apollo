@@ -1,29 +1,29 @@
-{-
--- EPITECH PROJECT, 2023
--- apollo
--- File description:
--- Main
--}
-
 module Main (main) where
 
 import Ast.Display (compile)
-import Control.Monad (void)
-import Eval (exec)
-import Eval.Instructions (Env, Insts)
-import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
+import Data.List (delete, elem, elemIndex)
+import Eval
 import Parser.Parser (parser)
-import PreProcess (readFiles)
-import System.Environment (getArgs)
-import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import PreProcess
+import System.Environment
+import System.Exit (ExitCode (ExitFailure), exitWith)
+import Prelude
 
 defaultHelp :: String
 defaultHelp =
   "\
   \Usage:\n\
-  \\t./apollo [\ESC[33mrun\ESC[0m [files] (-- [args]) | \ESC[33mbuild\ESC[0m [files] (-- [name])| \ESC[33mlaunch\ESC[0m [binary] (-- [args])]\n\
+  \\t./apollo [\
+  \ \ESC[33mrun\ESC[0m [files] (-- [args]) |\
+  \ \ESC[33mbuild\ESC[0m [files] (-- [name]) |\
+  \ \ESC[33mlaunch\ESC[0m [binary] (-- [args]) |\
+  \ \ESC[33mcompiled\ESC[0m [files] ]\n\
   \use\n\
-  \  ./apollo -h [\ESC[33mrun\ESC[0m | \ESC[33mbuild\ESC[0m | \ESC[33mlaunch\ESC[0m]\n\
+  \  ./apollo -h [ \
+  \ \ESC[33mrun\ESC[0m |\
+  \ \ESC[33mbuild\ESC[0m |\
+  \ \ESC[33mlaunch\ESC[0m |\
+  \ \ESC[33mcompiled\ESC[0m]\n\
   \for more details about these commands\n\
   \"
 
@@ -43,10 +43,10 @@ buildHelp =
   "\
   \Compiles the ginven files in a binary\n\
   \Usage:\n\
-  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-- \ESC[33m[name]\ESC[0m)\n\
+  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-o \ESC[33m[name]\ESC[0m)\n\
   \\ESC[33mfiles\ESC[0m\t\tlist of files to execute\n\
   \\ESC[33mname\ESC[0m\t\tthe name to give the binary.\
-  \if none is given, it will be named a.out and \"--\" is unnecessary\n\
+  \if none is given, it will be named a.out and \"-o\" is unnecessary\n\
   \"
 
 launchHelp :: String
@@ -60,6 +60,9 @@ launchHelp =
   \if none are provided \"--\" is unnecessary\n\
   \"
 
+compiledHelp :: String
+compiledHelp = "pending"
+
 invalidHelp :: String
 invalidHelp =
   "\
@@ -69,69 +72,108 @@ invalidHelp =
   \for help\n\
   \"
 
-helpMsg :: [String] -> IO ()
-helpMsg [] = putStr defaultHelp
-helpMsg ["run"] = putStr runHelp
-helpMsg ["build"] = putStr buildHelp
-helpMsg ["launch"] = putStr launchHelp
-helpMsg _ = putStr invalidHelp
+getIndex :: [String] -> String -> Int
+getIndex list element = case elemIndex element list of
+  Just a -> a
+  Nothing -> -1
+
+isAfter :: [String] -> String -> String -> Bool
+isAfter list a b = getIndex list b - getIndex list a == 1
+
+getName :: [String] -> String
+getName (x : xs)
+  | isAfter xs "-o" x = x
+  | otherwise = getName xs
+getName [] = ""
+
+extractname :: [String] -> ([String], String)
+extractname strs =
+  if "-o" `elem` strs
+    then (delete "-o" (delete (getName strs) strs), getName strs)
+    else (strs, "a.out")
+
+help :: [String] -> IO ()
+help [] = putStr defaultHelp
+help list
+  | isAfter list "-h" "run" = putStr runHelp
+  | isAfter list "-h" "build" = putStr buildHelp
+  | isAfter list "-h" "launch" = putStr launchHelp
+  | isAfter list "-h" "compile" = putStr compiledHelp
+help _ = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
-getStrsBefore [] _ = []
-getStrsBefore [x] target
+getStrsBefore (x : []) target
   | x == target = []
   | otherwise = [x]
 getStrsBefore (x : xs) target
   | x == target = []
-  | otherwise = x : getStrsBefore xs target
+  | otherwise = (x : getStrsBefore xs target)
 
 getStrsAfter :: [String] -> String -> [String]
-getStrsAfter [] _ = []
+getStrsAfter ([]) _ = []
 getStrsAfter (x : xs) target
   | x == target = xs
   | otherwise = getStrsAfter xs target
 
 separateArgs :: [String] -> String -> ([String], [String])
-separateArgs args separator =
-  (getStrsBefore args separator, getStrsAfter args separator)
+separateArgs args separator = (getStrsBefore args separator, getStrsAfter args separator)
 
-execute :: Env -> [String] -> Insts -> IO ()
+charToAtomC :: Char -> Value
+charToAtomC c = VAtom $ AtomC c False
+
+stringToVal :: String -> Value
+stringToVal str = VList $ map charToAtomC str
+
+stringsToVals :: [String] -> [Value]
+stringsToVals = map stringToVal
+
+execute :: Env -> [String] -> Insts -> IO Int
 execute env args main_f = do
-  result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
+  result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
   case result of
-    Left a -> putStrLn a
-    Right a -> print a
+    Left a -> do
+      putStrLn a
+      exitWith (ExitFailure 0)
+    Right (Just (VAtom (AtomI a))) -> exitWith (ExitFailure a)
+    Right (Just (VAtom (AtomC a _))) -> exitWith (ExitFailure $ fromEnum a)
+    Right (Just (VAtom (AtomF a))) -> exitWith (ExitFailure (round a :: Int))
+    Right _ -> exitWith (ExitFailure 1)
 
-run :: ([String], [String]) -> IO ()
+run :: ([String], [String]) -> IO Int
 run (filenames, args) = do
   files <- readFiles filenames
   defs <- parser files
   env <- compile defs
-  if not (hasNothing (argsToMaybeValues args))
-    then execute env args (snd $ head env)
-    else void $ print "invalid args"
+  execute env args (snd $ head env)
 
-build :: ([String], [String]) -> IO ()
-build (filenames, name)
-  | length name > 1 = void (putStr buildHelp)
-  | otherwise = do
-      files <- readFiles filenames
-      defs <- parser files
-      pure ()
+build :: [String] -> IO Int
+build args = do
+  let (filenames, name) = extractname args
+  files <- readFiles filenames
+  defs <- parser files
+  exitWith (ExitFailure 1)
 
-launch :: ([String], [String]) -> IO ()
-launch (binary, _)
-  | length binary > 1 = void $ putStr launchHelp
-  | otherwise = pure ()
+launch :: ([String], [String]) -> IO Int
+launch (binary, args) =
+  if length (binary) > 1
+    then do
+      putStr launchHelp
+      exitWith (ExitFailure 0)
+    else do
+      exitWith (ExitFailure 1)
 
-argDispatch :: [String] -> IO ()
-argDispatch ("-h" : args) = helpMsg args >> exitSuccess
+argDispatch :: [String] -> IO Int
+argDispatch list | "-h" `elem` list = do
+  help list
+  exitWith (ExitFailure 0)
 argDispatch ("run" : args) = run $ separateArgs args "--"
-argDispatch ("build" : args) = build $ separateArgs args "--"
+argDispatch ("build" : args) = build $ args
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
-argDispatch _ = helpMsg ["invalid"] >> exitWith (ExitFailure 1)
+argDispatch _ = do
+  help ["invalid"]
+  exitWith (ExitFailure 0)
 
-main :: IO ()
+main :: IO Int
 main = do
   args <- getArgs
   argDispatch args

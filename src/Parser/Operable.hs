@@ -11,7 +11,7 @@ import Ast.Ast (Operable (..), Operation (), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingQuote, parseOpeningParenthesis, parseOpeningQuote)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingsQuote, parseOpeningParenthesis, parseOpeningsQuote)
 import Parser.Int (parseFloat, parseInt)
 import Parser.List (parseList)
 import Parser.Operation (parseOperation)
@@ -19,6 +19,7 @@ import Parser.Operation (parseOperation)
 
 import Parser.Range (Range (Range))
 import Parser.StackTrace (defaultLocation)
+import Parser.String (parseString)
 import Parser.Symbol (parseSymbol, parseType)
 import Parser.Syntax (parseMany, parseWithSpace)
 import Parser.Type (Parser (..), StackTrace (StackTrace))
@@ -58,7 +59,7 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
 
 getcharOpValue :: Parser Char -> Parser Operable
 getcharOpValue parser = Parser $ \s p ->
-  case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+  case runParser (parseOpeningsQuote *> parser <* parseClosingsQuote) s p of
     Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
     Left a -> Left a
 
@@ -96,6 +97,16 @@ parseOpList = getOpList parseList
 
 ---------------------------------------------
 
+getOpStr :: Parser [Operable] -> Parser Operable
+getOpStr parser = Parser $ \s p -> case runParser parser s p of
+  Right (list, str, pos) -> Right (OpList list, str, pos)
+  Left a -> Left a
+
+parseOpStr :: Parser Operable
+parseOpStr = getOpList parseString
+
+---------------------------------------------
+
 getOpOp :: Parser Operation -> Parser Operable
 getOpOp parser = Parser $ \s p -> case runParser parser s p of
   Right (op, str, pos) -> Right (OpOperation op, str, pos)
@@ -112,6 +123,7 @@ parseOperable =
     <|> parseOpValue
     <|> parseOpVar
     <|> parseOpList
+    <|> parseOpStr
     <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
 
 parseElement :: Parser Operable

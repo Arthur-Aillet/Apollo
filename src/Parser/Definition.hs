@@ -71,7 +71,8 @@ findNextFunction nb_brackets = Parser $ \s p -> case runParser parseAChar s p of
     if nb_brackets == -1
       then runParser (findNextFunction 1) str pos
       else runParser (findNextFunction (nb_brackets + 1)) str pos
-  Right ('}', str, pos) -> runParser (findNextFunction (nb_brackets - 1)) str pos
+  Right ('}', str, pos) ->
+    runParser (findNextFunction (nb_brackets - 1)) str pos
   Right (_, str, pos) -> runParser (findNextFunction nb_brackets) str pos
   Left (StackTrace [(_, ran, src)]) -> Left (StackTrace [("", ran, src)])
   Left a -> Left a
@@ -83,8 +84,8 @@ parseNextFuncDef parser s p xs p1 p2 src =
       Left (StackTrace [(xs, Range p1 p2, src)])
     Left (StackTrace [("", Range _ p3, _)]) ->
       Left (StackTrace [(xs, Range p1 p3, src)])
-    Left (StackTrace [("Not Found: End of Input", _, _)]) ->
-      Left (StackTrace [(xs, Range p1 p2, src)])
+    Left (StackTrace [("Not Found: End of Input", ran, sr)]) ->
+      Left (StackTrace [("", ran, sr)])
     Left (StackTrace ys) -> Left $ StackTrace $ (xs, Range p1 p2, src) : ys
 
 parseManyFuncDef :: Parser [Definition] -> Parser [Definition]

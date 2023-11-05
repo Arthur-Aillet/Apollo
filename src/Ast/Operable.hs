@@ -83,12 +83,12 @@ opeValidArgs op (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs op xs (nbr - 1) type') w err
 opeValidArgs _ [] 0 (Just waited_type) = Ok [] waited_type
 opeValidArgs op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 opeValidArgs op (Ok w _ : _) 0 (Just _) =
-  Ko w ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko w ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 opeValidArgs op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 opeValidArgs op (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs op xs (nbr - 1) (Just arg_type)
 opeValidArgs op (Ok w (_, at) : xs) nbr (Just wt)
@@ -198,12 +198,12 @@ compSyscallType in' out op args count = case opeValidArgs op args count in' of
 allOfType :: Operator -> [Atom] -> Int -> Maybe Type -> Compile Type
 allOfType _ [] 0 (Just waited_type) = Ok [] waited_type
 allOfType op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 allOfType op (_ : _) 0 (Just _) =
-  Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 allOfType op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 allOfType op (val : xs) nbr Nothing =
   allOfType op xs (nbr - 1) (Just $ atomType val)
 allOfType op (val : xs) nbr (Just wt)
