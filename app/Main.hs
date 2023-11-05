@@ -7,8 +7,12 @@
 
 module Main (main) where
 
+import Ast.Bytecode
 import Ast.Display (compile)
 import Control.Monad (void)
+import qualified Data.Binary as Binary
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Builder as Builder
 import Eval (exec)
 import Eval.Instructions (Env, Insts)
 import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
@@ -16,10 +20,6 @@ import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
-import qualified Data.ByteString.Builder as Builder
-import qualified Data.ByteString as ByteString
-import qualified Data.Binary as Binary
-import Ast.Bytecode
 
 defaultHelp :: String
 defaultHelp =
@@ -119,24 +119,34 @@ build :: ([String], [String]) -> IO ()
 build (filenames, name)
   | length name > 1 = void (putStr buildHelp)
   | otherwise = do
-      files <- readFiles filenames
-      defs <- parser files
-      env <- compile defs
-      let encoded = encode env
-      let file = head (name ++ ["a.bin"])
-      ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
+    files <- readFiles filenames
+    defs <- parser files
+    env <- compile defs
+    let encoded = encode env
+    let file = head (name ++ ["a.bin"])
+    ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
 
 launch :: ([String], [String]) -> IO ()
 launch (binary, args)
   | length binary > 1 = void $ putStr launchHelp
   | otherwise = do
-      bytestring <- ByteString.readFile (head binary)
-      let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
-      let env = decode bytes
-      case env of
-        Right env2 -> execute env2 args (snd $ head env2)
-        Left err -> putStrLn err
+    bytestring <- ByteString.readFile (head binary)
+    let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
+    let env = decode bytes
+    case env of
+      Right env2 -> execute env2 args (snd $ head env2)
+      Left err -> putStrLn err
 
+dumpASM :: ([String], [String]) -> IO ()
+dumpASM (binary, _)
+  | length binary > 1 = void $ putStr launchHelp
+  | otherwise = do
+    bytestring <- ByteString.readFile (head binary)
+    let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
+    let env = decode bytes
+    case env of
+      Right env2 -> print env2
+      Left err -> putStrLn err
 
 argDispatch :: [String] -> IO ()
 argDispatch ("-h" : args) = helpMsg args >> exitSuccess
