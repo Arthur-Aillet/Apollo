@@ -11,7 +11,7 @@ import Ast.Ast (Operable (..), Operation (), Type (..))
 import Control.Applicative (Alternative ((<|>)))
 import Eval.Atom (Atom (..))
 import Parser.Bool (parseBool)
-import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseClosingQuote, parseOpeningParenthesis, parseOpeningQuote)
+import Parser.Char (parseAChar, parseAnyChar, parseClosingParenthesis, parseOpeningParenthesis, parseOpeningsQuote, parseClosingsQuote)
 import Parser.Int (parseFloat, parseInt)
 import Parser.List (parseList)
 import Parser.Operation (parseOperation)
@@ -59,7 +59,7 @@ getBoolOpValue parser = Parser $ \s p -> case runParser parser s p of
 
 getcharOpValue :: Parser Char -> Parser Operable
 getcharOpValue parser = Parser $ \s p ->
-  case runParser (parseOpeningQuote *> parser <* parseClosingQuote) s p of
+  case runParser (parseOpeningsQuote *> parser <* parseClosingsQuote) s p of
     Right (char, str, pos) -> Right (OpValue $ AtomC char False, str, pos)
     Left a -> Left a
 
