@@ -17,7 +17,7 @@ import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseMaybeparenthesis, parseWithSpace)
-import Parser.Type (Parser (..), faillingParser)
+import Parser.Type (Parser (..))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add

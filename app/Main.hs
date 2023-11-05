@@ -4,13 +4,10 @@ import Ast.CompileAST (Binary (..), generateBinary)
 import Ast.Display (compile)
 import Eval
 import Parser.Parser (parser)
-import Parser.Position (defaultPosition)
-import Parser.Type (Parser (..), StackTrace)
 import PreProcess
 import System.Environment
 import Prelude
-import System.Exit (exitWith, ExitCode (ExitSuccess, ExitFailure), exitFailure)
-import Eval.Atom (Atom (..))
+import System.Exit (exitWith, ExitCode (ExitFailure))
 
 defaultHelp :: String
 defaultHelp =
