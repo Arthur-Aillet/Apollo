@@ -8,10 +8,12 @@
 module Ast.Bytecode
   (
     fromBytecode,
-    toBytecode
+    toBytecode,
+    encode,
+    decode,
   ) where
 
-import Eval.Instructions (Instruction (..), Index)
+import Eval.Instructions (Instruction (..), Index, Env)
 import Eval.Atom (Atom (..), Type (..), cAtom, iAtom, bAtom)
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (..))
@@ -41,6 +43,24 @@ data InstructionEnum
   | EInstructionError -- out of bounds
   deriving (Show, Eq, Enum, Ord)
     -- insure this is synced to the types in Eval.Instructions
+
+type APHeader = [(Int, [Bytes])]
+
+decode :: [Bytes] -> Either String Env
+decode (s : i : xs) = case fromBytecode (take size xs) of
+  Left err -> Left err
+  Right y -> case decode (drop size xs) of
+    Left err -> Left err
+    Right ys -> Right ((idx, y) : ys)
+  where
+    size = bytecodeInt s
+    idx = bytecodeIndex i
+
+encode :: Env -> [Bytes]
+encode ((idx, func) : xs) =
+  [indexBytecode idx, intBytecode (length func)] ++ toBytecode func
+  ++ encode xs
+encode [] = []
 
 bytecodeFormat :: (Int, Int, Int)
 bytecodeFormat = (1, 1, 8)
