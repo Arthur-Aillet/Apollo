@@ -33,32 +33,35 @@
 
 <DeclareVariable>       = <Type> <String>;
 <DefineVariable>        = <DeclareVariable> "=" <Elem>;
-<AssigneVariable>       = <String> = <Elem>;
+<AssigneVariable>       = <String> "=" <Elem>;
 
-<Parameters>            = [<DeclareVariable>] | <DeclareVariable> {"," <DeclareVariable};
+<Parameters>            = {<DeclareVariable> ","} <DeclareVariable;
 
-<StructureIf>           =   "if" <Operation> "{"
-                                <Instructions> "}"
-                            { "elif" <Operation> "{" <Instructions> "}" }
-                            [ "elif {" <Instructions> "}" ];
-<StructureWhile>        = "while" <Operation> "{" <Instructions> "}";
-<StructureFor>          = "for" <String> "in" <Iterable> "{" <Instructions> "}"
 <FunctionDef>           = "@" <String> "(" <Parameters> ")" <Type> "{" <Instructions> "}";
 
-<FuncArgs>              = {<Elem> ","} <Elem>
-<FuncCall>              = "@"<String> "(" <FuncArgs> ")";
-<FuncCallWith0Args>     = "@"<String>;
-<FuncCallWithPipedArg>  = "@"<String>;
-<ShellCall>             = "$"<String> "(" <FuncArgs> ")";
-<ShellCallWith0Args>    = "$"<String>;
-<ShellCallWithPipedArg> = "$"<String>;
-<Call>                  = <FuncCall> | <ShellCall>
+
+<StructureIf>           =   "if" <Operation>
+                                <Structure>
+                            { "elif" <Operation> <Structure> }
+                            [ "else" <Structure> ];
+<StructureWhile>        = "while" <Operation> <Structure>;
+<StructureFor>          = "for" <String> "in" <Iterable> <Structure>;
+<StructureSequence>     = "{" {<Instruction> ";" } "}";
+
+<Structure>             = <StructureIf> | <StructureFor> | <StructureFor> | <StructureSequence>;
+
+<FuncArgs>              = {<Elem> ","} <Elem>;
+<FuncCall>              = "@"<String> ["(" <FuncArgs> ")" ];
+<ShellCall>             = "$"<String> ["(" <FuncArgs> ")" ];
+<Call>                  = <FuncCall> | <ShellCall>;
+# <ChainCalls>            = <Call>"."<Call>;
 
 <Return>                = "return" ["("] <Elem> [")"];
-<ChainCalls>            = <Call>"."<Call>
+
+<Action>                = <Return> | <Call> | <ChainCalls> | <Operation | <DeclareVariable> | <DefineVariable> | <AssigneVariable>;
 
 # <Then>                  = <Call> ">>" <Call>;
 # <Bind>                  = <DeclareVariable> "<-" <Call>;
 
-<Instruction>           = <StructureIf> ";" | <Call> ";" | <Return> ";" | <SetVariable> ";" | <DeclareVariable> ";" | <AssigneVariable> ";";
+<Instruction>           = <Structure> | <Action>
 <Instructions>          = {<Instruction>};
