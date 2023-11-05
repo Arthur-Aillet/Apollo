@@ -30,6 +30,8 @@ dependencies:
 - base >= 4.7 && < 5
 - unordered-containers
 - process
+- bytestring
+- binary
 
 ghc-options:
 - -Wall

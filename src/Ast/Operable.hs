@@ -300,11 +300,16 @@ compOperation (CallStd builtin ops) c l =
   compBuiltin args builtin (defsOp builtin) (allValue ops) ops
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallSys builtin ops) c l
-  | builtin == Print = compPrinting builtin args 1
-  | builtin == Write = compPrinting builtin args 2
-  | builtin == Append = compPrinting builtin args 2
-  | builtin == Read = compReading builtin args 1
+compOperation (CallSys Print ops) c l = compPrinting Print args 1
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Write ops) c l = compPrinting Write args 2
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Append ops) c l = compPrinting Append args 2
+  where
+    args = map (\op -> compOperable op c l) ops
+compOperation (CallSys Read ops) c l = compReading Read args 1
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of

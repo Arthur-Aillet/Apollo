@@ -1,13 +1,35 @@
+{-
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Main
+-}
+
 module Main (main) where
 
+import Ast.Bytecode
 import Ast.Display (compile)
+import Control.Monad (void)
+import qualified Data.Binary as Binary
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Builder as Builder
 import Data.List (delete, elem, elemIndex)
 import Eval
 import Parser.Parser (parser)
-import PreProcess
-import System.Environment
-import System.Exit (ExitCode (ExitFailure), exitWith)
-import Prelude
+import PreProcess (readFiles)
+import System.Environment (getArgs)
+import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+
+defaultHelp2 :: String
+defaultHelp2 =
+  "use\n\
+  \  ./apollo -h [ \
+  \ \ESC[33mrun\ESC[0m |\
+  \ \ESC[33mbuild\ESC[0m |\
+  \ \ESC[33mlaunch\ESC[0m |\
+  \ \ESC[33mcompiled\ESC[0m]\n\
+  \for more details about these commands\n\
+  \"
 
 defaultHelp :: String
 defaultHelp =
@@ -17,15 +39,8 @@ defaultHelp =
   \ \ESC[33mrun\ESC[0m [files] (-- [args]) |\
   \ \ESC[33mbuild\ESC[0m [files] (-- [name]) |\
   \ \ESC[33mlaunch\ESC[0m [binary] (-- [args]) |\
-  \ \ESC[33mcompiled\ESC[0m [files] ]\n\
-  \use\n\
-  \  ./apollo -h [ \
-  \ \ESC[33mrun\ESC[0m |\
-  \ \ESC[33mbuild\ESC[0m |\
-  \ \ESC[33mlaunch\ESC[0m |\
-  \ \ESC[33mcompiled\ESC[0m]\n\
-  \for more details about these commands\n\
-  \"
+  \ \ESC[33mcompiled\ESC[0m [files] ]\n\n"
+    ++ defaultHelp2
 
 runHelp :: String
 runHelp =
@@ -93,30 +108,30 @@ extractname strs =
     else (strs, "a.out")
 
 help :: [String] -> IO ()
-help _ = putStr defaultHelp
 help list
+  | not (any (/= "-h") list) = putStr defaultHelp
   | isAfter list "-h" "run" = putStr runHelp
   | isAfter list "-h" "build" = putStr buildHelp
   | isAfter list "-h" "launch" = putStr launchHelp
   | isAfter list "-h" "compile" = putStr compiledHelp
-  | otherwise = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
-getStrsBefore (x : []) target
+getStrsBefore [x] target
   | x == target = []
   | otherwise = [x]
 getStrsBefore (x : xs) target
   | x == target = []
-  | otherwise = (x : getStrsBefore xs target)
+  | otherwise = x : getStrsBefore xs target
 
 getStrsAfter :: [String] -> String -> [String]
-getStrsAfter ([]) _ = []
+getStrsAfter [] _ = []
 getStrsAfter (x : xs) target
   | x == target = xs
   | otherwise = getStrsAfter xs target
 
 separateArgs :: [String] -> String -> ([String], [String])
-separateArgs args separator = (getStrsBefore args separator, getStrsAfter args separator)
+separateArgs args separator =
+  (getStrsBefore args separator, getStrsAfter args separator)
 
 charToAtomC :: Char -> Value
 charToAtomC c = VAtom $ AtomC c False
@@ -131,9 +146,7 @@ execute :: Env -> [String] -> Insts -> IO Int
 execute env args main_f = do
   result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
   case result of
-    Left a -> do
-      putStrLn a
-      exitWith (ExitFailure 0)
+    Left a -> putStrLn a >> exitSuccess
     Right (Just (VAtom (AtomI a))) -> exitWith (ExitFailure a)
     Right (Just (VAtom (AtomC a _))) -> exitWith (ExitFailure $ fromEnum a)
     Right (Just (VAtom (AtomF a))) -> exitWith (ExitFailure (round a :: Int))
@@ -146,32 +159,35 @@ run (filenames, args) = do
   env <- compile defs
   execute env args (snd $ head env)
 
-build :: [String] -> IO Int
-build args = do
-  let (filenames, name) = extractname args
-  files <- readFiles filenames
-  defs <- parser files
-  exitWith (ExitFailure 1)
+build :: ([String], [String]) -> IO Int
+build (filenames, name)
+  | length name > 1 = putStr buildHelp >> return 1
+  | otherwise = do
+      files <- readFiles filenames
+      defs <- parser files
+      env <- compile defs
+      let encoded = encode env
+      let file = head (name ++ ["a.bin"])
+      ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
+      return 0
 
 launch :: ([String], [String]) -> IO Int
-launch (binary, args) =
-  if length (binary) > 1
-    then do
-      putStr launchHelp
-      exitWith (ExitFailure 0)
-    else do
-      exitWith (ExitFailure 1)
+launch (binary, args)
+  | length binary > 1 = putStr launchHelp >> return 1
+  | otherwise = do
+      bytestring <- ByteString.readFile (head binary)
+      let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
+      let env = decode bytes
+      case env of
+        Right env2 -> execute env2 args (snd $ head env2) >> return 0
+        Left err -> putStrLn err >> return 1
 
 argDispatch :: [String] -> IO Int
-argDispatch list | "-h" `elem` list = do
-  help list
-  exitWith (ExitFailure 0)
+argDispatch list | "-h" `elem` list = help list >> exitSuccess
 argDispatch ("run" : args) = run $ separateArgs args "--"
-argDispatch ("build" : args) = build $ args
+argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
-argDispatch _ = do
-  help ["invalid"]
-  exitWith (ExitFailure 0)
+argDispatch _ = help ["invalid"] >> exitSuccess
 
 main :: IO Int
 main = do
