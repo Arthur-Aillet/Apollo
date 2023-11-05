@@ -13,12 +13,17 @@ import Control.Monad (void)
 import qualified Data.Binary as Binary
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Builder as Builder
-import Data.List (delete, elem, elemIndex)
-import Eval
+import Eval (exec)
+import Eval.Atom
+import Eval.Operator(Value(..))
+import Eval.Instructions (Env, Insts)
 import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
-import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
+import System.Exit (ExitCode (..), exitSuccess, exitWith)
+import Eval.ASM
+import Control.Exception (catch, SomeException)
+import Data.List
 
 defaultHelp2 :: String
 defaultHelp2 =
@@ -109,11 +114,12 @@ extractname strs =
 
 help :: [String] -> IO ()
 help list
-  | not (any (/= "-h") list) = putStr defaultHelp
   | isAfter list "-h" "run" = putStr runHelp
   | isAfter list "-h" "build" = putStr buildHelp
   | isAfter list "-h" "launch" = putStr launchHelp
   | isAfter list "-h" "compile" = putStr compiledHelp
+  | not (any (/= "-h") list) = putStr defaultHelp
+help _ = putStr invalidHelp
 
 getStrsBefore :: [String] -> String -> [String]
 getStrsBefore [x] target
@@ -142,14 +148,18 @@ stringToVal str = VList $ map charToAtomC str
 stringsToVals :: [String] -> [Value]
 stringsToVals = map stringToVal
 
+exitCorrect :: Int -> ExitCode
+exitCorrect 0 = ExitSuccess
+exitCorrect a = ExitFailure a
+
 execute :: Env -> [String] -> Insts -> IO Int
 execute env args main_f = do
   result <- exec (env, [VList $ stringsToVals args], main_f, [], [])
   case result of
     Left a -> putStrLn a >> exitSuccess
-    Right (Just (VAtom (AtomI a))) -> exitWith (ExitFailure a)
-    Right (Just (VAtom (AtomC a _))) -> exitWith (ExitFailure $ fromEnum a)
-    Right (Just (VAtom (AtomF a))) -> exitWith (ExitFailure (round a :: Int))
+    Right (Just (VAtom (AtomI a))) -> exitWith (exitCorrect a)
+    Right (Just (VAtom (AtomC a _))) -> exitWith (exitCorrect $ fromEnum a)
+    Right (Just (VAtom (AtomF a))) -> exitWith (exitCorrect (round a :: Int))
     Right _ -> exitWith (ExitFailure 1)
 
 run :: ([String], [String]) -> IO Int
@@ -171,23 +181,48 @@ build (filenames, name)
       ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
       return 0
 
+
+handler :: SomeException -> IO (Either String Env)
+handler e = return $ Left $ show e
+
+load :: String -> IO (Either String Env)
+load binary = catch ( do
+    bytestring <- ByteString.readFile binary
+    return $ case Binary.decodeOrFail (ByteString.fromStrict bytestring) of
+      Left (_, _, err) -> Left err
+      Right (_, _, bytes) -> case decode bytes of
+        Left err -> Left err
+        Right env -> Right env
+    ) handler
+
 launch :: ([String], [String]) -> IO Int
 launch (binary, args)
   | length binary > 1 = putStr launchHelp >> return 1
   | otherwise = do
-      bytestring <- ByteString.readFile (head binary)
-      let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
-      let env = decode bytes
-      case env of
-        Right env2 -> execute env2 args (snd $ head env2) >> return 0
-        Left err -> putStrLn err >> return 1
+    prog <- load (head binary)
+    case prog of
+      Right env -> execute env args (snd $ head env)
+      Left err -> putStrLn err  >> return 1
+
+dumpASM :: ([String], [String]) -> IO Int
+dumpASM (binary, _)
+  | length binary > 1 = putStr launchHelp >> return 1
+  | otherwise = do
+    prog <- load (head binary)
+    case prog of
+      Right env ->
+        mapM_ (\x -> mapM_ putStrLn x >> putStrLn "")
+          (disassemble env) >> return 0
+      Left err -> putStrLn err >> return 1
 
 argDispatch :: [String] -> IO Int
-argDispatch list | "-h" `elem` list = help list >> exitSuccess
+argDispatch args | "-h" `elem` args = help args >> exitSuccess
+argDispatch ("--help" : args) = help args >> exitSuccess
 argDispatch ("run" : args) = run $ separateArgs args "--"
 argDispatch ("build" : args) = build $ separateArgs args "--"
 argDispatch ("launch" : args) = launch $ separateArgs args "--"
-argDispatch _ = help ["invalid"] >> exitSuccess
+argDispatch ("disassemble" : args) = dumpASM $ separateArgs args "--"
+argDispatch _ = help ["invalid"] >> exitWith (ExitFailure 1)
 
 main :: IO Int
 main = do

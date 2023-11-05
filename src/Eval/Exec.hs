@@ -159,7 +159,7 @@ exec (env, args, (Sys call) : xs, h, stack) = do
   result <- execSys stack call
   case result of
     Left err -> return $ Left err
-    Right _ -> exec (env, args, xs, Sys call : h, stack)
+    Right new_stack -> exec (env, args, xs, Sys call : h, new_stack)
 exec (e, a, CallS : xs, h, name : VList s_a : ys) =
   case valueToString name of
     Left err -> return $ Left err

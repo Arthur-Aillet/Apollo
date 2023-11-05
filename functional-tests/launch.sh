@@ -50,7 +50,6 @@ then
       FILE_BASE=$(basename -- "$f")
       FILE_ANSWER="${FILE_BASE%.*}"
       FILE_ARGS="${FILE_BASE%.*}args"
-      ARGS= cat functional-tests/args/${FILE_ARGS}
       if [ ! -f "functional-tests/answers/${FILE_ANSWER}" ]
       then
         echo -e "${Red}Warning: Answer not found for ${NoColor}${FILE_BASE}${Red} file, file skipped ${NoColor}"
@@ -59,7 +58,7 @@ then
         NAME=${f##*/}
         printf "Testing [%-15s] file:" $NAME
         touch /tmp/Apollo_Tests/current_apollo
-        /tmp/Apollo_Tests/current_apollo < echo ./apollo run functional-tests/samples/${FILE_BASE} -- ${ARGS}
+        /tmp/Apollo_Tests/current_apollo < echo < ./apollo run functional-tests/samples/${FILE_BASE} -- | cat functional-tests/args/${FILE_ARGS}
         DIFF=$(diff /tmp/Apollo_Tests/current_apollo functional-tests/answers/$FILE_ANSWER)
         if [ "$DIFF" == "" ]
         then
@@ -95,7 +94,7 @@ then
           ((nbr=nbr+1))
           NAME=${f##*/}
           printf "Testing [%-15s] file:" $NAME
-          ./apollo run < $f > /tmp/Apollo_Tests/current_apollo
+          /tmp/Apollo_Tests/current_apollo < echo < ./apollo run functional-tests/samples/${FILE_BASE} -- ${ARGS}
           DIFF=$(diff /tmp/Apollo_Tests/current_apollo functional-tests/answers/$FILE_ANSWER)
           if [ "$DIFF" == "" ]
           then
