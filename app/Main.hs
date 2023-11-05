@@ -22,6 +22,7 @@ import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
 import Eval.ASM
+import Control.Exception (catch, SomeException)
 import Data.List
 
 defaultHelp2 :: String
@@ -176,27 +177,38 @@ build (filenames, name)
       ByteString.writeFile file (ByteString.toStrict $ Binary.encode encoded)
       return 0
 
+
+handler :: SomeException -> IO (Either String Env)
+handler e = return $ Left $ show e
+
+load :: String -> IO (Either String Env)
+load binary = do
+  catch ( do
+    bytestring <- ByteString.readFile binary
+    return $ case Binary.decodeOrFail (ByteString.fromStrict bytestring) of
+      Left (_, _, err) -> Left err
+      Right (_, _, bytes) -> case decode bytes of
+        Left err -> Left err
+        Right env -> Right env
+    ) handler
+
 launch :: ([String], [String]) -> IO Int
 launch (binary, args)
   | length binary > 1 = putStr launchHelp >> return 1
   | otherwise = do
-    bytestring <- ByteString.readFile (head binary)
-    let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
-    let env = decode bytes
-    case env of
-      Right env2 -> execute env2 args (snd $ head env2)
+    prog <- load (head binary)
+    case prog of
+      Right env -> execute env args (snd $ head env)
       Left err -> putStrLn err  >> return 1
 
 dumpASM :: ([String], [String]) -> IO Int
 dumpASM (binary, _)
   | length binary > 1 = putStr launchHelp >> return 1
   | otherwise = do
-    bytestring <- ByteString.readFile (head binary)
-    let bytes = Binary.decode (ByteString.fromStrict bytestring) :: [Bytes]
-    let env = decode bytes
-    case env of
-      Right env2 ->
-        mapM_ (\x -> mapM_ putStrLn x >> putStrLn "") (disassemble env2) >> return 0
+    prog <- load (head binary)
+    case prog of
+      Right env ->
+        mapM_ (\x -> mapM_ putStrLn x >> putStrLn "") (disassemble env) >> return 0
       Left err -> putStrLn err >> return 1
 
 argDispatch :: [String] -> IO Int
