@@ -88,7 +88,7 @@ operate2 LEt = \(a, b) -> Right $ AtomB $ a <= b
 operate2 GEt = \(a, b) -> Right $ AtomB $ a >= b
 operate2 NEq = \(a, b) -> Right $ AtomB $ a /= b
 operate2 And = \(a, b) -> Right $ bAtom $ a * b
-operate2 Or = \(a, b) -> Right $ bAtom $ (abs a) + (abs b)
+operate2 Or = \(a, b) -> Right $ bAtom $ abs a + abs b
 operate2 _ = \_ -> Left "too many args were supplied to op"
 
 defsOp :: Operator -> OperatorDef
