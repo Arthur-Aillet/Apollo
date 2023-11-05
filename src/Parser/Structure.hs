@@ -34,15 +34,25 @@ parseSpecificInstruction =
         <|> parseSymbol "for"
     )
 
+makeStack :: String -> Position -> Position -> StackTrace
+makeStack str p pos = StackTrace [(str, Range p pos, defaultLocation)]
+
+msg1Err :: String -> String
+msg1Err inst = "Syntaxe error: instruction " ++ inst ++ " is not valid"
+
+msg2Err :: String
+msg2Err = "Syntaxe error: invalid instruction or bad assignation"
+
 parseError :: Parser Ast
-parseError = Parser $ \s p -> case runParser (parseWithSpace parseSymbolType) s p of
-  Right (_, _, ps) -> Left (StackTrace [("Syntaxe error: bad variable definition", Range p ps, defaultLocation)])
-  Left _ -> case runParser parseSpecificInstruction s p of
-    Right (instruction, _, pos) -> Left (StackTrace [("Syntaxe error: instruction " ++ instruction ++ " is not valid", Range p pos, defaultLocation)])
-    Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
-      Right _ -> Left (StackTrace [("", Range p p, defaultLocation)])
-      -- Left a -> Left a
-      Left _ -> Left (StackTrace [("Syntaxe error: invalid instruction or bad assignation", Range p p, defaultLocation)])
+parseError = Parser $ \s p ->
+  case runParser (parseWithSpace parseSymbolType) s p of
+    Right (_, _, ps) ->
+      Left (makeStack "Syntaxe error: bad variable definition" p ps)
+    Left _ -> case runParser parseSpecificInstruction s p of
+      Right (inst, _, pos) -> Left (makeStack (msg1Err inst) p pos)
+      Left _ -> case runParser (parseWithSpace (parseChar '}')) s p of
+        Right _ -> Left (makeStack "" p p)
+        Left _ -> Left (makeStack msg2Err p p)
 
 parseAstStructure :: Parser Ast
 parseAstStructure =
@@ -132,7 +142,7 @@ parseOpEquality =
 
 parseEqualityOp :: String -> Parser Operable
 parseEqualityOp name =
-  (\operand elem -> OpOperation $ CallStd operand [OpVariable name, elem])
+  (\operand eleme -> OpOperation $ CallStd operand [OpVariable name, eleme])
     <$> parseWithSpace (checkOperator parseOpEquality getOpequality)
     <*> parseMaybeparenthesis parseElement
 
@@ -195,7 +205,11 @@ parseReturn :: Parser Structure
 parseReturn =
   replaceErr
     "Syntaxe error: bad return"
-    (Return <$> ((parseReturnWithParenthesis <|> parseReturnWithoutParenthesis) <* parseChar ';'))
+    ( Return
+        <$> ( (parseReturnWithParenthesis <|> parseReturnWithoutParenthesis)
+                <* parseChar ';'
+            )
+    )
 
 ----------------------------------------------------------------
 
@@ -251,7 +265,13 @@ parseSingle :: Parser Structure
 parseSingle = Single <$> parseAst
 
 findNewStruc :: Parser String
-findNewStruc = parseWithSpace (parseSymbolType <|> parseSymbol "return" <|> parseSymbol "if" <|> parseSymbol "else")
+findNewStruc =
+  parseWithSpace
+    ( parseSymbolType
+        <|> parseSymbol "return"
+        <|> parseSymbol "if"
+        <|> parseSymbol "else"
+    )
 
 findNextInstruction :: Parser String
 findNextInstruction = Parser $ \s p -> case runParser (parseWithSpace findNewStruc) s p of
@@ -277,12 +297,16 @@ moveToError ps = Parser $ \s p ->
 parseManyInstructions :: Parser [Ast] -> Parser [Ast]
 parseManyInstructions parser = Parser $ \s p -> case runParser parser s p of
   Right a -> Right a
-  Left (StackTrace [(xs, Range p1 p2, src)]) -> case runParser (moveToError p2 *> findNextInstruction *> parseManyInstructions parser) s p of
-    Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
-    Left (StackTrace [("", Range _ p3, _)]) ->
-      Left (StackTrace [(xs, Range p1 p3, src)])
-    Left (StackTrace ys) -> Left (StackTrace ((xs, Range p1 p2, src) : ys))
+  Left (StackTrace [(xs, Range p1 p2, src)]) ->
+    case runParser (nextP p2) s p of
+      Right _ -> Left (StackTrace [(xs, Range p1 p2, src)])
+      Left (StackTrace [("", Range _ p3, _)]) ->
+        Left (StackTrace [(xs, Range p1 p3, src)])
+      Left (StackTrace ys) -> Left (StackTrace ((xs, Range p1 p2, src) : ys))
   Left a -> Left a
+  where
+    nextP p2 =
+      moveToError p2 *> findNextInstruction *> parseManyInstructions parser
 
 parseManyAst :: Parser [Ast]
 parseManyAst =

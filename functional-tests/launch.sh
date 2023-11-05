@@ -22,7 +22,7 @@ then
   echo -e "  ________________________________"
   echo -e " /                                \\"
   echo -e "|                                  |"
-  echo -e "|           \033[1;36mGLaDOS Tests\033[0m           |"
+  echo -e "|           \033[1;36mApollo Tests\033[0m           |"
   echo -e "|                                  |"
   echo -e " \\________________________________/"
   echo
@@ -57,7 +57,7 @@ then
         printf "Testing [%-15s] file:" $NAME
         ./apollo < $f > /tmp/Apollo_Tests/current_apollo
         DIFF=$(diff /tmp/Apollo_Tests/current_apollo functional-tests/answers/$FILE_ANSWER)
-        if [ "$DIFF" == "" ] 
+        if [ "$DIFF" == "" ]
         then
           ((nbr_passed=nbr_passed+1))
           echo -e "$2\t\t${Green}PASSED${NoColor}"
@@ -93,7 +93,7 @@ then
           printf "Testing [%-15s] file:" $NAME
           ./apollo < $f > /tmp/Apollo_Tests/current_apollo
           DIFF=$(diff /tmp/Apollo_Tests/current_apollo functional-tests/answers/$FILE_ANSWER)
-          if [ "$DIFF" == "" ] 
+          if [ "$DIFF" == "" ]
           then
             ((nbr_passed=nbr_passed+1))
             echo -e "$2\t\t${Green}PASSED${NoColor}"

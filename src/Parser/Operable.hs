@@ -27,27 +27,27 @@ defChars :: [Char]
 defChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_-"
 
 parseDefinitionName :: Parser String
-parseDefinitionName = Parser $ \s p -> case runParser (parseMany (parseAnyChar defChars)) s p of
-  Right ([], _, pos) -> Left (StackTrace [("empty definition", Range p pos, defaultLocation)])
-  Right a -> Right a
-  Left a -> Left a
+parseDefinitionName = Parser $ \s p ->
+  case runParser (parseMany (parseAnyChar defChars)) s p of
+    Right ([], _, pos) ->
+      Left (StackTrace [("empty definition", Range p pos, defaultLocation)])
+    Right a -> Right a
+    Left a -> Left a
 
 parseCast :: Parser Type
 parseCast = parseWithSpace (parseSymbol "as" *> parseWithSpace parseType)
 
 parseOpCast :: Parser Operable
-parseOpCast = Parser $ \s p -> case runParser
-  ( parseOpValue
-      <|> parseOpVar
-      <|> parseOpList
-      <|> parseOpeningParenthesis *> parseOpOperation <* parseClosingParenthesis
-  )
-  s
-  p of
-  Right (lhs, lstr, lpos) -> case runParser parseCast lstr lpos of
-    Right (rhs, rstr, rpos) -> Right (OpCast lhs rhs, rstr, rpos)
-    Left a -> Left a
-  Left a -> Left a
+parseOpCast =
+  OpCast
+    <$> ( parseOpValue
+            <|> parseOpVar
+            <|> parseOpList
+            <|> parseOpeningParenthesis
+              *> parseOpOperation
+              <* parseClosingParenthesis
+        )
+    <*> parseCast
 
 ---------------------------------------------
 

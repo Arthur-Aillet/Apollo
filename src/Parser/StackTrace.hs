@@ -31,18 +31,6 @@ defaultLocation :: SourceLocation
 defaultLocation =
   SourceLocation {functionName = "", fileName = "", l = 0, c = 0}
 
--- addSourceLocation :: SourceLocation -> String -> String
--- addSourceLocation src str =
---   str
---     ++ functionName src
---     ++ "' "
---     ++ fileName src
---     ++ ":"
---     ++ show (l src)
---     ++ ":"
---     ++ show (c src)
---     ++ "'"
-
 addSourceLocation :: String -> Position -> SourceLocation
 addSourceLocation name pos =
   SourceLocation
@@ -59,7 +47,6 @@ modifySourceLocation source ((str, ran, src) : stack)
       (str, ran, source) : modifySourceLocation source stack
 modifySourceLocation _ stack = stack
 
--- FIXME -
 addNewMessage :: (String, Range, SourceLocation) -> String -> String
 addNewMessage ("", _, _) pre = pre
 addNewMessage (str, Range start end, src) pre =
@@ -77,14 +64,6 @@ addNewMessage (str, Range start end, src) pre =
     ++ " and finished at "
     ++ show end
     ++ "\n"
-
--- ++ functionName src
--- ++ "' "
--- ++ fileName src
--- ++ ":"
--- ++ show (l src)
--- ++ ":"
--- ++ show (c src)
 
 instance Show StackTrace where
   show (StackTrace list) = foldr addNewMessage "Errors are: \n" list

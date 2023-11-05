@@ -11,6 +11,7 @@ import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
 import Control.Monad (void)
 import Eval (exec)
+import Eval.Instructions (Env, Insts)
 import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
 import PreProcess (readFiles)
@@ -95,19 +96,20 @@ separateArgs :: [String] -> String -> ([String], [String])
 separateArgs args separator =
   (getStrsBefore args separator, getStrsAfter args separator)
 
+execute :: Env -> [String] -> Insts -> IO ()
+execute env args main_f = do
+  result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
+  case result of
+    Left a -> putStrLn a
+    Right a -> print a
+
 run :: ([String], [String]) -> IO ()
 run (filenames, args) = do
-  print filenames
   files <- readFiles filenames
   defs <- parser files
   (Binary env main_f) <- compile defs
   if not (hasNothing (argsToMaybeValues args))
-    then do
-      result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
-      case result of
-        Left a -> putStrLn a
-        Right a -> print a
-      pure ()
+    then execute env args main_f
     else void $ print "invalid args"
 
 build :: ([String], [String]) -> IO ()
@@ -120,9 +122,7 @@ build (filenames, name)
 
 launch :: ([String], [String]) -> IO ()
 launch (binary, _)
-  | length binary > 1 = do
-      putStr launchHelp
-      pure ()
+  | length binary > 1 = putStr launchHelp >> pure ()
   | otherwise = pure ()
 
 argDispatch :: [String] -> IO ()

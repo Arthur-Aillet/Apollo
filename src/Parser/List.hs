@@ -72,14 +72,21 @@ parsevals :: Parser [Value]
 parsevals = parseMany (parseWithSpace (parseValsWithComa <|> parseAtomValue))
 
 parseListValue :: Parser Value
-parseListValue = Parser $ \s p -> case runParser (parseWithSpace (parseOpeningBraquet *> parsevals <* parseClosingBraquet)) s p of
-  Right (elements, str, pos) -> Right (VList elements, str, pos)
-  Left a -> Left a
+parseListValue =
+  VList
+    <$> parseWithSpace
+      ( parseOpeningBraquet
+          *> parsevals
+          <* parseClosingBraquet
+      )
 
 stringToVal :: String -> Maybe Value
-stringToVal str = case runParser (parseWithSpace (parseAtomValue <|> parseListValue)) str defaultPosition of
-  Right (result, _, _) -> Just result
-  Left _ -> Nothing
+stringToVal str =
+  case runParser parse str defaultPosition of
+    Right (result, _, _) -> Just result
+    Left _ -> Nothing
+  where
+    parse = parseWithSpace (parseAtomValue <|> parseListValue)
 
 hasNothing :: [Maybe a] -> Bool
 hasNothing [] = False

@@ -30,7 +30,8 @@ parseOnlySpaces = Parser $ \string pos -> case string of
   _ -> case runParser parseSpaces string pos of
     Right (new, new_str, new_pos) ->
       case runParser parseOnlySpaces new_str new_pos of
-        Left (StackTrace [(str, Range _ p2, src)]) -> Left (StackTrace [(str, Range pos p2, src)])
+        Left (StackTrace [(str, Range _ p2, src)]) ->
+          Left (StackTrace [(str, Range pos p2, src)])
         Left a -> Left a
         Right (found, fd_str, fd_pos) -> Right (new : found, fd_str, fd_pos)
     Left a -> Left a
