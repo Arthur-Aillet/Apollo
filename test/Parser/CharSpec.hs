@@ -7,25 +7,24 @@
 
 module Parser.CharSpec (charTests) where
 
-import Test.HUnit
-import Parser.PositionSpec(getPosition)
+import Parser.Char
 import Parser.Position (defaultPosition)
+import Parser.PositionSpec (getPosition)
 import Parser.Range (defaultRange)
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
-
-import Parser.Char
+import Test.HUnit
 
 charTests :: Test
 charTests =
-    TestList
-    [   "parseAChar" ~: parseACharTests,
-        "parseDigit" ~: parseDigitTests,
-        "parseOpeningAndClosing Functions" ~: parseOpeningAndClosingTests,
-        "parseChar" ~: parseCharTests,
-        "parseNotChar" ~: parseNotCharTests,
-        "parseAnyChar" ~: parseAnyCharTests,
-        "parseNotAnyChar" ~: parseNotAnyCharTests
+  TestList
+    [ "parseAChar" ~: parseACharTests,
+      "parseDigit" ~: parseDigitTests,
+      "parseOpeningAndClosing Functions" ~: parseOpeningAndClosingTests,
+      "parseChar" ~: parseCharTests,
+      "parseNotChar" ~: parseNotCharTests,
+      "parseAnyChar" ~: parseAnyCharTests,
+      "parseNotAnyChar" ~: parseNotAnyCharTests
     ]
 
 parseACharTests :: Test
@@ -38,15 +37,15 @@ parseACharTests =
 
 parseDigitTests :: Test
 parseDigitTests =
-    TestList
-    [   "is digit" ~: (Right ('9', "5678", (getPosition 1 0))) @=? (runParser parseDigit "95678" defaultPosition),
-        "is not digit" ~: (Left (StackTrace [("Not Found: List is empty", defaultRange, defaultLocation)])) @=? (runParser parseDigit "foobar" defaultPosition),
-        "Empty" ~: (Left (StackTrace [("Not Found: List is empty", defaultRange, defaultLocation)])) @=? (runParser parseDigit "foobar" defaultPosition)
+  TestList
+    [ "is digit" ~: (Right ('9', "5678", (getPosition 1 0))) @=? (runParser parseDigit "95678" defaultPosition),
+      "is not digit" ~: (Left (StackTrace [("Not Found: List is empty", defaultRange, defaultLocation)])) @=? (runParser parseDigit "foobar" defaultPosition),
+      "Empty" ~: (Left (StackTrace [("Not Found: List is empty", defaultRange, defaultLocation)])) @=? (runParser parseDigit "foobar" defaultPosition)
     ]
 
 parseOpeningAndClosingTests :: Test
 parseOpeningAndClosingTests =
-    TestList
+  TestList
     [ "Error parseOpeningQuote" ~: (Left (StackTrace [("Not Found: Missing opening Quote", defaultRange, defaultLocation)])) @=? (runParser parseOpeningQuote "foobar" defaultPosition),
       "Error parseClosingQuote" ~: (Left (StackTrace [("Not Found: Missing closing Quote", defaultRange, defaultLocation)])) @=? (runParser parseClosingQuote "foobar" defaultPosition),
       "Error parseOpeningsQuote" ~: (Left (StackTrace [("Not Found: Missing opening Quote", defaultRange, defaultLocation)])) @=? (runParser parseOpeningsQuote "foobar" defaultPosition),
@@ -91,4 +90,3 @@ parseNotAnyCharTests =
       "Is in the string" ~: (Left (StackTrace [("Not Found: character is 'b'", defaultRange, defaultLocation)])) @=? (runParser (parseNotAnyChar "abcd") "bar" defaultPosition),
       "String is empty" ~: (Left (StackTrace [("Not Found: List is empty", defaultRange, defaultLocation)])) @=? (runParser (parseNotAnyChar "") "zero\n" defaultPosition)
     ]
-

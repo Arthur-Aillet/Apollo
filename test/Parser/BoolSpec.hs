@@ -7,14 +7,13 @@
 
 module Parser.BoolSpec (module Parser.BoolSpec) where
 
-import Test.HUnit
-import Parser.PositionSpec(getPosition)
+import Parser.Bool
 import Parser.Position (defaultPosition)
+import Parser.PositionSpec (getPosition)
 import Parser.Range (defaultRange)
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Type (Parser (..))
-
-import Parser.Bool
+import Test.HUnit
 
 parseBoolTests :: Test
 parseBoolTests =

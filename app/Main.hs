@@ -11,13 +11,13 @@ import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
 import Control.Monad (void)
 import Eval (exec)
+import Eval.Exec (Atom (AtomC), Value (VAtom, VList))
 import Eval.Instructions (Env, Insts)
 import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
 import Parser.Parser (parser)
 import PreProcess (readFiles)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
-import Eval.Exec (Atom (AtomC), Value (VAtom, VList))
 
 defaultHelp :: String
 defaultHelp =
