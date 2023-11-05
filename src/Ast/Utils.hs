@@ -1,11 +1,11 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST To Insts Utils
 -}
 
-module Ast.Utils ((+++), (++++), concatInner, listInner, allEqual, zip5, zip4) where
+module Ast.Utils ((+++), (++++), concatInner, listInner, listInnerMaybe, allEqual, zip5, zip4) where
 
 import Ast.Error (Compile (..))
 
@@ -20,6 +20,9 @@ concatInner = foldl (\a b -> (++) <$> a <*> b) (Ok [] [])
 
 listInner :: [Compile b] -> Compile [b]
 listInner = foldl (\a b -> (++) <$> a <*> ((: []) <$> b)) (Ok [] [])
+
+listInnerMaybe :: [Either a b] -> Either a [b]
+listInnerMaybe = foldl (\a b -> (++) <$> a <*> ((: []) <$> b)) (Right [])
 
 zip5 :: a -> b -> c -> d -> e -> (a, b, c, d, e)
 zip5 a b c d e = (a, b, c, d, e)

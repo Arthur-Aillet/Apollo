@@ -1,6 +1,6 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo
+-- Apollo
 -- File description:
 -- parseBool
 -}
@@ -12,4 +12,4 @@ import Parser.Symbol (parseSymbol)
 import Parser.Type (Parser (..))
 
 parseBool :: Parser Bool
-parseBool = (== "True") <$> (parseSymbol "True" <|> parseSymbol "False")
+parseBool = (== "true") <$> (parseSymbol "true" <|> parseSymbol "false")

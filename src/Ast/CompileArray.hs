@@ -1,19 +1,16 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- Array Compilation
 -}
 
 module Ast.CompileArray (module Ast.CompileArray) where
 
+import Ast.Ast (Operable (..), Type (..))
 import Ast.Context (Context (..), LocalContext (..))
 import Ast.Error (Compile (..), Warning, failingComp)
 import Ast.Operable (compOperable)
-import Ast.Type
-  ( Operable (..),
-    Type (..),
-  )
 import Ast.Utils (allEqual, listInner, zip5)
 import Eval.Exec
 

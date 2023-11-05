@@ -12,26 +12,8 @@ module Eval.Atom
     iAtom,
     fAtom,
     atomCast,
-    Type (..),
   )
 where
-
-data Type
-  = TypeBool
-  | TypeChar
-  | TypeInt
-  | TypeFloat
-  | -- |  TypeBroken
-    TypeList (Maybe Type)
-  deriving (Eq)
-
-instance Show Type where
-  show TypeBool = "bool"
-  show TypeChar = "char"
-  show TypeInt = "int"
-  show TypeFloat = "float"
-  show (TypeList (Just type')) = "[" ++ show type' ++ "]"
-  show (TypeList Nothing) = "[]"
 
 data Atom
   = AtomB Bool

@@ -7,8 +7,12 @@
 
 module Eval.Syscall (Syscall (..), execSys) where
 
-import Eval.Operator (Operator (..), Value (..), Stack)
 import Eval.Atom (Atom (..))
+import Eval.Operator
+  ( Operator (..),
+    Stack,
+    Value (..),
+  )
 
 data Syscall
   = Print

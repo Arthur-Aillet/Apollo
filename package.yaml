@@ -2,12 +2,12 @@ name:                apollo
 version:             0.1.0.0
 github:              "github.com/Arthur-Aillet/Apollo"
 license:             GPL-3
-author:              
+author:
   - "Auguste Frater"
   - "Julian Scott"
   - "Ludovic De-Chavagnac"
   - "Arthur Aillet"
-maintainer:          
+maintainer:
   - "aguste.frater@epitech.eu"
   - "julian.scott@epitech.eu"
   - "ludovic.de-chavagnac@epitech.eu"
@@ -29,6 +29,7 @@ description:         Please see the README on GitHub at <https://github.com/Arth
 dependencies:
 - base >= 4.7 && < 5
 - unordered-containers
+- process
 
 ghc-options:
 - -Wall
@@ -42,7 +43,7 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
-  source-dirs: 
+  source-dirs:
   - src
 executables:
   apollo:
@@ -54,6 +55,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - apollo
+    - haskeline
 
 tests:
   apollo-test:
@@ -65,4 +67,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - apollo
+    - haskeline
     - HUnit

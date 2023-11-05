@@ -5,17 +5,22 @@
 -- Parser type
 -}
 
-module Parser.Type (Parser (..)) where
+module Parser.Type (Parser (..), StackTrace (..), defaultRange, faillingParser) where
 
-import Control.Applicative (Alternative (empty, (<|>)))
-import Parser.Position (Position)
+import Control.Applicative (Alternative ((<|>)))
+import Parser.Position (Position (..))
+import Parser.Range (defaultRange)
+import Parser.StackTrace (StackTrace (..))
 
 newtype Parser a = Parser
   { runParser ::
       String ->
       Position ->
-      Either (String, Position) (a, String, Position)
+      Either StackTrace (a, String, Position)
   }
+
+faillingParser :: Parser a
+faillingParser = Parser $ \_ _ -> Left $ StackTrace []
 
 instance Functor Parser where
   fmap fct parser = Parser $ \string pos -> case runParser parser string pos of
@@ -33,7 +38,6 @@ instance Applicative Parser where
   a <* b = const <$> a <*> b
 
 instance Alternative Parser where
-  empty = Parser $ \_ pos -> Left ("Empty", pos)
   first <|> second =
     Parser
       ( \s pos -> case (runParser first s pos, runParser second s pos) of

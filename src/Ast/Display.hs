@@ -1,15 +1,16 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST display
 -}
 
 module Ast.Display (compile) where
 
-import Ast.CompileAST (Binary (..), generateBinary)
+import Ast.Ast (Definition)
+import Eval.Instructions (Env)
+import Ast.CompileAST (generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
-import Ast.Type (Definition)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 yellow :: String
@@ -49,7 +50,7 @@ displayError err =
       ++ resetColor
       ++ concatMap (\x -> '\t' : x ++ "\n") err
 
-compile :: [Definition] -> IO Binary
+compile :: [Definition] -> IO Env
 compile defs = case generateBinary defs of
   Ko w err ->
     displayWarnings w

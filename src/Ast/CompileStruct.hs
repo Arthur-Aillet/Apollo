@@ -1,12 +1,16 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- AST-struct Compilation
 -}
 
 module Ast.CompileStruct (module Ast.CompileStruct) where
 
+import Ast.Ast
+  ( Structure (..),
+    Type (..),
+  )
 import Ast.CompileArray
 import Ast.CompileFor
 import Ast.CompileIf
@@ -14,10 +18,6 @@ import Ast.CompileVar
 import Ast.Context (Compiler, Context (..), LocalContext (..), firstValidIndex)
 import Ast.Error (Compile (..), failingComp, withW)
 import Ast.Operable (compOperable)
-import Ast.Type
-  ( Structure (..),
-    Type (..),
-  )
 import Data.HashMap.Lazy (insert, member, (!?))
 import Eval.Exec
 

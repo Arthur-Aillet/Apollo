@@ -13,15 +13,20 @@ module Eval.Instructions
     Func,
     History,
     Machine,
+    Pointer (..),
     Env,
     Args,
-    Pointer (..),
   )
 where
 
-import Eval.Operator (Operator (..), Value (..), Stack)
+import Ast.Type (Type (..))
+import Eval.Atom (Atom (..))
+import Eval.Operator
+  ( Operator (..),
+    Stack,
+    Value (..),
+  )
 import Eval.Syscall (Syscall (..))
-import Eval.Atom (Atom (..), Type (..))
 
 type Index = Int
 
@@ -37,6 +42,7 @@ data Instruction
   | CallD Index
   | CallI Index
   | Cast Type
+  | CallS -- call SH Args Name
   | Op Operator
   | Sys Syscall
   | JumpIfFalse Int

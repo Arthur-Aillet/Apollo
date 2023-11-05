@@ -1,175 +1,137 @@
+{-
+-- EPITECH PROJECT, 2023
+-- apollo
+-- File description:
+-- Main
+-}
+
 module Main (main) where
 
-import Ast.CompileAST (Binary (..))
 import Ast.Display (compile)
-import Ast.Type
-import Eval
-import Eval.Exec
-import Eval.Operator (Value (..))
-import Eval.Syscall (Syscall (..))
-import PreProcess
-import System.Environment
-import Prelude
+import Control.Monad (void)
+import Eval (exec)
+import Eval.Instructions (Env, Insts)
+import Parser.List (argsToMaybeValues, hasNothing, removeMaybes)
+import Parser.Parser (parser)
+import PreProcess (readFiles)
+import System.Environment (getArgs)
+import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
 
-createAbs :: Definition
-createAbs =
-  FuncDefinition
-    "abs"
-    ( Function
-        [("n", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure
-            ( If
-                [ ( OpOperation $ CallStd Lt [OpVariable "n", OpValue (AtomI 0)],
-                    AstStructure $ Return $ OpOperation $ CallStd Mul [OpVariable "n", OpValue (AtomI (-1))]
-                  )
-                ]
-                (Just $ AstStructure $ Return $ OpVariable "n")
-            )
-        )
-    )
+defaultHelp :: String
+defaultHelp =
+  "\
+  \Usage:\n\
+  \\t./apollo [\ESC[33mrun\ESC[0m [files] (-- [args]) | \ESC[33mbuild\ESC[0m [files] (-- [name])| \ESC[33mlaunch\ESC[0m [binary] (-- [args])]\n\
+  \use\n\
+  \  ./apollo -h [\ESC[33mrun\ESC[0m | \ESC[33mbuild\ESC[0m | \ESC[33mlaunch\ESC[0m]\n\
+  \for more details about these commands\n\
+  \"
 
-createFib :: Definition
-createFib =
-  FuncDefinition
-    "fib"
-    ( Function
-        [("n", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure
-            ( If
-                [ ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 0)],
-                    AstStructure $ Return $ OpValue (AtomI 0)
-                  ),
-                  ( OpOperation $ CallStd Eq [OpVariable "n", OpValue (AtomI 1)],
-                    AstStructure $ Return $ OpValue (AtomI 1)
-                  )
-                ]
-                ( Just $
-                    AstStructure $
-                      Return $
-                        OpOperation $
-                          CallStd
-                            Add
-                            [ OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 1)]],
-                              OpOperation $ CallFunc "fib" [OpOperation $ CallStd Sub [OpVariable "n", OpValue (AtomI 2)]]
-                            ]
-                )
-            )
-        )
-    )
+runHelp :: String
+runHelp =
+  "\
+  \Compiles and execute the files with given args\n\
+  \Usage:\n\
+  \\t./apollo run \ESC[33m[files]\ESC[0m (-- \ESC[33m[args]\ESC[0m)\n\
+  \\ESC[33mfiles\ESC[0m\t\tlist of files to execute\n\
+  \\ESC[33margs\ESC[0m\t\targuments to execute with.\
+  \if none are provided \"--\" is unnecessary\n\
+  \"
 
-createSub :: Definition
-createSub =
-  FuncDefinition
-    "sub"
-    ( Function
-        [("a", TypeInt), ("b", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure $
-            Return $
-              OpOperation $
-                CallStd
-                  Sub
-                  [ OpVariable "a",
-                    OpVariable "b"
-                  ]
-        )
-    )
+buildHelp :: String
+buildHelp =
+  "\
+  \Compiles the ginven files in a binary\n\
+  \Usage:\n\
+  \\t./apollo build \ESC[33m[files]\ESC[0m\ESC[0m (-- \ESC[33m[name]\ESC[0m)\n\
+  \\ESC[33mfiles\ESC[0m\t\tlist of files to execute\n\
+  \\ESC[33mname\ESC[0m\t\tthe name to give the binary.\
+  \if none is given, it will be named a.out and \"--\" is unnecessary\n\
+  \"
 
-createGcd :: Definition
-createGcd =
-  FuncDefinition
-    "gcd"
-    ( Function
-        [("x", TypeInt), ("y", TypeInt)]
-        (Just TypeInt)
-        ( AstStructure
-            ( If
-                [ ( OpOperation $ CallStd Eq [OpValue (AtomI 0), OpVariable "y"],
-                    AstStructure $ Return $ OpVariable "x"
-                  )
-                ]
-                ( Just $
-                    AstStructure $
-                      Return $
-                        OpOperation $
-                          CallFunc
-                            "gcd"
-                            [OpVariable "y", OpOperation (CallStd Mod [OpVariable "x", OpVariable "y"])]
-                )
-            )
-        )
-    )
+launchHelp :: String
+launchHelp =
+  "\
+  \Executes the given binary with given args\n\
+  \Usage:\n\
+  \\t./apollo launch \ESC[33m[binary]\ESC[0m) (-- \ESC[33m[args]\ESC[0m)\n\
+  \\ESC[33mbinary\ESC[0m\t\tbinary to execute\n\
+  \\ESC[33margs\ESC[0m\t\targuments to execute with.\
+  \if none are provided \"--\" is unnecessary\n\
+  \"
 
-createFst :: Definition
-createFst =
-  FuncDefinition
-    "main"
-    ( Function
-        []
-        (Just TypeBool)
-        ( AstStructure $
-            Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"]
-              ]
-        )
-    )
+invalidHelp :: String
+invalidHelp =
+  "\
+  \Invalid -h arguments\n\
+  \use\n\
+  \  \ESC[33m./apollo -h\ESC[0m\n\
+  \for help\n\
+  \"
 
-createSnd :: Definition
-createSnd =
-  FuncDefinition
-    "main"
-    ( Function
-        []
-        (Just TypeBool)
-        ( AstStructure $
-            Sequence
-              [ AstStructure $ Return $ OpOperation $ CallStd Or [OpValue (AtomI 3), OpVariable "res"],
-                AstStructure $ Return $ OpOperation $ CallStd Or [OpVariable "res", OpValue (AtomI 3), OpVariable "res"]
-              ]
-        )
-    )
+helpMsg :: [String] -> IO ()
+helpMsg [] = putStr defaultHelp
+helpMsg ["run"] = putStr runHelp
+helpMsg ["build"] = putStr buildHelp
+helpMsg ["launch"] = putStr launchHelp
+helpMsg _ = putStr invalidHelp
 
-createCoolPrint :: Definition
-createCoolPrint =
-  FuncDefinition
-    "cool_print"
-    ( Function
-        []
-        Nothing
-        (AstOperation $ CallSys Print [OpOperation $ CallStd Concat [OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)], OpList [OpValue (AtomC 't' True), OpValue (AtomC 'e' True), OpValue (AtomC 's' True), OpValue (AtomC 't' True), OpValue (AtomC '\n' True)]]])
-    )
+getStrsBefore :: [String] -> String -> [String]
+getStrsBefore [] _ = []
+getStrsBefore [x] target
+  | x == target = []
+  | otherwise = [x]
+getStrsBefore (x : xs) target
+  | x == target = []
+  | otherwise = x : getStrsBefore xs target
 
-createMain :: Definition
-createMain =
-  FuncDefinition
-    "main"
-    ( Function
-        []
-        (Just TypeInt)
-        ( AstStructure $
-            Sequence
+getStrsAfter :: [String] -> String -> [String]
+getStrsAfter [] _ = []
+getStrsAfter (x : xs) target
+  | x == target = xs
+  | otherwise = getStrsAfter xs target
 
-              [ AstStructure $ VarDefinition "arr" (TypeList (Just $ TypeList $ Just TypeChar)) (Just $ OpList [OpList [OpValue (AtomC 'a' True), OpValue (AtomC 'b' True), OpValue (AtomC 'c' True)], OpList [OpValue (AtomC 'd' True), OpValue (AtomC 'e' True), OpValue (AtomC 'f' True)]]),
-                AstStructure $
-                  For "i" (OpVariable "arr") $
-                    AstStructure $
-                      Sequence
-                        [ AstOperation $ CallSys Print [OpVariable "i"]
-                        ],
-                AstStructure $ Return $ OpOperation $ CallStd Len [OpVariable "arr"]
-              ]
-        )
-    )
+separateArgs :: [String] -> String -> ([String], [String])
+separateArgs args separator =
+  (getStrsBefore args separator, getStrsAfter args separator)
+
+execute :: Env -> [String] -> Insts -> IO ()
+execute env args main_f = do
+  result <- exec (env, removeMaybes $ argsToMaybeValues args, main_f, [], [])
+  case result of
+    Left a -> putStrLn a
+    Right a -> print a
+
+run :: ([String], [String]) -> IO ()
+run (filenames, args) = do
+  files <- readFiles filenames
+  defs <- parser files
+  env <- compile defs
+  if not (hasNothing (argsToMaybeValues args))
+    then execute env args (snd $ head env)
+    else void $ print "invalid args"
+
+build :: ([String], [String]) -> IO ()
+build (filenames, name)
+  | length name > 1 = void (putStr buildHelp)
+  | otherwise = do
+      files <- readFiles filenames
+      defs <- parser files
+      pure ()
+
+launch :: ([String], [String]) -> IO ()
+launch (binary, _)
+  | length binary > 1 = void $ putStr launchHelp
+  | otherwise = pure ()
+
+argDispatch :: [String] -> IO ()
+argDispatch ("-h" : args) = helpMsg args >> exitSuccess
+argDispatch ("run" : args) = run $ separateArgs args "--"
+argDispatch ("build" : args) = build $ separateArgs args "--"
+argDispatch ("launch" : args) = launch $ separateArgs args "--"
+argDispatch _ = helpMsg ["invalid"] >> exitWith (ExitFailure 1)
 
 main :: IO ()
 main = do
   args <- getArgs
-  files <- readFiles args
-  (Binary env main_f) <- compile [createMain, createCoolPrint, createFib]
-  result <- exec (env, [], main_f, [], [])
-  case result of
-    Left a -> putStrLn a
-    Right a -> print a
+  argDispatch args

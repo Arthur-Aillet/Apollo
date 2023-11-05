@@ -1,11 +1,11 @@
 {-
 -- EPITECH PROJECT, 2023
--- Dev_repo
+-- Apollo
 -- File description:
 -- Parser condition
 -}
 
 module Parser.Condition () where
 
-import Ast.Type (Ast (..))
+import Ast.Ast (Ast (..))
 import Parser.Type (Parser (..))

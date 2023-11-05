@@ -14,12 +14,13 @@ module Ast.Bytecode
   ) where
 
 import Eval.Instructions (Instruction (..), Index, Env)
-import Eval.Atom (Atom (..), Type (..), cAtom, iAtom, bAtom)
+import Eval.Atom (Atom (..), cAtom, iAtom, bAtom)
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (..))
 import Data.Bits
 import Data.Word
 import Unsafe.Coerce
+import Ast.Type (Type (..))
 
 type Bytes = Word
 

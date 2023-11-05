@@ -1,20 +1,20 @@
 {-
 -- EPITECH PROJECT, 2023
--- glados
+-- apollo
 -- File description:
 -- if-then-else Compilation
 -}
 
 module Ast.CompileIf (module Ast.CompileIf) where
 
+import Ast.Ast
+  ( Ast (..),
+    Operable (..),
+  )
 import Ast.Context (Compiler, Context (..), LocalContext (..))
 import Ast.Error (Compile (..))
 import Ast.Operable (compOperable, concatInner)
-import Ast.Type
-  ( Ast (..),
-    Operable (..),
-    Type (..),
-  )
+import Ast.Type (Type (..))
 import Eval.Exec
 
 ifOpErr :: Type -> String
