@@ -6,21 +6,20 @@
 -}
 
 module Ast.Bytecode
-  (
-    fromBytecode,
+  ( fromBytecode,
     toBytecode,
     encode,
     decode,
     Bytes
   ) where
 
-import Eval.Instructions (Instruction (..), Index, Env)
-import Eval.Atom (Atom (..), cAtom, iAtom, bAtom)
+import Ast.Type ( Type(..), Type(..) )
+import Data.Word
+import Eval.Atom (Atom (..), bAtom, cAtom, iAtom)
+import Eval.Instructions (Env, Index, Instruction (..))
 import Eval.Operator (Operator (..))
 import Eval.Syscall (Syscall (..))
 import Unsafe.Coerce
-import Ast.Type (Type (..))
-import Data.Word (Word64)
 
 type Bytes = Word64
 
@@ -44,7 +43,8 @@ data InstructionEnum
   | ERet
   | EInstructionError -- out of bounds
   deriving (Show, Eq, Enum, Ord)
-    -- insure this is synced to the types in Eval.Instructions
+
+-- insure this is synced to the types in Eval.Instructions
 
 decode :: [Bytes] -> Either String Env
 decode [] = Right []
@@ -54,7 +54,7 @@ decode (i : s : xs) = case fromBytecode (take size xs) of
     Left err -> Left err
     Right ys -> Right ((idx, y) : ys)
   where
-    size = (bytecodeInt s)
+    size = bytecodeInt s
     idx = bytecodeIndex i
 decode [_] = Left "invalid bytecode (almost empty decode)"
 
@@ -95,8 +95,9 @@ syscallBytecode :: Syscall -> Bytes
 syscallBytecode x = toEnum $ fromEnum x
 
 toBytecode :: [Instruction] -> [Bytes]
-toBytecode (instr : xs) = (a : b : c ) ++ (toBytecode xs)
-  where (a, b, c) = toBytecode' instr
+toBytecode (instr : xs) = (a : b : c) ++ toBytecode xs
+  where
+    (a, b, c) = toBytecode' instr
 toBytecode [] = []
 
 toBytecode' :: Instruction -> Bytecode
@@ -134,9 +135,10 @@ bytecodeIndex :: Bytes -> Index
 bytecodeIndex x = toEnum $ fromEnum x
 
 bytecodeInstruction :: Bytes -> Either String InstructionEnum
-bytecodeInstruction x = if fromEnum x < fromEnum EInstructionError
-  then Right (toEnum $ bytecodeInt x)
-  else Left ("Instruction bytecode deos not exist: " ++ show x)
+bytecodeInstruction x =
+  if fromEnum x < fromEnum EInstructionError
+    then Right (toEnum $ bytecodeInt x)
+    else Left ("Instruction bytecode deos not exist: " ++ show x)
 
 bytecodeType :: Bytes -> Type
 bytecodeType 0 = TypeBool
@@ -165,7 +167,7 @@ fromBytecode [x] =
 
 fromBytecode' :: InstructionEnum -> Int -> [Bytes] -> Either String (Instruction, [Bytes])
 fromBytecode' EPushD 2 (x : y : xs) = Right (PushD (bytecodeAtom x y), xs)
-fromBytecode' EStore 0 (xs) = Right (Store, xs)
+fromBytecode' EStore 0 xs = Right (Store, xs)
 fromBytecode' ETake 1 (x : xs) = Right (Take (bytecodeInt x), xs)
 fromBytecode' EAssign 1 (x : xs) = Right (Assign (bytecodeIndex x), xs)
 fromBytecode' EArrAssign 1 (x : xs) = Right (ArrAssign (bytecodeIndex x), xs)
@@ -173,11 +175,11 @@ fromBytecode' EPushI 1 (x : xs) = Right (PushI (bytecodeIndex x), xs)
 fromBytecode' ECallD 1 (x : xs) = Right (CallD (bytecodeIndex x), xs)
 fromBytecode' ECallI 1 (x : xs) = Right (CallI (bytecodeIndex x), xs)
 fromBytecode' ECast 1 (x : xs) = Right (Cast (bytecodeType x), xs)
-fromBytecode' ECallS 0 (xs) = Right (CallS, xs)
+fromBytecode' ECallS 0 xs = Right (CallS, xs)
 fromBytecode' EOp 1 (x : xs) = Right (Op (bytecodeOperator x), xs)
 fromBytecode' ESys 1 (x : xs) = Right (Sys (bytecodeSyscall x), xs)
 fromBytecode' EJumpIfFalse 1 (x : xs) = Right (JumpIfFalse (bytecodeInt x), xs)
 fromBytecode' EJump 1 (x : xs) = Right (Jump (bytecodeInt x), xs)
-fromBytecode' ERet 0 (xs) = Right (Ret, xs)
+fromBytecode' ERet 0 xs = Right (Ret, xs)
 fromBytecode' i count xs =
   Left ("impossible " ++ show i ++ " " ++ show count ++ " " ++ show xs)

@@ -5,12 +5,12 @@
 -- AST display
 -}
 
-module Ast.Display (compile) where
+module Ast.Display (compile, resetColor, yellow, red, green) where
 
 import Ast.Ast (Definition)
-import Eval.Instructions (Env)
 import Ast.CompileAST (generateBinary)
 import Ast.Error (Compile (..), Error, Warning)
+import Eval.Instructions (Env)
 import System.Exit (ExitCode (ExitFailure), exitWith)
 
 yellow :: String
@@ -18,6 +18,9 @@ yellow = "\x1b[33m"
 
 red :: String
 red = "\x1b[31m"
+
+green :: String
+green = "\x1b[32m"
 
 resetColor :: String
 resetColor = "\x1b[0m"

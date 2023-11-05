@@ -30,6 +30,8 @@ dependencies:
 - base >= 4.7 && < 5
 - unordered-containers
 - process
+- bytestring
+- binary
 
 ghc-options:
 - -Wall
@@ -41,6 +43,8 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -Wno-incomplete-uni-patterns
+- -Wno-incomplete-patterns
 
 library:
   source-dirs:

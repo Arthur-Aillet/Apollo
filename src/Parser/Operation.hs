@@ -8,16 +8,16 @@
 module Parser.Operation (module Parser.Operation) where
 
 import Ast.Ast (Operable (..), Operation (..))
-import Control.Applicative (Alternative ((<|>)))
+import Control.Applicative (Alternative (empty, (<|>)))
 import Eval.Operator (Operator (..))
-import Eval.Syscall (Syscall (Print))
+import Eval.Syscall (Syscall (..))
 import Parser.Char (parseChar, parseClosingBraquet, parseClosingParenthesis, parseOpeningParenthesis)
 import {-# SOURCE #-} Parser.Operable (parseDefinitionName, parseOperable)
 import Parser.Range (Range (..))
 import Parser.StackTrace (StackTrace (..), defaultLocation)
 import Parser.Symbol (parseSymbol)
 import Parser.Syntax (parseMany, parseMaybeparenthesis, parseWithSpace)
-import Parser.Type (Parser (..), faillingParser)
+import Parser.Type (Parser (..))
 
 getPredicat :: String -> Maybe Operator
 getPredicat "+" = Just Add
@@ -40,8 +40,10 @@ parsePredicat :: Parser String
 parsePredicat =
   foldl
     (\prec symbol -> prec <|> parseSymbol symbol)
-    faillingParser
-    ["+", "-", "*", "/", "%", "==", "<", "<=", ">", ">=", "!=", "&&", "||", ":"]
+    empty
+    ( ["+", "-", "*", "/", "%", "=="]
+        ++ ["<", "<=", ">", ">=", "!=", "&&", "||", ":"]
+    )
 
 ---------------------------------------------
 
@@ -74,12 +76,22 @@ parseBuiltin = parseSymbol "len"
 
 getSysCall :: String -> Maybe Syscall
 getSysCall "print" = Just Print
+getSysCall "read" = Just Read
+getSysCall "write" = Just Write
+getSysCall "append" = Just Append
 getSysCall _ = Nothing
 
 parseSysCall :: Parser String
-parseSysCall = parseSymbol "print"
+parseSysCall =
+  parseSymbol "print"
+    <|> parseSymbol "read"
+    <|> parseSymbol "write"
+    <|> parseSymbol "append"
 
 ---------------------------------------------
+
+invalidOperator :: String -> String
+invalidOperator operatorstr = "Invalid operator : \"" ++ operatorstr ++ "\""
 
 checkOperator :: Parser String -> (String -> Maybe a) -> Parser a
 checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
@@ -88,12 +100,7 @@ checkOperator parser getter = Parser $ \s p -> case runParser parser s p of
     Nothing ->
       Left
         ( StackTrace
-            [ ( "Invalid operator : \""
-                  ++ operatorstr
-                  ++ "\"",
-                Range p pos,
-                defaultLocation
-              )
+            [ (invalidOperator operatorstr, Range p pos, defaultLocation)
             ]
         )
   Left a -> Left a

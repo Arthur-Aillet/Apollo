@@ -69,11 +69,10 @@ operate1 :: Operator -> (Atom -> Either String Atom)
 operate1 Not x = Right $ AtomB $ x /= AtomB False
 operate1 _ _ = Left "only one arg was supplied to op"
 
-
 operate2 :: Operator -> ((Atom, Atom) -> Either String Atom)
 operate2 Add = \(a, b) -> Right $ sum [a, b]
 operate2 Sub = \(a, b) -> Right (a - b)
-operate2 Mul = Right . product
+operate2 Mul =  \(a, b) -> Right (a * b)
 operate2 Div = \(a, b) ->
   if b /= 0
     then Right (a / b)
@@ -91,7 +90,6 @@ operate2 NEq = \(a, b) -> Right $ AtomB $ a /= b
 operate2 And = \(a, b) -> Right $ bAtom $ a * b
 operate2 Or = \(a, b) -> Right $ bAtom $ (abs a) + (abs b)
 operate2 _ = \_ -> Left "too many args were supplied to op"
-
 
 defsOp :: Operator -> OperatorDef
 defsOp Add = OperatorDef 2 Calculus

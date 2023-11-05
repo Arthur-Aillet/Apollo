@@ -83,12 +83,12 @@ opeValidArgs op (Ko w err : xs) nbr type' =
   failingComp (opeValidArgs op xs (nbr - 1) type') w err
 opeValidArgs _ [] 0 (Just waited_type) = Ok [] waited_type
 opeValidArgs op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 opeValidArgs op (Ok w _ : _) 0 (Just _) =
-  Ko w ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko w ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 opeValidArgs op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 opeValidArgs op (Ok _ (_, arg_type) : xs) nbr Nothing =
   opeValidArgs op xs (nbr - 1) (Just arg_type)
 opeValidArgs op (Ok w (_, at) : xs) nbr (Just wt)
@@ -115,6 +115,12 @@ compLogical = compOperationType (Just TypeBool) (Just TypeBool)
 
 compPrinting :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
 compPrinting = compSyscallType (Just $ TypeList $ Just TypeChar) Nothing
+
+compReading :: Syscall -> [Compile (Insts, Type)] -> Int -> Compile (Insts, Maybe Type)
+compReading =
+  compSyscallType
+    (Just $ TypeList $ Just TypeChar)
+    (Just $ TypeList $ Just TypeChar)
 
 cMsg :: [String]
 cMsg = ["Can't get on empty list"]
@@ -192,12 +198,12 @@ compSyscallType in' out op args count = case opeValidArgs op args count in' of
 allOfType :: Operator -> [Atom] -> Int -> Maybe Type -> Compile Type
 allOfType _ [] 0 (Just waited_type) = Ok [] waited_type
 allOfType op [] nbr (Just _)
-  | nbr < 0 = Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
-  | otherwise = Ko [] ["Builtin\"" ++ show op ++ "\": Not enough arguments"]
+  | nbr < 0 = Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
+  | otherwise = Ko [] ["Builtin \"" ++ show op ++ "\": Not enough arguments"]
 allOfType op (_ : _) 0 (Just _) =
-  Ko [] ["Builtin\"" ++ show op ++ "\": Too many arguments"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": Too many arguments"]
 allOfType op [] _ Nothing =
-  Ko [] ["Builtin\"" ++ show op ++ "\": No arguments given"]
+  Ko [] ["Builtin \"" ++ show op ++ "\": No arguments given"]
 allOfType op (val : xs) nbr Nothing =
   allOfType op xs (nbr - 1) (Just $ atomType val)
 allOfType op (val : xs) nbr (Just wt)
@@ -267,8 +273,6 @@ compBuiltin _ builtin (OperatorDef ac Logical) True ops =
   evalLogical builtin (toVa ops) ac
 compBuiltin args builtin (OperatorDef ac Logical) False _ =
   compLogical builtin args ac
--- compBuiltin args builtin (OperatorDef ac Printing) _ _ =
--- compPrinting builtin args ac
 compBuiltin args builtin (OperatorDef ac Concatenation) _ _ =
   compConcat builtin args ac
 compBuiltin args builtin (OperatorDef ac Getting) _ _ =
@@ -296,8 +300,11 @@ compOperation (CallStd builtin ops) c l =
   compBuiltin args builtin (defsOp builtin) (allValue ops) ops
   where
     args = map (\op -> compOperable op c l) ops
-compOperation (CallSys builtin ops) c l =
-  compPrinting builtin args 1
+compOperation (CallSys builtin ops) c l
+  | builtin == Print = compPrinting builtin args 1
+  | builtin == Write = compPrinting builtin args 2
+  | builtin == Append = compPrinting builtin args 2
+  | builtin == Read = compReading builtin args 1
   where
     args = map (\op -> compOperable op c l) ops
 compOperation (CallFunc func ops) (Context c) l = case c !? func of
