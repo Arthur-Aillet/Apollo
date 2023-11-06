@@ -6,7 +6,7 @@
 <Hexadecimal>           = "0" | .. | "F";
 <SpecialCharCall>       = "_" | "-";
 <SpecialChars>          = "(" | ")" | "\\" | "/" | "[" |"]" | "\"" | "'" | <SpecialCharCall>;
-<String>                = {(<Letter> | <Decimal> | <SpecialCharCall>)}-;
+<String>                = {(<Letter> | <SpecialCharCall>)}-;
 
 <PosNumber>             = {<Decimal>}-;
 <NegNumber>             = "-" <PosNumber>;
@@ -16,8 +16,8 @@
 <HexaNumber>            = "0x"{<Hexadecimal>}-;
 <Number>                = <PosNumber> | <NegNumber> | <HexaNumber>;
 <Float>                 = <PosFloat> | <NegFloat>;
-<StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\""; # \ handle
-<List>                  = "[" {<Elem> ","} <Elem> "]";
+<StringType>            = "\"" {(<Letter> | <Decimal> | <specialChar>)} "\"";
+<List>                  = "[" {{<Elem> ","} <Elem>} "]";
 <Range>                 = <Number>".."<Number>[":"Number];
 <Bool>                  = "true" | "false";
 <Type>                  = "char" | "string" | "bool" | "int" | "float" | "[" <Type> "]";
@@ -27,41 +27,38 @@
 
 <EqualityPredicate>     = "<" | ">" | "==" | "!=" | "<=" | ">=";
 <LogicalPredicate>      = "&&" | "||";
+<BinaryPredicate>       = <LogicalPredicate> | <EqualityPredicate>
 <CalculusPredicate>     = "/" | "%" | "-" | "+";
 <UnaryPredicate>        = "!"
 <Operation>             = ["("] <Elem> <BinaryPredicate> <Elem> [")"] | ["("] <UnaryPredicate> <Elem> [")"];
 
-<DeclareVariable>       = <Type> <String>;
-<DefineVariable>        = <DeclareVariable> "=" <Elem>;
-<AssigneVariable>       = <String> "=" <Elem>;
+<DeclareVariable>       = <Type> <String> ";";
+<DefineVariable>        = <DeclareVariable> "=" <Elem> ";";
+<AssigneVariable>       = <String> "=" <Elem> ";";
 
-<Parameters>            = {<DeclareVariable> ","} <DeclareVariable;
+<Parameters>            = [{<DeclareVariable> ","} <DeclareVariable>];
 
-<FunctionDef>           = "@" <String> "(" <Parameters> ")" <Type> "{" <Instructions> "}";
+<FunctionDef>           = "@" <String> "(" <Parameters>")" [<Type>] "{" {<Instructions>} "}";
 
 
-<StructureIf>           =   "if" <Operation>
-                                <Structure>
-                            { "elif" <Operation> <Structure> }
-                            [ "else" <Structure> ];
-<StructureWhile>        = "while" <Operation> <Structure>;
-<StructureFor>          = "for" <String> "in" <Iterable> <Structure>;
+<StructureIf>           =   "if" "(" <Operation> ")" "{"
+                                <Structure> "}"
+                            { "elif" "(" <Operation> ")" "{" <Structure> }
+                            [ "} else {" <Structure> "}" ];
+<StructureWhile>        = "while" "(" <Operation> ")" "{" <Structure> "}";
+<StructureFor>          = "for" <String> "in" <Iterable> "{" Structure> "}";
 <StructureSequence>     = "{" {<Instruction> ";" } "}";
 
 <Structure>             = <StructureIf> | <StructureFor> | <StructureFor> | <StructureSequence>;
 
-<FuncArgs>              = {<Elem> ","} <Elem>;
-<FuncCall>              = "@"<String> ["(" <FuncArgs> ")" ];
-<ShellCall>             = "$"<String> ["(" <FuncArgs> ")" ];
-<Call>                  = <FuncCall> | <ShellCall>;
-# <ChainCalls>            = <Call>"."<Call>;
+<FuncArgs>              = [{<Elem> ","} <Elem>];
+<FuncCall>              = "@"<String> ["(" <FuncArgs> ")" ] ";";
+<ShellCall>             = "$"<String> ["(" <FuncArgs> ")" ] ";";
+<Call>                  = (<FuncCall> | <ShellCall>) ";";
 
-<Return>                = "return" ["("] <Elem> [")"];
+<Return>                = "return" ["("] <Elem> [")"] ";";
 
-<Action>                = <Return> | <Call> | <ChainCalls> | <Operation | <DeclareVariable> | <DefineVariable> | <AssigneVariable>;
-
-# <Then>                  = <Call> ">>" <Call>;
-# <Bind>                  = <DeclareVariable> "<-" <Call>;
+<Action>                = <Return> | <Call> | <Operation> | <DeclareVariable> | <DefineVariable> | <AssigneVariable>;
 
 <Instruction>           = <Structure> | <Action>;
 <Instructions>          = {<Instruction>};
