@@ -32,9 +32,9 @@
 <UnaryPredicate>        = "!"
 <Operation>             = ["("] <Elem> <BinaryPredicate> <Elem> [")"] | ["("] <UnaryPredicate> <Elem> [")"];
 
-<DeclareVariable>       = <Type> <String> ";";
-<DefineVariable>        = <DeclareVariable> "=" <Elem> ";";
-<AssigneVariable>       = <String> "=" <Elem> ";";
+<DeclareVariable>       = <Type> <String>;
+<DefineVariable>        = <DeclareVariable> "=" <Elem>;
+<AssigneVariable>       = <String> "=" <Elem>;
 
 <Parameters>            = [{<DeclareVariable> ","} <DeclareVariable>];
 
@@ -52,13 +52,13 @@
 <Structure>             = <StructureIf> | <StructureFor> | <StructureFor> | <StructureSequence>;
 
 <FuncArgs>              = [{<Elem> ","} <Elem>];
-<FuncCall>              = "@"<String> ["(" <FuncArgs> ")" ] ";";
-<ShellCall>             = "$"<String> ["(" <FuncArgs> ")" ] ";";
+<FuncCall>              = "@"<String> ["(" <FuncArgs> ")" ];
+<ShellCall>             = "$"<String> ["(" <FuncArgs> ")" ];
 <Call>                  = (<FuncCall> | <ShellCall>) ";";
 
-<Return>                = "return" ["("] <Elem> [")"] ";";
+<Return>                = "return" ["("] <Elem> [")"];
 
-<Action>                = <Return> | <Call> | <Operation> | <DeclareVariable> | <DefineVariable> | <AssigneVariable>;
+<Action>                = (<Return> | <Call> | <Operation> | <DeclareVariable> | <DefineVariable> | <AssigneVariable>) ";";
 
 <Instruction>           = <Structure> | <Action>;
 <Instructions>          = {<Instruction>};
