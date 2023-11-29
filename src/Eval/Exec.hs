@@ -8,6 +8,7 @@
 module Eval.Exec (module Eval.Exec, module Eval.Atom, module Eval.Instructions, module Eval.Operator) where
 
 import Ast.Utils (listInnerMaybe)
+import Ast.Ast (Type (..))
 import Control.Exception (catch)
 import Eval.Atom (Atom (..), bAtom, cAtom, fAtom, iAtom)
 import Eval.Instructions (Args, Env, Func, History, Index, Instruction (..), Insts, Machine, Pointer (..), moveForward)
@@ -79,6 +80,14 @@ execInstr (env, args, (Op op) : xs, h, stack) =
   case execOperator stack op of
     Left err -> Left err
     Right new_stack -> Right (env, args, xs, Op op : h, new_stack)
+execInstr (env, args, (Cast t) : xs, h, y : stack) =
+  case y of
+    (VAtom x) -> case t of
+      TypeBool -> Right (env, args, xs, Cast t : h, VAtom (bAtom x) : stack)
+      TypeChar ->Right (env, args, xs, Cast t : h, VAtom (cAtom x) : stack)
+      TypeInt -> Right (env, args, xs, Cast t : h, VAtom (iAtom x) : stack)
+      TypeFloat -> Right (env, args, xs, Cast t : h, VAtom (fAtom x) : stack)
+    _ -> Left "error: cannot cast non-primitive"
 execInstr (env, args, (JumpIfFalse line) : xs, h, VAtom 0 : ys)
   | line >= 0 = case moveForward line xs of
       Left a -> Left a
